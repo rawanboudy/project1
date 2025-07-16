@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const instance = axios.create({
-  baseURL: 'http://ElkadyAndRawanStore.somee.com/api/',
+  baseURL: 'https://yummyfood.runasp.net/api/',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
