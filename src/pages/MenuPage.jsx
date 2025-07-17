@@ -106,50 +106,167 @@ export default function MenuPage() {
     navigate(`/product/${productId}`);
   };
 
-  // Add to cart function
-  const addToCart = async (product) => {
-    const quantity = quantities[product.id] || 1;
-    const productId = product.id;
+ // Add to cart function - FIXED VERSION
+// Add to cart function - OPTIMIZED VERSION for your API
+const addToCart = async (product) => {
+  const quantity = quantities[product.id] || 1;
+  const productId = product.id;
 
-    setCartLoading(prev => ({ ...prev, [productId]: true }));
-    setError('');
+  setCartLoading(prev => ({ ...prev, [productId]: true }));
+  setError('');
 
-    try {
-      const basketId = localStorage.getItem('basketId') || Math.random().toString(36).substr(2, 9);
+  try {
+    let basketId = localStorage.getItem('basketId');
+    
+    // Generate basketId if it doesn't exist
+    if (!basketId) {
+      basketId = `basket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('basketId', basketId);
-      const cartData = {
-        id: basketId, // Generate random ID
-        items: [
-          {
-            id: productId,
-            productName: product.name,
-            pictureUrl: product.pictureUrl,
-            price: product.price,
-            quantity: quantity
-          }
-        ],
-        paymentIntentId: "", // Will be set by backend
-        deliveryMethodId: 0, // Default delivery method
-        clientSecret: "", // Will be set by backend
-        shippingPrice: 0 // Default shipping price
-      };
-
-      const response = await axios.post('/basket', cartData);
+    }
+    
+    // First, try to get existing cart
+    let existingCart = null;
+    try {
+      console.log('Attempting to fetch existing cart with basketId:', basketId);
+      const existingResponse = await axios.get(`basket/${basketId}`);
       
+      if (existingResponse.data && (existingResponse.status === 200 || existingResponse.status === 201)) {
+        existingCart = existingResponse.data;
+        console.log('Existing cart found:', existingCart);
+      }
+    } catch (err) {
+      console.log('Cart fetch error:', {
+        status: err.response?.status,
+        message: err.message,
+        data: err.response?.data
+      });
+      
+      // Only treat 404 as "cart not found", other errors should be handled differently
+      if (err.response?.status === 404) {
+        console.log('Cart not found (404), will create new one');
+        existingCart = null;
+      } else if (err.response?.status >= 500) {
+        // Server error, throw to be caught by outer try-catch
+        throw new Error('Server error while fetching cart');
+      } else {
+        // Other errors (400, 401, 403, etc.) - treat as no existing cart
+        console.log('Treating as no existing cart due to error:', err.response?.status);
+        existingCart = null;
+      }
+    }
+
+    // Prepare the new item
+    const newItem = {
+      id: productId,
+      productName: product.name,
+      pictureUrl: product.pictureUrl,
+      price: product.price,
+      quantity: quantity
+    };
+
+    let cartData;
+    
+    // Check if existing cart has valid structure
+    if (existingCart && existingCart.items && Array.isArray(existingCart.items)) {
+      console.log('Working with existing cart, items:', existingCart.items.length);
+      
+      // Find existing item
+      const existingItemIndex = existingCart.items.findIndex(item => 
+        item.id === productId || item.productId === productId
+      );
+      
+      if (existingItemIndex >= 0) {
+        // Item already exists, update quantity
+        existingCart.items[existingItemIndex].quantity += quantity;
+        console.log(`Updated existing item quantity to: ${existingCart.items[existingItemIndex].quantity}`);
+      } else {
+        // Item doesn't exist, add new item
+        existingCart.items.push(newItem);
+        console.log('Added new item to existing cart');
+      }
+      
+      // Preserve existing cart structure
+      cartData = {
+        id: basketId,
+        items: existingCart.items,
+        paymentIntentId: existingCart.paymentIntentId || "",
+        deliveryMethodId: existingCart.deliveryMethodId || 0,
+        clientSecret: existingCart.clientSecret || "",
+        shippingPrice: existingCart.shippingPrice || 0
+      };
+    } else {
+      // No existing cart or invalid cart data, create new one
+      console.log('Creating new cart');
+      cartData = {
+        id: basketId,
+        items: [newItem],
+        paymentIntentId: "",
+        deliveryMethodId: 0,
+        clientSecret: "",
+        shippingPrice: 0
+      };
+    }
+
+    console.log('Sending cart data to API:', cartData);
+    
+    // Send the cart data
+    const response = await axios.post('basket', cartData);
+    
+    console.log('Cart API response:', {
+      status: response.status,
+      data: response.data
+    });
+    
+    if (response.status === 200 || response.status === 201) {
       // Show success message
       setCartSuccess(prev => ({ ...prev, [productId]: true }));
       setTimeout(() => {
         setCartSuccess(prev => ({ ...prev, [productId]: false }));
       }, 2000);
 
-      console.log('Added to cart:', response.data);
-    } catch (err) {
-      setError('Failed to add item to cart. Please try again.');
-      console.error('Cart error:', err);
-    } finally {
-      setCartLoading(prev => ({ ...prev, [productId]: false }));
+      console.log('Successfully added to cart');
+    } else {
+      throw new Error(`Unexpected response status: ${response.status}`);
     }
-  };
+    
+  } catch (err) {
+    console.error('Cart error details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      url: err.config?.url,
+      method: err.config?.method
+    });
+    
+    // More specific error messages
+    let errorMessage = 'Failed to add item to cart. Please try again.';
+    
+    if (err.message === 'Server error while fetching cart') {
+      errorMessage = 'Unable to load cart. Please try again later.';
+    } else if (err.code === 'ECONNABORTED') {
+      errorMessage = 'Request timed out. Please check your connection and try again.';
+    } else if (err.response?.status === 400) {
+      errorMessage = 'Invalid request. Please refresh the page and try again.';
+    } else if (err.response?.status === 401) {
+      errorMessage = 'Authentication required. Please log in and try again.';
+    } else if (err.response?.status === 403) {
+      errorMessage = 'Access denied. Please check your permissions.';
+    } else if (err.response?.status >= 500) {
+      errorMessage = 'Server error. Please try again later.';
+    } else if (err.code === 'NETWORK_ERROR' || !err.response) {
+      errorMessage = 'Network error. Please check your internet connection.';
+    }
+    
+    setError(errorMessage);
+    
+    // Clear the error after 5 seconds
+    setTimeout(() => {
+      setError('');
+    }, 5000);
+  } finally {
+    setCartLoading(prev => ({ ...prev, [productId]: false }));
+  }
+};
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">

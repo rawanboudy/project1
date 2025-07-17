@@ -218,7 +218,7 @@ const RestaurantHomepage = () => {
               <img
                 src={slide.image}
                 alt={slide.title}
-                loading='lazy'
+                
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-black/40"></div>
@@ -297,7 +297,7 @@ const RestaurantHomepage = () => {
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=800&fit=crop" 
-               alt="Restaurant Interior" loading='lazy' className="w-full h-full object-cover" />
+               alt="Restaurant Interior" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/60"></div>
         </div>
         

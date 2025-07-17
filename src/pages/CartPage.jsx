@@ -168,7 +168,7 @@ export default function CartPage() {
                   <div className="flex-shrink-0">
                     <img
                       src={item.pictureUrl}
-                      loading='lazy'
+                      
                       alt={item.productName}
                       className="w-24 h-24 object-cover rounded-lg"
                     />
