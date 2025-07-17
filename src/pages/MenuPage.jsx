@@ -1,7 +1,8 @@
 // src/pages/MenuPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import axios from '../axiosConfig';
-import { Star, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import theme from '../theme';
 import Navbar from '../components/Navbar';
@@ -16,15 +17,19 @@ const SORT_OPTIONS = [
 ];
 
 export default function MenuPage() {
+  const navigate = useNavigate(); // Add navigation hook
   const [allProducts, setAllProducts] = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
+  const [cartLoading, setCartLoading] = useState({});
+  const [cartSuccess, setCartSuccess] = useState({});
 
   const [brandFilter, setBrandFilter] = useState('');
   const [typeFilter,  setTypeFilter]  = useState('');
   const [search,      setSearch]      = useState('');
   const [sort,        setSort]        = useState('');
   const [pageIndex,   setPageIndex]   = useState(1);
+  const [quantities,  setQuantities]  = useState({});
   const pageSize = 8;
 
   // Fetch once on mount (and on every hard refresh)
@@ -32,10 +37,19 @@ export default function MenuPage() {
     setLoading(true);
     setError('');
     axios.get('products')
-      .then(resp => setAllProducts(resp.data.data || []))
+      .then(resp => {
+        const products = resp.data.data || [];
+        setAllProducts(products);
+        // Initialize quantities for all products
+        const initialQuantities = {};
+        products.forEach(product => {
+          initialQuantities[product.id] = 1;
+        });
+        setQuantities(initialQuantities);
+      })
       .catch(() => setError('Failed to load products.'))
       .finally(() => setLoading(false));
-  }, []);  // <-- empty deps means "only on mount"
+  }, []);
 
   // Build unique filter lists
   const brands = useMemo(
@@ -78,6 +92,64 @@ export default function MenuPage() {
     const start = (pageIndex - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
   }, [filtered, pageIndex]);
+
+  // Handle quantity changes
+  const updateQuantity = (productId, change) => {
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: Math.max(1, (prev[productId] || 1) + change)
+    }));
+  };
+
+  // Navigate to product details
+  const viewProduct = (productId) => {
+    navigate(`/product/${productId}`);
+  };
+
+  // Add to cart function
+  const addToCart = async (product) => {
+    const quantity = quantities[product.id] || 1;
+    const productId = product.id;
+
+    setCartLoading(prev => ({ ...prev, [productId]: true }));
+    setError('');
+
+    try {
+      const basketId = localStorage.getItem('basketId') || Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('basketId', basketId);
+      const cartData = {
+        id: basketId, // Generate random ID
+        items: [
+          {
+            id: productId,
+            productName: product.name,
+            pictureUrl: product.pictureUrl,
+            price: product.price,
+            quantity: quantity
+          }
+        ],
+        paymentIntentId: "", // Will be set by backend
+        deliveryMethodId: 0, // Default delivery method
+        clientSecret: "", // Will be set by backend
+        shippingPrice: 0 // Default shipping price
+      };
+
+      const response = await axios.post('/basket', cartData);
+      
+      // Show success message
+      setCartSuccess(prev => ({ ...prev, [productId]: true }));
+      setTimeout(() => {
+        setCartSuccess(prev => ({ ...prev, [productId]: false }));
+      }, 2000);
+
+      console.log('Added to cart:', response.data);
+    } catch (err) {
+      setError('Failed to add item to cart. Please try again.');
+      console.error('Cart error:', err);
+    } finally {
+      setCartLoading(prev => ({ ...prev, [productId]: false }));
+    }
+  };
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">
@@ -162,7 +234,11 @@ export default function MenuPage() {
 
         {/* Products List */}
         <section className="md:col-span-4">
-          {error && <p className="text-red-600 text-center mb-6">{error}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-600 text-center">{error}</p>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-20">
@@ -176,9 +252,9 @@ export default function MenuPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition"
+                  className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
                 >
-                  <div className="overflow-hidden h-48">
+                  <div className="overflow-hidden h-48 flex-shrink-0">
                     <img
                       src={item.pictureUrl}
                       alt={item.name}
@@ -186,29 +262,88 @@ export default function MenuPage() {
                       className="w-full h-full object-cover transition-transform group-hover:scale-110"
                     />
                   </div>
-                  <div className="p-6 flex flex-col justify-between h-56">
-                    <div>
-                      <h3 className="text-2xl font-semibold mb-1" style={{ color: theme.colors.textDark }}>
+                  <div className="p-6 flex flex-col flex-grow">
+                    <div className="mb-4 flex-grow">
+                      <h3 className="text-xl font-semibold mb-2 line-clamp-2 min-h-[3.5rem]" style={{ color: theme.colors.textDark }}>
                         {item.name}
                       </h3>
-                      <p className="text-gray-600 text-sm line-clamp-2">
+                      <p className="text-gray-600 text-sm line-clamp-3 min-h-[4rem]">
                         {item.description}
                       </p>
                     </div>
-                    <div className="mt-4 flex items-center justify-between">
+                    
+                    {/* Price and Rating */}
+                    <div className="flex items-center justify-between mb-4">
                       <span className="text-xl font-extrabold" style={{ color: theme.colors.orange }}>
                         ${(item.price || 0).toFixed(2)}
                       </span>
-                      <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-full text-sm font-medium hover:scale-105 transform transition">
-                        Order
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        <span className="text-sm font-medium">
+                          {item.rating?.toFixed(1) || '–'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quantity Controls */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-medium text-gray-700">Quantity:</span>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center font-medium">
+                          {quantities[item.id] || 1}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Button Container - Fixed positioning */}
+                    <div className="space-y-2 mt-auto">
+                      {/* View Product Button */}
+                      <button
+                        onClick={() => viewProduct(item.id)}
+                        className="w-full py-3 px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform"
+                      >
+                        <Eye className="w-5 h-5" />
+                        <span>View Product</span>
+                      </button>
+
+                      {/* Add to Cart Button */}
+                      <button
+                        onClick={() => addToCart(item)}
+                        disabled={cartLoading[item.id]}
+                        className={`w-full py-3 px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
+                          cartSuccess[item.id]
+                            ? 'bg-green-500 text-white'
+                            : cartLoading[item.id]
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
+                        }`}
+                      >
+                        {cartLoading[item.id] ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : cartSuccess[item.id] ? (
+                          <>
+                            <span>Added!</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-5 h-5" />
+                            <span>Add to Cart</span>
+                          </>
+                        )}
                       </button>
                     </div>
-                  </div>
-                  <div className="absolute top-2 left-2 bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-medium">
-                      {item.rating?.toFixed(1) || '–'}
-                    </span>
                   </div>
                 </motion.div>
               ))}
@@ -220,7 +355,7 @@ export default function MenuPage() {
             <button
               onClick={() => setPageIndex(n => Math.max(1, n - 1))}
               disabled={pageIndex === 1}
-              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition"
+              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-5 h-5" />
               <span>Prev</span>
@@ -229,7 +364,7 @@ export default function MenuPage() {
             <button
               onClick={() => setPageIndex(n => Math.min(totalPages, n + 1))}
               disabled={pageIndex === totalPages}
-              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition"
+              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>Next</span>
               <ChevronRight className="w-5 h-5" />

@@ -1,12 +1,11 @@
-// src/pages/ProfilePage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from '../axiosConfig';
-import { Loader2, AlertCircle } from 'lucide-react';
-
+import { Loader2, AlertCircle, User, Mail } from 'lucide-react';
+import Navbar from '../components/Navbar';
 export default function ProfilePage() {
-  const [user,    setUser]    = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     axios.get('Authentication/User')
@@ -16,8 +15,7 @@ export default function ProfilePage() {
       .catch(err => {
         console.error(err);
         setError(
-          err.response?.data?.message
-            || 'Unable to load profile. Please log in.'
+          err.response?.data?.message || 'Unable to load profile. Please log in.'
         );
       })
       .finally(() => setLoading(false));
@@ -33,7 +31,9 @@ export default function ProfilePage() {
 
   if (error) {
     return (
+      
       <div className="max-w-md mx-auto mt-20 p-6 bg-red-50 rounded-lg">
+        <Navbar />
         <div className="flex items-center text-red-700">
           <AlertCircle className="w-5 h-5 mr-2" />
           {error}
@@ -42,24 +42,36 @@ export default function ProfilePage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-12 px-6">
-      <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
-        <div className="flex items-center space-x-6">
-          {user.pictureUrl && (
-            <img
-              src={user.pictureUrl}
-              alt={user.name}
-              className="w-32 h-32 object-cover rounded-full"
-            />
-          )}
+ return (
+  <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <Navbar />
+
+    <div className="max-w-xl mx-auto bg-white shadow-lg rounded-lg p-8 mt-12">
+      <h1 className="text-3xl font-bold text-center text-orange-600 mb-8">
+        User Profile
+      </h1>
+
+      <div className="space-y-6">
+        {/* Username */}
+        <div className="flex items-center bg-gray-100 p-4 rounded-md shadow-sm">
+          <User className="text-orange-500 mr-4" />
           <div>
-            <h2 className="text-3xl font-bold">{user.name}</h2>
-            <p className="text-gray-600 mt-1">{user.description}</p>
+            <p className="text-sm text-gray-500">Username</p>
+            <p className="text-lg font-medium text-gray-800">{user.username}</p>
           </div>
         </div>
-        {/* any additional profile fields */}
+
+        {/* Email */}
+        <div className="flex items-center bg-gray-100 p-4 rounded-md shadow-sm">
+          <Mail className="text-orange-500 mr-4" />
+          <div>
+            <p className="text-sm text-gray-500">Email</p>
+            <p className="text-lg font-medium text-gray-800">{user.email}</p>
+          </div>
+        </div>
       </div>
     </div>
-  );
+  </div>
+);
+
 }

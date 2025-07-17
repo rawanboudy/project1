@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChefHat, Star, Clock, MapPin, Phone, Play, Pause, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
+import { Star, Clock, Play, Pause, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
 import '../styles/RestaurantHomepage.css'
 import theme from '../theme';
 import Navbar from '../components/Navbar';

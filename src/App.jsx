@@ -8,8 +8,13 @@ import MenuPage from './pages/MenuPage';
 import { CartProvider } from './context/CartContext';
 import AboutPage from './pages/AboutPage';
 import CartPage from './pages/CartPage';
+import { Toaster } from 'react-hot-toast';
+import ProductDetailsPage from './pages/ProductDetailsPage';
+import CheckoutPage from './pages/CheckoutPage';
 function App() {
   return (
+    <>
+    <Toaster position="top-right" reverseOrder={false} />
     <Router>
       
       <Routes>
@@ -20,10 +25,13 @@ function App() {
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/product/:id" element={<ProductDetailsPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         
       </Routes>
       
     </Router>
+    </>
   );
 }
 
