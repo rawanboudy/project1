@@ -22,9 +22,6 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [registrationAttempts, setRegistrationAttempts] = useState(0);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
 
   // Email and username checking states
   const [emailExists, setEmailExists] = useState(false);
@@ -47,8 +44,7 @@ export default function RegisterPage() {
   const [emailDebounceTimer, setEmailDebounceTimer] = useState(null);
   const [usernameDebounceTimer, setUsernameDebounceTimer] = useState(null);
 
-  const MAX_REGISTRATION_ATTEMPTS = 3;
-  const BLOCK_DURATION = 600000; // 10 minutes
+
 
   const icons = {
     firstName:   <User  className="w-5 h-5"/>,
@@ -91,40 +87,9 @@ export default function RegisterPage() {
     };
   }, [generalError]);
 
-  // Check for registration blocking on mount
-  useEffect(() => {
-    const blockEndTime = localStorage.getItem('registrationBlockEndTime');
-    if (blockEndTime && new Date().getTime() < parseInt(blockEndTime)) {
-      setIsBlocked(true);
-      const remaining = parseInt(blockEndTime) - new Date().getTime();
-      setBlockTimeRemaining(Math.ceil(remaining / 1000));
-    }
 
-    const attempts = parseInt(localStorage.getItem('registrationAttempts') || '0');
-    setRegistrationAttempts(attempts);
-  }, []);
 
-  // Block timer countdown
-  useEffect(() => {
-    let interval;
-    if (isBlocked && blockTimeRemaining > 0) {
-      interval = setInterval(() => {
-        setBlockTimeRemaining(prev => {
-          if (prev <= 1) {
-            setIsBlocked(false);
-            localStorage.removeItem('registrationBlockEndTime');
-            localStorage.removeItem('registrationAttempts');
-            setRegistrationAttempts(0);
-            setGeneralError('');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
 
-    return () => clearInterval(interval);
-  }, [isBlocked, blockTimeRemaining]);
 
   // Password strength checker
   const checkPasswordStrength = (password) => {
@@ -233,8 +198,8 @@ export default function RegisterPage() {
     // First name validation
     if (!formData.firstName.trim()) {
       newErr.firstName = ['First name is required.'];
-    } else if (formData.firstName.length < 2) {
-      newErr.firstName = ['First name must be at least 2 characters.'];
+    } else if (formData.firstName.length < 3) {
+      newErr.firstName = ['First name must be at least 3 characters.'];
     } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName)) {
       newErr.firstName = ['First name can only contain letters and spaces.'];
     }
@@ -242,22 +207,24 @@ export default function RegisterPage() {
     // Last name validation
     if (!formData.lastName.trim()) {
       newErr.lastName = ['Last name is required.'];
-    } else if (formData.lastName.length < 2) {
-      newErr.lastName = ['Last name must be at least 2 characters.'];
+    } else if (formData.lastName.length < 3) {
+      newErr.lastName = ['Last name must be at least 3 characters.'];
     } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName)) {
       newErr.lastName = ['Last name can only contain letters and spaces.'];
     }
 
     // Username validation
-    if (!formData.username.trim()) {
-      newErr.username = ['Username is required.'];
-    } else if (formData.username.length < 3) {
-      newErr.username = ['Username must be at least 3 characters.'];
-    } else if (formData.username.length > 20) {
-      newErr.username = ['Username cannot exceed 20 characters.'];
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErr.username = ['Username can only contain letters, numbers, and underscores.'];
-    }
+ if (!formData.username.trim()) {
+  newErr.username = ['Username is required.'];
+} else if (formData.username.length <= 3) {
+  newErr.username = ['Username must be more than 3 characters.'];
+} else if (formData.username.length > 20) {
+  newErr.username = ['Username cannot exceed 20 characters.'];
+} else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+  newErr.username = ['Username can only contain letters, numbers, and underscores.'];
+} else if (usernameExists) {
+  newErr.username = ['That username is already taken.'];
+}
 
     // Email validation
     if (!formData.email.trim()) {
@@ -295,36 +262,14 @@ export default function RegisterPage() {
     return newErr;
   };
 
-  // Handle failed registration
-  const handleFailedRegistration = () => {
-    const newAttempts = registrationAttempts + 1;
-    setRegistrationAttempts(newAttempts);
-    localStorage.setItem('registrationAttempts', newAttempts.toString());
 
-    if (newAttempts >= MAX_REGISTRATION_ATTEMPTS) {
-      const blockEndTime = new Date().getTime() + BLOCK_DURATION;
-      localStorage.setItem('registrationBlockEndTime', blockEndTime.toString());
-      setIsBlocked(true);
-      setBlockTimeRemaining(Math.ceil(BLOCK_DURATION / 1000));
-      setGeneralError(`Too many registration attempts. Please try again in ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`);
-    }
-  };
 
-  // Format time remaining
-  const formatTimeRemaining = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+ 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check if blocked
-    if (isBlocked) {
-      toast.error(`Please wait ${Math.ceil(blockTimeRemaining / 60)} minutes before trying again.`);
-      return;
-    }
+    
 
     // Check network connectivity
     if (!isOnline) {
@@ -377,9 +322,7 @@ export default function RegisterPage() {
       setSuccessMessage('Registration completed successfully! Redirecting to login...');
       toast.success('Registration successful! Redirecting to login...');
       
-      // Reset registration attempts
-      localStorage.removeItem('registrationAttempts');
-      localStorage.removeItem('registrationBlockEndTime');
+     
       
       setTimeout(() => navigate('/login'), 2000);
 
@@ -472,10 +415,7 @@ export default function RegisterPage() {
             break;
         }
 
-        // Handle failed registration attempt
-        if (status !== 409) { // Don't count conflicts as failed attempts
-          handleFailedRegistration();
-        }
+        
 
       } else if (err.request) {
         // Network error
@@ -518,12 +458,7 @@ export default function RegisterPage() {
     return null;
   };
 
-  // Get error icon based on error type
-  const getErrorIcon = () => {
-    if (!isOnline) return <WifiOff className="w-4 h-4" />;
-    if (isBlocked) return <Shield className="w-4 h-4" />;
-    return <AlertCircle className="w-4 h-4" />;
-  };
+ 
 
   return (
     
@@ -587,33 +522,13 @@ export default function RegisterPage() {
               color: theme.colors.errorDark
             }}
           >
-            {getErrorIcon()}
+           
             <span className="flex-1">{generalError}</span>
-            {isBlocked && blockTimeRemaining > 0 && (
-              <span className="text-sm font-mono">
-                {formatTimeRemaining(blockTimeRemaining)}
-              </span>
-            )}
+           
           </div>
         )}
 
-        {/* Registration Attempts Warning */}
-        {registrationAttempts > 0 && registrationAttempts < MAX_REGISTRATION_ATTEMPTS && !isBlocked && (
-          <div
-            className="mb-4 p-3 border rounded-xl flex items-center gap-2"
-            style={{
-              backgroundColor: '#FEF3C7',
-              borderColor: '#F59E0B',
-              color: '#92400E'
-            }}
-          >
-            <AlertTriangle className="w-4 h-4" />
-            <span>
-              {registrationAttempts} failed attempt{registrationAttempts > 1 ? 's' : ''}. 
-              {MAX_REGISTRATION_ATTEMPTS - registrationAttempts} remaining.
-            </span>
-          </div>
-        )}
+      
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {Object.keys(formData).map(field => (
@@ -646,7 +561,7 @@ export default function RegisterPage() {
                     color: theme.colors.textDark
                   }}
                   placeholder={`Enter your ${labels[field].toLowerCase()}`}
-                  disabled={isLoading || isBlocked}
+                  disabled={isLoading}
                   autoComplete={field === 'password' ? 'new-password' : field}
                 />
                 
@@ -656,7 +571,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
                     className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
-                    disabled={isLoading || isBlocked}
+                    disabled={isLoading}
                   >
                     {showPassword
                       ? <EyeOff className="w-5 h-5"/>
@@ -720,33 +635,29 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isLoading || emailExists || usernameExists || isBlocked || !isOnline}
+            disabled={isLoading || emailExists || usernameExists || !isOnline}
             className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2"
             style={{
               background: `linear-gradient(to right,
                 ${theme.colors.orange},
                 ${theme.colors.orangeDark})`,
-              opacity: (isLoading || emailExists || usernameExists || isBlocked || !isOnline) ? 0.6 : 1
+              opacity: (isLoading || emailExists || usernameExists ||!isOnline) ? 0.6 : 1
             }}
           >
             {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin"/>
-                Creating Account...
-              </>
-            ) : isBlocked ? (
-              <>
-                <Shield className="w-5 h-5" />
-                Blocked ({formatTimeRemaining(blockTimeRemaining)})
-              </>
-            ) : !isOnline ? (
-              <>
-                <WifiOff className="w-5 h-5" />
-                No Connection
-              </>
-            ) : (
-              'Create Account'
-            )}
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin"/>
+                  Creating Account...
+                </>
+              ) : !isOnline ? (
+                <>
+                  <WifiOff className="w-5 h-5" />
+                  No Connection
+                </>
+              ) : (
+                'Create Account'
+              )}
+
           </button>
         </form>
 

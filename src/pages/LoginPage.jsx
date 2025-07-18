@@ -20,12 +20,55 @@ const LoginPage = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const navigate = useNavigate();
 
   // Maximum login attempts before blocking
   const MAX_LOGIN_ATTEMPTS = 5;
   const BLOCK_DURATION = 300000; // 5 minutes in milliseconds
+
+  // Check for existing valid session on component mount
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const rememberMeStatus = localStorage.getItem('rememberMe') === 'true';
+        
+        if (token && rememberMeStatus) {
+          // Set axios default header for authentication
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          
+          // Verify token is still valid by fetching user info
+          const response = await axios.get('/api/Authentication/user');
+          
+          if (response.data) {
+            // Token is valid, store user info and redirect
+            localStorage.setItem('userInfo', JSON.stringify(response.data));
+            toast.success('Welcome back! Logging you in automatically.');
+            navigate('/');
+            return;
+          }
+        }
+      } catch (error) {
+        // Token is invalid or expired, clear stored data
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('refreshToken');
+        delete axios.defaults.headers.common['Authorization'];
+        
+        if (error.response?.status === 401) {
+          setSessionExpired(true);
+          setGeneralError('Your session has expired. Please log in again.');
+        }
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
 
   // Check for remembered credentials on component mount
   useEffect(() => {
@@ -141,6 +184,53 @@ const LoginPage = () => {
     }
   };
 
+  // Store all token information
+  const storeTokenInfo = (responseData) => {
+    // Store main token
+    if (responseData.token) {
+      localStorage.setItem('token', responseData.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
+    }
+
+    // Store refresh token if available
+    if (responseData.refreshToken) {
+      localStorage.setItem('refreshToken', responseData.refreshToken);
+    }
+
+    // Store token expiry if available
+    if (responseData.expiresAt || responseData.expires_at || responseData.exp) {
+      const expiryTime = responseData.expiresAt || responseData.expires_at || responseData.exp;
+      localStorage.setItem('tokenExpiry', expiryTime);
+    }
+
+    // Store user information
+    if (responseData.user) {
+      localStorage.setItem('userInfo', JSON.stringify(responseData.user));
+    }
+
+    // Store any additional token metadata
+    if (responseData.tokenType || responseData.token_type) {
+      localStorage.setItem('tokenType', responseData.tokenType || responseData.token_type);
+    }
+
+    // Store permissions/roles if available
+    if (responseData.permissions) {
+      localStorage.setItem('userPermissions', JSON.stringify(responseData.permissions));
+    }
+
+    if (responseData.roles) {
+      localStorage.setItem('userRoles', JSON.stringify(responseData.roles));
+    }
+
+    // Store session ID if available
+    if (responseData.sessionId) {
+      localStorage.setItem('sessionId', responseData.sessionId);
+    }
+
+    // Store remember me preference
+    localStorage.setItem('rememberMe', rememberMe.toString());
+  };
+
   // Handle login attempts and blocking
   const handleFailedLogin = () => {
     const newAttempts = loginAttempts + 1;
@@ -195,25 +285,21 @@ const LoginPage = () => {
     try {
       const response = await axios.post('Authentication/login', {
         email: email.trim().toLowerCase(),
-        password
+        password,
+        rememberMe // Send remember me preference to backend
       });
 
       // Success handling
       toast.success('Login successful. Redirecting...');
+      
+      // Store all token information
+      storeTokenInfo(response.data);
       
       // Handle remember me
       handleRememberMe();
       
       // Reset failed attempts
       handleSuccessfulLogin();
-      
-      // Store token
-      localStorage.setItem('token', response.data.token);
-      
-      // Store user info if available
-      if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
 
       // Redirect
       navigate('/');
@@ -354,6 +440,23 @@ const LoginPage = () => {
     return <AlertCircle className="w-4 h-4" />;
   };
 
+  // Show loading screen while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          background: `linear-gradient(to bottom right, ${theme.colors.gradientStart}, ${theme.colors.gradientMiddle}, ${theme.colors.gradientEnd})`
+        }}
+      >
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: theme.colors.orange }} />
+          <p className="text-white">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
@@ -370,11 +473,9 @@ const LoginPage = () => {
             <Lock className="w-7 h-7" style={{ color: theme.colors.orangeDark }} />
           </div>
           <h2 className="text-3xl font-semibold" style={{ color: theme.colors.textDark }}>
-            Sign in to Your Account
+            Sign in 
           </h2>
-          <p className="text-sm mt-1" style={{ color: theme.colors.textGray }}>
-            Access your dashboard securely
-          </p>
+        
         </div>
 
         {/* Network Status Indicator */}
@@ -385,22 +486,12 @@ const LoginPage = () => {
           </div>
         )}
 
-       
-
-        {/* Login Attempts Warning */}
-        {loginAttempts > 0 && loginAttempts < MAX_LOGIN_ATTEMPTS && !isBlocked && (
-          <div
-            className="mb-4 p-3 border rounded-xl flex items-center gap-2"
-            style={{
-              backgroundColor: '#FEF3C7',
-              borderColor: '#F59E0B',
-              color: '#92400E'
-            }}
-          >
-            <AlertTriangle className="w-4 h-4" />
-            <span>
-              {loginAttempts} failed attempt{loginAttempts > 1 ? 's' : ''}. 
-              {MAX_LOGIN_ATTEMPTS - loginAttempts} remaining.
+        {/* General Error Display */}
+        {generalError && (
+          <div className="mb-4 p-3 border rounded-xl flex items-center gap-2" style={{ backgroundColor: theme.colors.errorLight, borderColor: theme.colors.error }}>
+            {getErrorIcon()}
+            <span className="text-sm" style={{ color: theme.colors.errorDark }}>
+              {generalError}
             </span>
           </div>
         )}
