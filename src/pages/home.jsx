@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Clock, Play, Pause, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
-import '../styles/RestaurantHomepage.css'
+import '../styles/RestaurantHomepage.css';
 import theme from '../theme';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
 import SignatureDishes from '../components/SignatureDishes';
 import { useNavigate } from 'react-router-dom';
-
-
 
 const RestaurantHomepage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -20,7 +18,6 @@ const RestaurantHomepage = () => {
   const [hoveredDish, setHoveredDish] = useState(null);
   const [currentDishIndex, setCurrentDishIndex] = useState(0);
   const navigate = useNavigate();
-
 
   const heroSlides = [
     {
@@ -94,42 +91,42 @@ const RestaurantHomepage = () => {
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face"
     }
   ];
-  const DishCard = ({ dish, index }) => (
-  <div
-    className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-transform transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp"
-    style={{ animationDelay: `${index * 0.2}s` }}
-  >
-    <div className="relative">
-      <img src={dish.pictureUrl} loading='lazy' alt={dish.name} className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-        {dish.category}
-      </span>
-      <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
-        <Star className="w-4 h-4 text-orange-500" />
-        <span>{dish.rating}</span>
-      </div>
-      <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
-        <Clock className="w-4 h-4 text-orange-500" />
-        <span>{dish.preparationTime}</span>
-      </div>
-    </div>
-    <div className="p-6 space-y-3">
-      <h3 className="text-xl font-bold text-gray-900 group-hover:gradient-text transition-all duration-500">
-        {dish.name}
-      </h3>
-      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
-      <div className="flex justify-between items-center">
-        <span className="text-2xl font-bold gradient-text">{dish.price}</span>
-        <button className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold">
-          Order
-          <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-        </button>
-      </div>
-    </div>
-  </div>
-);
 
+  const DishCard = ({ dish, index }) => (
+    <div
+      className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-transform transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp"
+      style={{ animationDelay: `${index * 0.2}s` }}
+    >
+      <div className="relative">
+        <img src={dish.pictureUrl} loading='lazy' alt={dish.name} className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+          {dish.category}
+        </span>
+        <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
+          <Star className="w-4 h-4 text-orange-500" />
+          <span>{dish.rating}</span>
+        </div>
+        <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
+          <Clock className="w-4 h-4 text-orange-500" />
+          <span>{dish.preparationTime}</span>
+        </div>
+      </div>
+      <div className="p-6 space-y-3">
+        <h3 className="text-xl font-bold text-gray-900 group-hover:gradient-text transition-all duration-500">
+          {dish.name}
+        </h3>
+        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
+        <div className="flex justify-between items-center">
+          <span className="text-2xl font-bold gradient-text">{dish.price}</span>
+          <button className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold">
+            Order
+            <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -218,7 +215,6 @@ const RestaurantHomepage = () => {
               <img
                 src={slide.image}
                 alt={slide.title}
-                
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-black/40"></div>
@@ -248,19 +244,19 @@ const RestaurantHomepage = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fadeInUp"
                  style={{ animationDelay: '1.1s', animationFillMode: 'forwards' }}>
-               <button
-      type="button"
-      onClick={() => navigate('/menu')}
-      className="group px-8 py-4 rounded-full font-bold text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-      style={{
-        background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
-      }}
-    >
-      <span className="flex items-center justify-center gap-2">
-        Explore Menu
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-      </span>
-    </button>
+              <button
+                type="button"
+                onClick={() => navigate('/menu')}
+                className="group px-8 py-4 rounded-full font-bold text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
+                }}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  Explore Menu
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </button>
               
               <button 
                 className="group px-8 py-4 rounded-full font-bold text-white border-2 border-white/30 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
@@ -289,9 +285,7 @@ const RestaurantHomepage = () => {
         </div>
       </section>
 
-
-
-<SignatureDishes/>
+      <SignatureDishes />
 
       {/* Experience Section */}
       <section className="py-20 relative overflow-hidden">
@@ -316,11 +310,10 @@ const RestaurantHomepage = () => {
               </p>
               
               <div className="grid grid-cols-2 gap-6 mb-8">
-                {[
-                  { icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
-                  { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
-                  { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
-                  { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
+                {[{ icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
+                   { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
+                   { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
+                   { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
@@ -386,6 +379,7 @@ const RestaurantHomepage = () => {
           </div>
         </div>
       </section>
+
       <Footer />
     </div>
   );

@@ -1,23 +1,21 @@
-// src/components/Navbar.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChefHat, User, LogOut, UserCircle, Clock, X } from 'lucide-react';
+import { ChefHat, User, LogOut, UserCircle, Clock, Menu, X, ShoppingCart, Home, BookOpen, Phone } from 'lucide-react';
 import theme from '../theme';
 import toast from 'react-hot-toast';
 
 const NAV_ITEMS = [
-  { label: 'Home',    to: '/'       },
-  { label: 'Menu',    to: '/menu'   },
-  { label: 'About',   to: '/about'  },
-  { label: 'Cart',    to: '/cart'   },
-  { label: 'Contact', to: '/contact'}
+  { label: 'Home', to: '/', icon: <Home /> },
+  { label: 'Menu', to: '/menu', icon: <BookOpen /> },
+  { label: 'About', to: '/about', icon: <UserCircle /> },
+  { label: 'Cart', to: '/cart', icon: <ShoppingCart /> },
+  { label: 'Contact', to: '/contact', icon: <Phone /> }
 ];
 
-// Session configuration
 const SESSION_CONFIG = {
-  WARNING_TIME: 5 * 60 * 1000, // 5 minutes before expiry
-  SESSION_DURATION: 30 * 60 * 1000, // 30 minutes total
-  CHECK_INTERVAL: 60 * 1000, // Check every minute
+  WARNING_TIME: 5 * 60 * 1000, 
+  SESSION_DURATION: 30 * 60 * 1000, 
+  CHECK_INTERVAL: 60 * 1000, 
 };
 
 const Navbar = ({ scrollY }) => {
@@ -27,15 +25,15 @@ const Navbar = ({ scrollY }) => {
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [sessionTimeLeft, setSessionTimeLeft] = useState(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
-  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
   const sessionCheckInterval = useRef(null);
   const sessionWarningTimeout = useRef(null);
   const sessionExpiryTimeout = useRef(null);
-  
+
   const isSolid = typeof scrollY === 'number' ? scrollY > 50 : true;
 
-  // Get user info from localStorage if available
+  // User session management
   const getUserInfo = () => {
     try {
       const userStr = localStorage.getItem('user');
@@ -47,7 +45,6 @@ const Navbar = ({ scrollY }) => {
 
   const user = getUserInfo();
 
-  // Check if session is active
   const checkSessionStatus = () => {
     const token = localStorage.getItem('token');
     const sessionStart = localStorage.getItem('sessionStart');
@@ -62,7 +59,6 @@ const Navbar = ({ scrollY }) => {
     const elapsed = now - startTime;
     
     if (elapsed >= SESSION_CONFIG.SESSION_DURATION) {
-      // Session expired
       handleSessionExpiry();
       return false;
     }
@@ -71,7 +67,6 @@ const Navbar = ({ scrollY }) => {
     setSessionTimeLeft(timeLeft);
     setIsSessionActive(true);
     
-    // Show warning if close to expiry
     if (timeLeft <= SESSION_CONFIG.WARNING_TIME && !showSessionWarning) {
       showSessionExpiryWarning();
     }
@@ -79,7 +74,6 @@ const Navbar = ({ scrollY }) => {
     return true;
   };
 
-  // Initialize session tracking
   const initializeSession = () => {
     const token = localStorage.getItem('token');
     if (token && !localStorage.getItem('sessionStart')) {
@@ -87,7 +81,6 @@ const Navbar = ({ scrollY }) => {
     }
   };
 
-  // Show session expiry warning
   const showSessionExpiryWarning = () => {
     setShowSessionWarning(true);
     toast.error('Your session will expire soon. Please extend your session to continue.', {
@@ -96,9 +89,7 @@ const Navbar = ({ scrollY }) => {
     });
   };
 
-  // Handle session expiry
   const handleSessionExpiry = () => {
-    // Clear all auth-related data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('sessionStart');
@@ -106,27 +97,22 @@ const Navbar = ({ scrollY }) => {
     localStorage.removeItem('rememberedPassword');
     localStorage.removeItem('rememberMe');
     
-    // Clear intervals and timeouts
     clearInterval(sessionCheckInterval.current);
     clearTimeout(sessionWarningTimeout.current);
     clearTimeout(sessionExpiryTimeout.current);
     
-    // Update state
     setIsSessionActive(false);
     setShowSessionWarning(false);
     setIsDropdownOpen(false);
     
-    // Show expiry message
     toast.error('Your session has expired. Please log in again.', {
       duration: 5000,
       position: 'top-center',
     });
     
-    // Navigate to login
     navigate('/login');
   };
 
-  // Extend session
   const extendSession = () => {
     localStorage.setItem('sessionStart', Date.now().toString());
     setShowSessionWarning(false);
@@ -137,7 +123,6 @@ const Navbar = ({ scrollY }) => {
     });
   };
 
-  // End session manually
   const endSession = () => {
     handleSessionExpiry();
     toast.success('Session ended successfully', {
@@ -145,14 +130,12 @@ const Navbar = ({ scrollY }) => {
     });
   };
 
-  // Format time for display
   const formatTime = (milliseconds) => {
     const minutes = Math.floor(milliseconds / 60000);
     const seconds = Math.floor((milliseconds % 60000) / 1000);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Setup session monitoring
   useEffect(() => {
     const token = localStorage.getItem('token');
     
@@ -160,7 +143,6 @@ const Navbar = ({ scrollY }) => {
       initializeSession();
       checkSessionStatus();
       
-      // Set up periodic session checks
       sessionCheckInterval.current = setInterval(() => {
         checkSessionStatus();
       }, SESSION_CONFIG.CHECK_INTERVAL);
@@ -173,7 +155,6 @@ const Navbar = ({ scrollY }) => {
     };
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -185,13 +166,11 @@ const Navbar = ({ scrollY }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdown on route change
   useEffect(() => {
     setIsDropdownOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
-    // Clear all auth-related data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('sessionStart');
@@ -199,20 +178,16 @@ const Navbar = ({ scrollY }) => {
     localStorage.removeItem('rememberedPassword');
     localStorage.removeItem('rememberMe');
     
-    // Clear intervals and timeouts
     clearInterval(sessionCheckInterval.current);
     clearTimeout(sessionWarningTimeout.current);
     clearTimeout(sessionExpiryTimeout.current);
     
-    // Update state
     setIsSessionActive(false);
     setShowSessionWarning(false);
     setIsDropdownOpen(false);
     
-    // Show success message
     toast.success('Logged out successfully');
     
-    // Navigate to home or login page
     navigate('/');
   };
 
@@ -225,84 +200,57 @@ const Navbar = ({ scrollY }) => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <>
-      <nav className={`
-          fixed top-0 w-full z-50 transition-all duration-500
-          ${isSolid
-            ? 'bg-white/95 backdrop-blur-md shadow-lg'
-            : 'bg-transparent'}
-        `}
-      >
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div
-            className="flex items-center space-x-3 cursor-pointer"
-            onClick={() => navigate('/')}
-          >
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{
-                background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
-              }}
-            >
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
               <ChefHat className="w-6 h-6 text-white" />
             </div>
-            <h1
-              className="text-2xl font-bold"
-              style={{ color: isSolid ? theme.colors.textDark : 'white' }}
-            >
-              Savoria
-            </h1>
+            <h1 className="text-2xl font-bold" style={{ color: isSolid ? theme.colors.textDark : 'white' }}>Savoria</h1>
           </div>
 
-          {/* Nav links */}
+          {/* Mobile Hamburger Menu */}
+          <button className="block md:hidden" onClick={toggleMobileMenu}>
+            {isMobileMenuOpen ? <X className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} /> : <Menu className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />}
+          </button>
+
+          {/* Desktop Navbar Links */}
           <div className="hidden md:flex space-x-8">
-            {NAV_ITEMS.map(({ label, to }) => (
+            {NAV_ITEMS.map(({ label, to, icon }) => (
               <Link
                 key={label}
                 to={to}
-                className="font-medium hover:scale-105 transition-all duration-300"
+                className="font-medium flex items-center gap-2 hover:scale-105 transition-all duration-300"
                 style={{
                   color: isSolid ? theme.colors.textDark : 'white',
-                  borderBottom: location.pathname === to
-                    ? `2px solid ${theme.colors.orange}`
-                    : '2px solid transparent'
+                  borderBottom: location.pathname === to ? `2px solid ${theme.colors.orange}` : '2px solid transparent'
                 }}
               >
-                {label}
+                {icon}
+                <span>{label}</span>
               </Link>
             ))}
           </div>
 
-          {/* Login or User Dropdown */}
+          {/* User Dropdown */}
           {isSessionActive ? (
             <div className="relative" ref={dropdownRef}>
-              {/* User Button with session indicator */}
-              <button
-                onClick={toggleDropdown}
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 relative"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
-                }}
-              >
+              <button onClick={toggleDropdown} className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 relative" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
                 <User className="w-5 h-5 text-white" />
-                {/* Session warning indicator */}
                 {showSessionWarning && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 )}
               </button>
 
-              {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden"
-                  style={{
-                    borderColor: theme.colors.orange + '20',
-                    boxShadow: `0 10px 25px -5px ${theme.colors.orange}20, 0 10px 10px -5px ${theme.colors.orange}10`
-                  }}
-                >
-                  {/* User Info Header */}
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden">
                   {user && (
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-medium" style={{ color: theme.colors.textDark }}>
@@ -314,49 +262,28 @@ const Navbar = ({ scrollY }) => {
                     </div>
                   )}
 
-                  {/* Session Status */}
                   {sessionTimeLeft && (
                     <div className="px-4 py-3 border-b border-gray-100">
                       <div className="flex items-center gap-2 text-xs">
                         <Clock className="w-3 h-3" style={{ color: theme.colors.orange }} />
-                        <span style={{ color: theme.colors.textGray }}>
-                          Session expires in: {formatTime(sessionTimeLeft)}
-                        </span>
+                        <span style={{ color: theme.colors.textGray }}>Session expires in: {formatTime(sessionTimeLeft)}</span>
                       </div>
                       {showSessionWarning && (
                         <div className="mt-2 flex gap-2">
-                          <button
-                            onClick={extendSession}
-                            className="flex-1 px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-                          >
-                            Extend
-                          </button>
-                          <button
-                            onClick={endSession}
-                            className="flex-1 px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                          >
-                            End Now
-                          </button>
+                          <button onClick={extendSession} className="flex-1 px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors">Extend</button>
+                          <button onClick={endSession} className="flex-1 px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">End Now</button>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Menu Items */}
                   <div className="py-2">
-                    <button
-                      onClick={handleViewProfile}
-                      className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200"
-                      style={{ color: theme.colors.textDark }}
-                    >
+                    <button onClick={handleViewProfile} className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200" style={{ color: theme.colors.textDark }}>
                       <UserCircle className="w-4 h-4" />
                       <span className="text-sm">View Profile</span>
                     </button>
                     
-                    <button
-                      onClick={handleLogout}
-                      className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-red-50 transition-colors duration-200 text-red-600"
-                    >
+                    <button onClick={handleLogout} className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-red-50 transition-colors duration-200 text-red-600">
                       <LogOut className="w-4 h-4" />
                       <span className="text-sm">Logout</span>
                     </button>
@@ -365,51 +292,75 @@ const Navbar = ({ scrollY }) => {
               )}
             </div>
           ) : (
-            <button
-              onClick={() => navigate('/login')}
-              className="px-6 py-2 rounded-full font-medium text-white transition-all duration-300 hover:scale-105"
-              style={{
-                background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
-              }}
-            >
+            <button onClick={() => navigate('/login')} className="px-6 py-2 rounded-full font-medium text-white transition-all duration-300 hover:scale-105" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
               Login
             </button>
           )}
+        </div>
+
+        {/* Mobile Menu - Professional Sliding Menu */}
+        <div className={`md:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden bg-white/95 backdrop-blur-md border-t border-gray-100`}>
+          <div className="px-4 py-4 space-y-1">
+            {NAV_ITEMS.map(({ label, to, icon }) => (
+              <Link
+                key={label}
+                to={to}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  location.pathname === to 
+                    ? 'bg-gray-100 shadow-sm' 
+                    : 'hover:bg-gray-50'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  color: theme.colors.textDark,
+                }}
+              >
+                <span className="w-5 h-5 flex-shrink-0">{icon}</span>
+                <span>{label}</span>
+                {location.pathname === to && (
+                  <div 
+                    className="ml-auto w-2 h-2 rounded-full"
+                    style={{ backgroundColor: theme.colors.orange }}
+                  />
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
       </nav>
 
       {/* Session Warning Modal */}
       {showSessionWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Clock className="w-6 h-6" style={{ color: theme.colors.orange }} />
               </div>
-              <div>
-                <h3 className="font-semibold text-lg" style={{ color: theme.colors.textDark }}>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg mb-1" style={{ color: theme.colors.textDark }}>
                   Session Expiring Soon
                 </h3>
                 <p className="text-sm" style={{ color: theme.colors.textGray }}>
-                  Your session will expire in {sessionTimeLeft ? formatTime(sessionTimeLeft) : '0:00'}
+                  Your session will expire in <span className="font-semibold">{sessionTimeLeft ? formatTime(sessionTimeLeft) : '0:00'}</span>
                 </p>
               </div>
             </div>
             
-            <p className="text-sm mb-6" style={{ color: theme.colors.textGray }}>
-              Would you like to extend your session or end it now?
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: theme.colors.textGray }}>
+              Would you like to extend your session to continue working, or end it now?
             </p>
             
-            <div className="flex gap-3">
-              <button
-                onClick={extendSession}
-                className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={extendSession} 
+                className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold text-sm"
               >
                 Extend Session
               </button>
-              <button
-                onClick={endSession}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+              <button 
+                onClick={endSession} 
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-semibold text-sm"
               >
                 End Session
               </button>

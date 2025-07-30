@@ -1,4 +1,3 @@
-// src/pages/ProductDetailsPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -138,26 +137,15 @@ const ProductDetailsPage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
+    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen mt-20"> {/* Added margin-top here */}
       <Navbar />
 
       {/* Breadcrumb */}
       <div className="max-w-4xl mx-auto px-6 py-4">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <button 
-            onClick={() => navigate('/menu')} 
-            className="hover:text-orange-600 transition-colors duration-200"
-          >
-            Menu
-          </button>
-          <span>/</span>
-          <span className="text-gray-900 font-medium">{product.name}</span>
-        </div>
+        
       </div>
 
       <main className="max-w-4xl mx-auto px-6 pb-16">
-       
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Left: Product Image */}
           <motion.div
@@ -166,16 +154,16 @@ const ProductDetailsPage = () => {
             transition={{ duration: 0.6 }}
             className="relative"
           >
-            <div className="relative bg-white rounded-xl shadow-sm overflow-hidden group">
+            <div className="relative bg-white rounded-xl shadow-lg overflow-hidden group hover:scale-105 transition-all duration-200">
               <img
                 src={product.pictureUrl}
                 alt={product.name}
                 loading='lazy'
-                className="w-full h-80 lg:h-96 object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-80 lg:h-96 object-cover transition-transform duration-700"
               />
               <button
                 onClick={shareProduct}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-600 hover:text-orange-600 hover:bg-white transition-all duration-200 shadow-sm"
+                className="absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm text-gray-600 hover:text-orange-600 hover:bg-white transition-all duration-200 shadow-lg"
               >
                 <Share2 className="w-5 h-5" />
               </button>
@@ -199,11 +187,7 @@ const ProductDetailsPage = () => {
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-4 h-4 ${
-                        i < Math.floor(product.rating || 0)
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-300'
-                      }`}
+                      className={`w-4 h-4 ${i < Math.floor(product.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
                     />
                   ))}
                   <span className="text-sm text-gray-600 ml-1">

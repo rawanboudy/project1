@@ -1,17 +1,16 @@
-// src/components/SignatureDishes.jsx
 import React, { useState, useEffect } from 'react';
 
 export default function SignatureDishes() {
   const featuredDishes = [
-    { id:1, name:"Grilled Salmon", description:"Fresh Atlantic salmon with herbs and lemon", pictureUrl:"https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop" },
-    { id:2, name:"Truffle Pasta",   description:"Handmade pasta with black truffle & parmesan",      pictureUrl:"https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop" },
-    { id:3, name:"Wagyu Steak",     description:"Premium wagyu beef with garlic butter",              pictureUrl:"https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop" },
-    { id:4, name:"Lobster Bisque",  description:"Creamy lobster soup with cognac",                     pictureUrl:"https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop" },
-    { id:5, name:"Duck Confit",     description:"Slow-cooked duck leg with cherry sauce",              pictureUrl:"https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop" },
+    { id: 1, name: "Grilled Salmon", description: "Fresh Atlantic salmon with herbs and lemon", pictureUrl: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop" },
+    { id: 2, name: "Truffle Pasta", description: "Handmade pasta with black truffle & parmesan", pictureUrl: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop" },
+    { id: 3, name: "Wagyu Steak", description: "Premium wagyu beef with garlic butter", pictureUrl: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop" },
+    { id: 4, name: "Lobster Bisque", description: "Creamy lobster soup with cognac", pictureUrl: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop" },
+    { id: 5, name: "Duck Confit", description: "Slow-cooked duck leg with cherry sauce", pictureUrl: "https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop" },
   ];
 
   const [currentDishIndex, setCurrentDishIndex] = useState(0);
-  const [animationKey,     setAnimationKey]     = useState(0);
+  const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -26,66 +25,82 @@ export default function SignatureDishes() {
   const currentDish = featuredDishes[currentDishIndex];
 
   return (
-    <div className="signature-dishes-section">
+    <div className="signature-dishes-section relative py-6 sm:py-12">
       <style jsx>{`
-        /* gradient background + abstract shapes */
         .signature-dishes-section {
-          position: relative;
-          padding: 2.5rem 0.8rem 3rem;
           background: linear-gradient(135deg, #fafafa 0%, #f0f4f8 100%);
           overflow: hidden;
-          min-height: 55vh;
           font-family: 'Poppins', sans-serif;
+          position: relative;
         }
-        /* decorative circles */
+
+        /* Floating circles */
         .shape-circle {
           position: absolute;
           border-radius: 50%;
           background: rgba(251,140,0,0.1);
           pointer-events: none;
         }
-        .shape-circle.small { width: 100px; height: 100px; top: 10%; left: 80%; }
-        .shape-circle.large { width: 300px; height: 300px; bottom: 5%; right: -50px; }
 
-        /* header */
+        .shape-circle.small { 
+          width: 120px; /* Increased size */
+          height: 120px; 
+          top: 5%; 
+          left: 75%; 
+        }
+        .shape-circle.large { 
+          width: 250px; /* Increased size */
+          height: 250px; 
+          bottom: 5%; 
+          right: -40px; /* Adjusted for better visibility */
+        }
+
         .section-header {
           text-align: center;
           margin-bottom: 2rem;
           animation: fadeInUp 0.8s ease-out both;
         }
+
         .section-title {
           font-size: 2.5rem;
           font-weight: 900;
-          background: linear-gradient(135deg,#1f2937,#fb8c00);
+          background: linear-gradient(135deg, #1f2937, #fb8c00);
           -webkit-background-clip: text;
           color: transparent;
         }
+
         .section-subtitle {
           color: #6b7280;
           margin-top: 0.25rem;
           font-size: 1rem;
         }
 
-        /* layout */
         .dishes-container {
           display: flex;
-          gap: 2rem;
-          max-width: 1000px;
+          gap: 1.5rem;
+          flex-wrap: wrap;
+          justify-content: center;
+          max-width: 800px; /* Reduced width for smaller white area */
           margin: 0 auto;
+          padding-top: 2rem; /* Added padding to avoid overlap */
         }
 
-        /* circle track */
         .curved-path-container {
           position: relative;
-          width: 500px;
-          height: 500px;
+          width: 350px; /* Reduced size to fit better in the smaller white area */
+          height: 350px; /* Reduced size to fit better in the smaller white area */
           flex-shrink: 0;
+          margin-bottom: 1rem;
+          margin-left: 10px; /* Adjusted margin */
+          overflow: visible; /* Ensure circle is fully visible */
         }
+
         .curved-path-svg {
           position: absolute;
           inset: 0;
           z-index: 1;
         }
+
         .path-glow {
           fill: none;
           stroke: #fb8c00;
@@ -94,16 +109,16 @@ export default function SignatureDishes() {
           filter: blur(5px);
         }
 
-        /* dish animation */
         .dish-animator { position: relative; z-index: 2; }
         .animated-dish {
-          width: 180px;
-          height: 180px;
+          width: 160px;
+          height: 160px;
           position: absolute;
-          offset-path: circle(200px at 250px 250px);
+          offset-path: circle(160px at 175px 175px);
           offset-rotate: auto;
           animation: dishFlowComplete 7s ease-in-out forwards;
         }
+
         .dish-image {
           width: 100%;
           height: 100%;
@@ -115,19 +130,20 @@ export default function SignatureDishes() {
           background: white;
         }
 
-        /* dish name display */
         .dish-name-display {
           flex: 1;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding-left: 1rem;
+          padding-left: 3rem;
+          align-items: flex-start;
         }
+
         .display-name {
-          font-size: 2.5rem;
+          font-size: 2rem;
           font-weight: 800;
           margin: 0;
-          background: linear-gradient(135deg,#fb8c00,#f57c00);
+          background: linear-gradient(135deg, #fb8c00, #f57c00);
           -webkit-background-clip: text;
           color: transparent;
           opacity: 0;
@@ -136,32 +152,63 @@ export default function SignatureDishes() {
                      namePulse 1.5s ease-in-out 1s infinite alternate;
         }
 
-        /* CTA button */
         .explore-btn {
           margin-top: 1.5rem;
-          align-self: flex-start;
-          padding: 0.75rem 1.5rem;
-          background: #fb8c00;
+          padding: 0.875rem 2rem;
+          background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
           color: white;
           border: none;
-          border-radius: 999px;
+          border-radius: 50px;
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-          transition: background 0.3s, transform 0.3s;
-        }
-        .explore-btn:hover {
-          background: #f57c00;
-          transform: translateY(-2px);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: fit-content;
+          white-space: nowrap;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(251, 140, 0, 0.3), 
+                      0 4px 10px rgba(0, 0, 0, 0.1);
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
-        /* indicators */
+        .explore-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transition: left 0.6s;
+        }
+
+        .explore-btn:hover {
+          background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 12px 35px rgba(251, 140, 0, 0.4), 
+                      0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .explore-btn:hover::before {
+          left: 100%;
+        }
+
+        .explore-btn:active {
+          transform: translateY(-1px) scale(1.01);
+          box-shadow: 0 6px 20px rgba(251, 140, 0, 0.3);
+        }
+
         .dish-indicators {
           display: flex;
           gap: 0.75rem;
           margin-top: 1rem;
         }
+
         .indicator {
           width: 8px;
           height: 8px;
@@ -171,17 +218,18 @@ export default function SignatureDishes() {
           cursor: pointer;
           transition: all 0.3s;
         }
+
         .indicator.active {
           background: #fb8c00;
           transform: scale(1.4);
           border-color: rgba(251,140,0,0.3);
         }
 
-        /* keyframes */
         @keyframes fadeInUp {
           from { opacity:0; transform: translateY(20px); }
           to   { opacity:1; transform: translateY(0); }
         }
+
         @keyframes dishFlowComplete {
           0%   { offset-distance:0%; transform: scale(0.7); opacity:0; }
           10%  { opacity:1; transform: scale(1); }
@@ -189,13 +237,16 @@ export default function SignatureDishes() {
           90%  { offset-distance:90%; }
           100% { offset-distance:100%; transform: scale(0.7); opacity:0; }
         }
+
         @keyframes pulseRing {
           0%,100% { box-shadow:0 0 0 0 rgba(251,140,0,0.6); }
           50%     { box-shadow:0 0 0 15px rgba(251,140,0,0); }
         }
+
         @keyframes nameEnter {
           to { opacity:1; transform: translateX(0) scale(1); }
         }
+
         @keyframes namePulse {
           to { transform: translateX(0) scale(1.03); }
         }
