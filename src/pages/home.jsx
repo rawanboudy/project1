@@ -98,7 +98,7 @@ const RestaurantHomepage = () => {
       style={{ animationDelay: `${index * 0.2}s` }}
     >
       <div className="relative">
-        <img src={dish.pictureUrl} loading='lazy' alt={dish.name} className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110" />
+        <img src={dish.pictureUrl}  alt={dish.name} className="w-full h-64 object-cover transition-transform duration-700 group-hover:scale-110" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
           {dish.category}

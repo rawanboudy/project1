@@ -158,7 +158,7 @@ const ProductDetailsPage = () => {
               <img
                 src={product.pictureUrl}
                 alt={product.name}
-                loading='lazy'
+               
                 className="w-full h-80 lg:h-96 object-cover transition-transform duration-700"
               />
               <button

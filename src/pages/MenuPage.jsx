@@ -375,7 +375,7 @@ const addToCart = async (product) => {
                     <img
                       src={item.pictureUrl}
                       alt={item.name}
-                      loading='lazy'
+                     
                       className="w-full h-full object-cover transition-transform group-hover:scale-110"
                     />
                   </div>
