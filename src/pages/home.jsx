@@ -18,6 +18,8 @@ const RestaurantHomepage = () => {
   const [hoveredDish, setHoveredDish] = useState(null);
   const [currentDishIndex, setCurrentDishIndex] = useState(0);
   const navigate = useNavigate();
+  const [pageLoaded, setPageLoaded] = useState(false);
+
 
   const heroSlides = [
     {
@@ -197,6 +199,26 @@ const RestaurantHomepage = () => {
     document.querySelectorAll('[id]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+  const handleLoad = () => {
+    setTimeout(() => setPageLoaded(true), 500); // Delay for smoother transition
+  };
+
+  if (document.readyState === 'complete') {
+    handleLoad();
+  } else {
+    window.addEventListener('load', handleLoad);
+    return () => window.removeEventListener('load', handleLoad);
+  }
+}, []);
+if (!pageLoaded || isLoading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="w-16 h-16 border-4 border-orange-400 border-dashed rounded-full animate-spin" />
+    </div>
+  );
+}
+
 
   return (
     <div className="min-h-screen bg-white font-sans">
