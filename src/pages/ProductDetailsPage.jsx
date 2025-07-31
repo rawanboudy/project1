@@ -27,6 +27,9 @@ const ProductDetailsPage = () => {
   const [cartSuccess, setCartSuccess] = useState(false);
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+    
     axios.get(`/products/${id}`)
       .then(res => setProduct(res.data))
       .catch(() => setError('Failed to load product details.'))
@@ -122,7 +125,7 @@ const ProductDetailsPage = () => {
     return (
       <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
         <Navbar />
-        <div className="flex justify-center items-center h-96">
+        <div className="flex justify-center items-center h-96 pt-20">
           <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
         </div>
         <Footer />
@@ -134,7 +137,7 @@ const ProductDetailsPage = () => {
     return (
       <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto px-6 py-16 pt-24">
           <div className="text-center">
             <div className="text-red-600 text-lg mb-4">{error}</div>
             <button
@@ -155,7 +158,7 @@ const ProductDetailsPage = () => {
     return (
       <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-6 py-16">
+        <div className="max-w-4xl mx-auto px-6 py-16 pt-24">
           <p className="text-center text-gray-600">Product not found.</p>
         </div>
         <Footer />
@@ -164,11 +167,11 @@ const ProductDetailsPage = () => {
   }
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen mt-20"> {/* Added margin-top here */}
+    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
       <Navbar />
 
       {/* Breadcrumb */}
-      <div className="max-w-4xl mx-auto px-6 py-4">
+      <div className="max-w-4xl mx-auto px-6 py-4 pt-24">
         
       </div>
 
