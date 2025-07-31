@@ -38,42 +38,69 @@ const ProductDetailsPage = () => {
   };
 
   const addToCart = async () => {
-    if (!product) return;
-    
-    setCartLoading(true);
-    setError('');
+  if (!product) return;
 
-    try {
-      const basketId = localStorage.getItem('basketId') || Math.random().toString(36).substr(2, 9);
+  setCartLoading(true);
+  setError('');
+
+  try {
+    let basketId = localStorage.getItem('basketId');
+    if (!basketId) {
+      basketId = Math.random().toString(36).substr(2, 9);
       localStorage.setItem('basketId', basketId);
-      
-      const cartData = {
-        id: basketId,
-        items: [
-          {
-            id: product.id,
-            productName: product.name,
-            pictureUrl: product.pictureUrl,
-            price: product.price,
-            quantity: quantity
-          }
-        ],
-        paymentIntentId: "",
-        deliveryMethodId: 0,
-        clientSecret: "",
-        shippingPrice: 0
-      };
-
-      await axios.post('/basket', cartData);
-      
-      setCartSuccess(true);
-      setTimeout(() => setCartSuccess(false), 3000);
-    } catch (err) {
-      setError('Failed to add item to cart. Please try again.');
-    } finally {
-      setCartLoading(false);
     }
-  };
+
+    // Try get existing cart
+    let existingCart = null;
+    try {
+      const response = await axios.get(`/basket/${basketId}`);
+      existingCart = response.data;
+    } catch (err) {
+      if (err.response?.status !== 404) throw err;
+    }
+
+    const newItem = {
+      id: product.id,
+      productName: product.name,
+      pictureUrl: product.pictureUrl,
+      price: product.price,
+      quantity: quantity
+    };
+
+    let updatedItems = [];
+    if (existingCart && existingCart.items) {
+      const existingIndex = existingCart.items.findIndex(
+        item => item.id === product.id
+      );
+      if (existingIndex >= 0) {
+        existingCart.items[existingIndex].quantity += quantity;
+        updatedItems = existingCart.items;
+      } else {
+        updatedItems = [...existingCart.items, newItem];
+      }
+    } else {
+      updatedItems = [newItem];
+    }
+
+    const updatedCart = {
+      id: basketId,
+      items: updatedItems,
+      paymentIntentId: existingCart?.paymentIntentId || '',
+      deliveryMethodId: existingCart?.deliveryMethodId || 0,
+      clientSecret: existingCart?.clientSecret || '',
+      shippingPrice: existingCart?.shippingPrice || 0,
+    };
+
+    await axios.post('/basket', updatedCart);
+    setCartSuccess(true);
+    setTimeout(() => setCartSuccess(false), 3000);
+  } catch (err) {
+    console.error(err);
+    setError('Failed to add item to cart. Please try again.');
+  } finally {
+    setCartLoading(false);
+  }
+};
 
   const shareProduct = async () => {
     if (navigator.share) {

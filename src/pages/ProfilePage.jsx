@@ -15,12 +15,16 @@ import {
   Plus,
   X,
   Save,
-  Building
+  Building,
+  LogOut,
+  Heart
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,6 +91,11 @@ export default function ProfilePage() {
   };
 
   const handleAddressSubmit = async () => {
+    if (!addressForm.street || !addressForm.city || !addressForm.country) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
     setAddressLoading(true);
 
     try {
@@ -147,12 +156,17 @@ export default function ProfilePage() {
     user.address.country
   );
 
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    navigate('/login');
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="flex justify-center items-center min-h-screen">
-          <Loader2 className="w-16 h-16 animate-spin text-orange-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
         </div>
       </div>
     );
@@ -160,10 +174,10 @@ export default function ProfilePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+      <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="max-w-md mx-auto pt-32 px-4">
-          <div className="bg-white border border-red-200 rounded-2xl p-8 shadow-lg">
+          <div className="bg-white border border-red-200 rounded-lg p-6 shadow-sm">
             <div className="text-center">
               <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Profile Error</h3>
@@ -176,158 +190,369 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <header className="w-full bg-orange-500 bg-opacity-90 backdrop-blur-md rounded-b-2xl shadow-lg mt-6">
-
-        <div className="max-w-6xl mx-auto px-6 py-10 flex items-center gap-6">
-          <div className="w-20 h-20 bg-white bg-opacity-30 rounded-full flex items-center justify-center shadow">
-            <User className="w-10 h-10 text-white" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold text-white tracking-wide">
-              {user.firstname && user.lastname ? `${user.firstname} ${user.lastname}` : user.username || 'User Profile'}
-            </h1>
-            <p className="text-orange-100 text-lg">Manage your account details</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Personal Information */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Personal Information</h2>
-          <div className="space-y-4">
-            {[
-              { label: 'First Name', value: user.firstname },
-              { label: 'Last Name', value: user.lastname },
-              { label: 'Username', value: user.username },
-              { label: 'Email', value: user.email },
-              { label: 'Phone', value: user.phone }
-            ].map((item) =>
-              item.value && (
-                <div
-                  key={item.label}
-                  className="flex justify-between items-center bg-gray-50 rounded-lg p-4 border hover:border-orange-200"
+      
+      <div className="max-w-7xl mx-auto px-4 py-6 mt-16">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar */}
+          <div className="lg:w-64 w-full">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">Account</h2>
+              <nav className="space-y-2">
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg bg-orange-50 text-orange-700 border border-orange-200"
+                  onClick={() => navigate('/profile')}
                 >
-                  <div>
-                    <p className="text-sm text-gray-500">{item.label}</p>
-                    <p className="text-lg font-medium text-gray-800">{item.value}</p>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(item.value, item.label)}
-                    className="p-2 rounded-full hover:bg-orange-100 transition"
-                  >
-                    {copiedField === item.label ? (
-                      <Check className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Address Information */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Address Information</h2>
-            <button
-              onClick={openAddressModal}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition flex items-center gap-2"
-            >
-              {hasAddress ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {hasAddress ? 'Edit' : 'Add'}
-            </button>
-          </div>
-          {!hasAddress ? (
-            <div className="text-center text-gray-500 py-6">
-              <p>No address saved.</p>
+                  <User className="w-4 h-4" />
+                  Profile
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => navigate('/profile/favorites')}
+                >
+                  <Heart className="w-4 h-4" />
+                  Favorites
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => navigate('/profile/history')}
+                >
+                  <Building className="w-4 h-4" />
+                  History
+                </button>
+                <hr className="my-4 border-gray-200" />
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </nav>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {[
-                { label: 'Street', value: user.address.street, icon: Home },
-                { label: 'City', value: user.address.city, icon: Building },
-                { label: 'Country', value: user.address.country, icon: Globe }
-              ].map(
-                (item) =>
-                  item.value && (
-                    <div
-                      key={item.label}
-                      className="flex justify-between items-center bg-gray-50 rounded-lg p-4 border hover:border-orange-200"
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5 text-orange-500" />
-                        <div>
-                          <p className="text-sm text-gray-500">{item.label}</p>
-                          <p className="text-lg font-medium text-gray-800">{item.value}</p>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              {/* Header */}
+              <div className="px-6 py-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-t-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-white">
+                      {user.firstname && user.lastname 
+                        ? `${user.firstname} ${user.lastname}` 
+                        : user.username || 'User Profile'
+                      }
+                    </h1>
+                    <p className="text-orange-100">{user.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Personal Information */}
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+                    <div className="space-y-4">
+                      {user.firstname && (
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div>
+                            <p className="text-sm text-gray-500">First Name</p>
+                            <p className="text-gray-900 font-medium">{user.firstname}</p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(user.firstname, 'First Name')}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            {copiedField === 'First Name' ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
+                      )}
+                      
+                      {user.lastname && (
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div>
+                            <p className="text-sm text-gray-500">Last Name</p>
+                            <p className="text-gray-900 font-medium">{user.lastname}</p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(user.lastname, 'Last Name')}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            {copiedField === 'Last Name' ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div>
+                          <p className="text-sm text-gray-500">Username</p>
+                          <p className="text-gray-900 font-medium">{user.username}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(user.username, 'Username')}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          {copiedField === 'Username' ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
                       </div>
+
+                      <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div>
+                          <p className="text-sm text-gray-500">Email</p>
+                          <p className="text-gray-900 font-medium">{user.email}</p>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(user.email, 'Email')}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          {copiedField === 'Email' ? (
+                            <Check className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {user.phone && (
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div>
+                            <p className="text-sm text-gray-500">Phone</p>
+                            <p className="text-gray-900 font-medium">{user.phone}</p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(user.phone, 'Phone')}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            {copiedField === 'Phone' ? (
+                              <Check className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Address Information */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-gray-900">Address</h2>
                       <button
-                        onClick={() => copyToClipboard(item.value, item.label)}
-                        className="p-2 rounded-full hover:bg-orange-100 transition"
+                        onClick={openAddressModal}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600 transition-colors"
                       >
-                        {copiedField === item.label ? (
-                          <Check className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Copy className="w-5 h-5 text-gray-400" />
-                        )}
+                        {hasAddress ? <Edit className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                        {hasAddress ? 'Edit' : 'Add Address'}
                       </button>
                     </div>
-                  )
-              )}
+                    
+                    {!hasAddress ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p>No address information</p>
+                        <p className="text-sm">Add your address to complete your profile</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {user.address.street && (
+                          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                              <Home className="w-4 h-4 text-orange-500" />
+                              <div>
+                                <p className="text-sm text-gray-500">Street</p>
+                                <p className="text-gray-900 font-medium">{user.address.street}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(user.address.street, 'Street')}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              {copiedField === 'Street' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+
+                        {user.address.city && (
+                          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                              <Building className="w-4 h-4 text-orange-500" />
+                              <div>
+                                <p className="text-sm text-gray-500">City</p>
+                                <p className="text-gray-900 font-medium">{user.address.city}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(user.address.city, 'City')}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              {copiedField === 'City' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+
+                        {user.address.country && (
+                          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                              <Globe className="w-4 h-4 text-orange-500" />
+                              <div>
+                                <p className="text-sm text-gray-500">Country</p>
+                                <p className="text-gray-900 font-medium">{user.address.country}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => copyToClipboard(user.address.country, 'Country')}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            >
+                              {copiedField === 'Country' ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </main>
+      </div>
 
       {/* Address Modal */}
       {showAddressModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl">
-            <div className="bg-orange-500 px-6 py-4 rounded-t-2xl flex justify-between items-center">
-              <h3 className="text-xl font-bold text-white">{hasAddress ? 'Edit Address' : 'Add Address'}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {hasAddress ? 'Edit Address' : 'Add Address'}
+              </h3>
               <button
                 onClick={() => setShowAddressModal(false)}
-                className="p-2 rounded-full hover:bg-orange-600 transition"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-white" />
+                <X className="w-5 h-5" />
               </button>
             </div>
+            
             <div className="p-6 space-y-4">
-              {['firstname', 'lastname', 'street', 'city', 'country'].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700 capitalize mb-1">{field}</label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
                   <input
                     type="text"
-                    name={field}
-                    value={addressForm[field]}
+                    name="firstname"
+                    value={addressForm.firstname}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
-              ))}
-              <div className="flex gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddressModal(false)}
-                  className="flex-1 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddressSubmit}
-                  disabled={addressLoading}
-                  className="flex-1 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition flex justify-center items-center"
-                >
-                  {addressLoading ? <Loader2 className="animate-spin" /> : <Save className="mr-2" />}
-                  Save
-                </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastname"
+                    value={addressForm.lastname}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  name="street"
+                  value={addressForm.street}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={addressForm.city}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Country *
+                </label>
+                <input
+                  type="text"
+                  name="country"
+                  value={addressForm.country}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowAddressModal(false)}
+                disabled={addressLoading}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddressSubmit}
+                disabled={addressLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
+              >
+                {addressLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {hasAddress ? 'Update' : 'Save'} Address
+              </button>
             </div>
           </div>
         </div>

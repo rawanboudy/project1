@@ -1,12 +1,13 @@
 // src/pages/MenuPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add this import
+import { useNavigate } from 'react-router-dom';
 import axios from '../axiosConfig';
-import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye } from 'lucide-react';
+import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import theme from '../theme';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
+import toast from 'react-hot-toast';
 
 const SORT_OPTIONS = [
   { value: '',        label: '–– None ––' },
@@ -17,12 +18,14 @@ const SORT_OPTIONS = [
 ];
 
 export default function MenuPage() {
-  const navigate = useNavigate(); // Add navigation hook
+  const navigate = useNavigate();
   const [allProducts, setAllProducts] = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
   const [cartLoading, setCartLoading] = useState({});
   const [cartSuccess, setCartSuccess] = useState({});
+  const [favoriteLoading, setFavoriteLoading] = useState({});
+  const [userFavorites, setUserFavorites] = useState([]);
 
   const [brandFilter, setBrandFilter] = useState('');
   const [typeFilter,  setTypeFilter]  = useState('');
@@ -32,13 +35,15 @@ export default function MenuPage() {
   const [quantities,  setQuantities]  = useState({});
   const pageSize = 8;
 
-  // Fetch once on mount (and on every hard refresh)
+  // Fetch products and user favorites on mount
   useEffect(() => {
     setLoading(true);
     setError('');
+    
+    // Fetch products and favorites
     axios.get('products')
-      .then(resp => {
-        const products = resp.data.data || [];
+      .then((productsResp) => {
+        const products = productsResp.data.data || [];
         setAllProducts(products);
         // Initialize quantities for all products
         const initialQuantities = {};
@@ -46,10 +51,117 @@ export default function MenuPage() {
           initialQuantities[product.id] = 1;
         });
         setQuantities(initialQuantities);
+        
+        // Load user favorites from localStorage
+        fetchUserFavorites();
       })
       .catch(() => setError('Failed to load products.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Fetch user favorites from localStorage
+  const fetchUserFavorites = () => {
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      if (!userInfo) {
+        return; // User not logged in
+      }
+
+      const user = JSON.parse(userInfo);
+      const favoritesKey = `favorites_${user.username || user.email}`;
+      const storedFavorites = localStorage.getItem(favoritesKey);
+      
+      if (storedFavorites) {
+        const favorites = JSON.parse(storedFavorites);
+        setUserFavorites(favorites.map(fav => fav.productId));
+      }
+    } catch (err) {
+      console.log('Error fetching favorites from localStorage:', err);
+    }
+  };
+
+  // Save favorites to localStorage
+  const saveFavoritesToStorage = (favorites) => {
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        const favoritesKey = `favorites_${user.username || user.email}`;
+        localStorage.setItem(favoritesKey, JSON.stringify(favorites));
+      }
+    } catch (err) {
+      console.error('Error saving favorites to localStorage:', err);
+    }
+  };
+
+  // Get user's stored favorites
+  const getUserStoredFavorites = () => {
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      if (!userInfo) return [];
+      
+      const user = JSON.parse(userInfo);
+      const favoritesKey = `favorites_${user.username || user.email}`;
+      const storedFavorites = localStorage.getItem(favoritesKey);
+      
+      return storedFavorites ? JSON.parse(storedFavorites) : [];
+    } catch (err) {
+      console.error('Error getting stored favorites:', err);
+      return [];
+    }
+  };
+
+  // Toggle favorite status (localStorage version)
+  const toggleFavorite = (product) => {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) {
+      toast.error('Please log in to add favorites');
+      return;
+    }
+
+    const productId = product.id;
+    const isFavorited = userFavorites.includes(productId);
+    
+    setFavoriteLoading(prev => ({ ...prev, [productId]: true }));
+
+    // Simulate async operation for better UX
+    setTimeout(() => {
+      try {
+        const currentFavorites = getUserStoredFavorites();
+        
+        if (isFavorited) {
+          // Remove from favorites
+          const updatedFavorites = currentFavorites.filter(fav => fav.productId !== productId);
+          saveFavoritesToStorage(updatedFavorites);
+          setUserFavorites(prev => prev.filter(id => id !== productId));
+          toast.success('Removed from favorites');
+        } else {
+          // Add to favorites
+          const favoriteData = {
+            productId: productId,
+            productName: product.name,
+            pictureUrl: product.pictureUrl,
+            price: product.price,
+            brandName: product.brandName,
+            typeName: product.typeName,
+            description: product.description,
+            rating: product.rating,
+            dateAdded: new Date().toISOString()
+          };
+          
+          const updatedFavorites = [...currentFavorites, favoriteData];
+          saveFavoritesToStorage(updatedFavorites);
+          setUserFavorites(prev => [...prev, productId]);
+          toast.success('Added to favorites');
+        }
+      } catch (err) {
+        console.error('Error toggling favorite:', err);
+        toast.error('Failed to update favorites. Please try again.');
+      } finally {
+        setFavoriteLoading(prev => ({ ...prev, [productId]: false }));
+      }
+    }, 300); // Small delay for better UX
+  };
 
   // Build unique filter lists
   const brands = useMemo(
@@ -106,167 +218,133 @@ export default function MenuPage() {
     navigate(`/product/${productId}`);
   };
 
- // Add to cart function - FIXED VERSION
-// Add to cart function - OPTIMIZED VERSION for your API
-const addToCart = async (product) => {
-  const quantity = quantities[product.id] || 1;
-  const productId = product.id;
+  // Add to cart function
+  const addToCart = async (product) => {
+    const quantity = quantities[product.id] || 1;
+    const productId = product.id;
 
-  setCartLoading(prev => ({ ...prev, [productId]: true }));
-  setError('');
+    setCartLoading(prev => ({ ...prev, [productId]: true }));
+    setError('');
 
-  try {
-    let basketId = localStorage.getItem('basketId');
-    
-    // Generate basketId if it doesn't exist
-    if (!basketId) {
-      basketId = `basket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('basketId', basketId);
-    }
-    
-    // First, try to get existing cart
-    let existingCart = null;
     try {
-      console.log('Attempting to fetch existing cart with basketId:', basketId);
-      const existingResponse = await axios.get(`basket/${basketId}`);
+      let basketId = localStorage.getItem('basketId');
       
-      if (existingResponse.data && (existingResponse.status === 200 || existingResponse.status === 201)) {
-        existingCart = existingResponse.data;
-        console.log('Existing cart found:', existingCart);
+      if (!basketId) {
+        basketId = `basket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('basketId', basketId);
       }
+      
+      let existingCart = null;
+      try {
+        const existingResponse = await axios.get(`basket/${basketId}`);
+        
+        if (existingResponse.data && (existingResponse.status === 200 || existingResponse.status === 201)) {
+          existingCart = existingResponse.data;
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          existingCart = null;
+        } else if (err.response?.status >= 500) {
+          throw new Error('Server error while fetching cart');
+        } else {
+          existingCart = null;
+        }
+      }
+
+      const newItem = {
+        id: productId,
+        productName: product.name,
+        pictureUrl: product.pictureUrl,
+        price: product.price,
+        quantity: quantity
+      };
+
+      let cartData;
+      
+      if (existingCart && existingCart.items && Array.isArray(existingCart.items)) {
+        const existingItemIndex = existingCart.items.findIndex(item => 
+          item.id === productId || item.productId === productId
+        );
+        
+        if (existingItemIndex >= 0) {
+          existingCart.items[existingItemIndex].quantity += quantity;
+        } else {
+          existingCart.items.push(newItem);
+        }
+        
+        cartData = {
+          id: basketId,
+          items: existingCart.items,
+          paymentIntentId: existingCart.paymentIntentId || "",
+          deliveryMethodId: existingCart.deliveryMethodId || 0,
+          clientSecret: existingCart.clientSecret || "",
+          shippingPrice: existingCart.shippingPrice || 0
+        };
+      } else {
+        cartData = {
+          id: basketId,
+          items: [newItem],
+          paymentIntentId: "",
+          deliveryMethodId: 0,
+          clientSecret: "",
+          shippingPrice: 0
+        };
+      }
+
+      let response;
+      try {
+        response = await axios.post('basket', cartData, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response || !response.data || !response.data.id || !Array.isArray(response.data.items)) {
+          throw new Error('Invalid basket response structure');
+        }
+
+      } catch (basketError) {
+        if (basketError.response?.status === 500) {
+          throw new Error('Server error while creating/updating basket');
+        }
+        throw new Error('Failed to create or update basket');
+      }
+      
+      if (response.status === 200 || response.status === 201) {
+        setCartSuccess(prev => ({ ...prev, [productId]: true }));
+        setTimeout(() => {
+          setCartSuccess(prev => ({ ...prev, [productId]: false }));
+        }, 2000);
+      } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
+      
     } catch (err) {
-      console.log('Cart fetch error:', {
-        status: err.response?.status,
-        message: err.message,
-        data: err.response?.data
-      });
+      let errorMessage = 'Failed to add item to cart. Please try again.';
       
-      // Only treat 404 as "cart not found", other errors should be handled differently
-      if (err.response?.status === 404) {
-        console.log('Cart not found (404), will create new one');
-        existingCart = null;
+      if (err.message === 'Server error while fetching cart') {
+        errorMessage = 'Unable to load cart. Please try again later.';
+      } else if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid request. Please refresh the page and try again.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Authentication required. Please log in and try again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Access denied. Please check your permissions.';
       } else if (err.response?.status >= 500) {
-        // Server error, throw to be caught by outer try-catch
-        throw new Error('Server error while fetching cart');
-      } else {
-        // Other errors (400, 401, 403, etc.) - treat as no existing cart
-        console.log('Treating as no existing cart due to error:', err.response?.status);
-        existingCart = null;
-      }
-    }
-
-    // Prepare the new item
-    const newItem = {
-      id: productId,
-      productName: product.name,
-      pictureUrl: product.pictureUrl,
-      price: product.price,
-      quantity: quantity
-    };
-
-    let cartData;
-    
-    // Check if existing cart has valid structure
-    if (existingCart && existingCart.items && Array.isArray(existingCart.items)) {
-      console.log('Working with existing cart, items:', existingCart.items.length);
-      
-      // Find existing item
-      const existingItemIndex = existingCart.items.findIndex(item => 
-        item.id === productId || item.productId === productId
-      );
-      
-      if (existingItemIndex >= 0) {
-        // Item already exists, update quantity
-        existingCart.items[existingItemIndex].quantity += quantity;
-        console.log(`Updated existing item quantity to: ${existingCart.items[existingItemIndex].quantity}`);
-      } else {
-        // Item doesn't exist, add new item
-        existingCart.items.push(newItem);
-        console.log('Added new item to existing cart');
+        errorMessage = 'Server error. Please try again later.';
+      } else if (err.code === 'NETWORK_ERROR' || !err.response) {
+        errorMessage = 'Network error. Please check your internet connection.';
       }
       
-      // Preserve existing cart structure
-      cartData = {
-        id: basketId,
-        items: existingCart.items,
-        paymentIntentId: existingCart.paymentIntentId || "",
-        deliveryMethodId: existingCart.deliveryMethodId || 0,
-        clientSecret: existingCart.clientSecret || "",
-        shippingPrice: existingCart.shippingPrice || 0
-      };
-    } else {
-      // No existing cart or invalid cart data, create new one
-      console.log('Creating new cart');
-      cartData = {
-        id: basketId,
-        items: [newItem],
-        paymentIntentId: "",
-        deliveryMethodId: 0,
-        clientSecret: "",
-        shippingPrice: 0
-      };
-    }
-
-    console.log('Sending cart data to API:', cartData);
-    
-    // Send the cart data
-    const response = await axios.post('basket', cartData);
-    
-    console.log('Cart API response:', {
-      status: response.status,
-      data: response.data
-    });
-    
-    if (response.status === 200 || response.status === 201) {
-      // Show success message
-      setCartSuccess(prev => ({ ...prev, [productId]: true }));
+      setError(errorMessage);
+      
       setTimeout(() => {
-        setCartSuccess(prev => ({ ...prev, [productId]: false }));
-      }, 2000);
-
-      console.log('Successfully added to cart');
-    } else {
-      throw new Error(`Unexpected response status: ${response.status}`);
+        setError('');
+      }, 5000);
+    } finally {
+      setCartLoading(prev => ({ ...prev, [productId]: false }));
     }
-    
-  } catch (err) {
-    console.error('Cart error details:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-      url: err.config?.url,
-      method: err.config?.method
-    });
-    
-    // More specific error messages
-    let errorMessage = 'Failed to add item to cart. Please try again.';
-    
-    if (err.message === 'Server error while fetching cart') {
-      errorMessage = 'Unable to load cart. Please try again later.';
-    } else if (err.code === 'ECONNABORTED') {
-      errorMessage = 'Request timed out. Please check your connection and try again.';
-    } else if (err.response?.status === 400) {
-      errorMessage = 'Invalid request. Please refresh the page and try again.';
-    } else if (err.response?.status === 401) {
-      errorMessage = 'Authentication required. Please log in and try again.';
-    } else if (err.response?.status === 403) {
-      errorMessage = 'Access denied. Please check your permissions.';
-    } else if (err.response?.status >= 500) {
-      errorMessage = 'Server error. Please try again later.';
-    } else if (err.code === 'NETWORK_ERROR' || !err.response) {
-      errorMessage = 'Network error. Please check your internet connection.';
-    }
-    
-    setError(errorMessage);
-    
-    // Clear the error after 5 seconds
-    setTimeout(() => {
-      setError('');
-    }, 5000);
-  } finally {
-    setCartLoading(prev => ({ ...prev, [productId]: false }));
-  }
-};
+  };
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">
@@ -371,11 +449,31 @@ const addToCart = async (product) => {
                   transition={{ delay: idx * 0.1 }}
                   className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
                 >
+                  {/* Favorite Button - Positioned absolutely */}
+                  <button
+                    onClick={() => toggleFavorite(item)}
+                    disabled={favoriteLoading[item.id]}
+                    className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all duration-200 ${
+                      userFavorites.includes(item.id)
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
+                    } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+                  >
+                    {favoriteLoading[item.id] ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Heart 
+                        className={`w-5 h-5 ${
+                          userFavorites.includes(item.id) ? 'fill-current' : ''
+                        }`} 
+                      />
+                    )}
+                  </button>
+
                   <div className="overflow-hidden h-48 flex-shrink-0">
                     <img
                       src={item.pictureUrl}
                       alt={item.name}
-                     
                       className="w-full h-full object-cover transition-transform group-hover:scale-110"
                     />
                   </div>
@@ -424,7 +522,7 @@ const addToCart = async (product) => {
                       </div>
                     </div>
 
-                    {/* Button Container - Fixed positioning */}
+                    {/* Button Container */}
                     <div className="space-y-2 mt-auto">
                       {/* View Product Button */}
                       <button

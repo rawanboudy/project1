@@ -31,8 +31,10 @@ export default function RegisterPage() {
   const [emailChecking, setEmailChecking] = useState(false);
   const [emailCheckError, setEmailCheckError] = useState(false);
 
-  // Username checking states - no API available, so we track differently
+  // Username checking states
   const [usernameExists, setUsernameExists] = useState(false);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameCheckError, setUsernameCheckError] = useState(false);
 
   // Password strength checking
   const [passwordStrength, setPasswordStrength] = useState({
@@ -45,6 +47,7 @@ export default function RegisterPage() {
 
   // Debouncing for API calls
   const [emailDebounceTimer, setEmailDebounceTimer] = useState(null);
+  const [usernameDebounceTimer, setUsernameDebounceTimer] = useState(null);
 
   const icons = {
     firstName: <User className="w-5 h-5" />,
@@ -112,14 +115,14 @@ export default function RegisterPage() {
         if (value.length <= 3) return 'Username must be more than 3 characters';
         if (value.length > 20) return 'Username cannot exceed 20 characters';
         if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores';
-        // Remove real-time username exists check
+        // Don't return username exists error here - let getFieldError handle it
         return null;
 
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return 'Please enter a valid email address';
         if (value.length > 254) return 'Email address is too long';
-        if (emailExists) return 'This email is already registered';
+        // Don't return email exists error here - let getFieldError handle it
         return null;
 
       case 'password':
@@ -150,7 +153,7 @@ export default function RegisterPage() {
       }
     });
     setRealtimeErrors(newRealtimeErrors);
-  }, [formData, fieldTouched, emailExists, passwordStrength]);
+  }, [formData, fieldTouched, passwordStrength]); // Removed emailExists and usernameExists from dependencies
 
   // Password strength checker
   const checkPasswordStrength = (password) => {
@@ -189,6 +192,112 @@ export default function RegisterPage() {
     }
   };
 
+  // Username availability check using registration API
+  const checkUsernameAvailability = async (username) => {
+    if (!username || username.length <= 3 || !/^[a-zA-Z0-9_]+$/.test(username)) return;
+
+    setUsernameChecking(true);
+    setUsernameCheckError(false);
+
+    try {
+      // Create a test registration request with minimal data to check username
+      const testData = {
+        firstName: 'Test',
+        lastName: 'User',
+        username: username.trim(),
+        email: `test${Date.now()}@example.com`, // Use unique dummy email
+        password: 'TestPassword123',
+        phoneNumber: '+1234567890'
+      };
+
+      await axios.post('Authentication/register', testData, { timeout: 5000 });
+      
+      // If registration succeeds, it means username is available but we don't want to actually register
+      // This shouldn't happen with our dummy data, but if it does, username is available
+      setUsernameExists(false);
+    } catch (err) {
+      console.error('Username check response:', err.response?.data);
+      
+      if (err.response) {
+        const { status, data } = err.response;
+        
+        // Check if the error is specifically about username conflict
+        if (status === 409) {
+          // 409 Conflict - resource already exists
+          if (data.message?.toLowerCase().includes('username') || 
+              (data.errors && data.errors.username)) {
+            setUsernameExists(true);
+          } else {
+            // Conflict is about email or other field, username might be available
+            setUsernameExists(false);
+          }
+        } else if (status === 422) {
+          // 422 Unprocessable Entity - validation failed
+          if (data.errors && data.errors.username) {
+            // Server returned specific username validation errors
+            const usernameErrors = data.errors.username;
+            if (Array.isArray(usernameErrors)) {
+              // Check if any error message indicates username already exists
+              const hasExistsError = usernameErrors.some(error => 
+                error.toLowerCase().includes('already') || 
+                error.toLowerCase().includes('taken') || 
+                error.toLowerCase().includes('exists')
+              );
+              setUsernameExists(hasExistsError);
+            } else if (typeof usernameErrors === 'string') {
+              // Single error message
+              const hasExistsError = usernameErrors.toLowerCase().includes('already') || 
+                                   usernameErrors.toLowerCase().includes('taken') || 
+                                   usernameErrors.toLowerCase().includes('exists');
+              setUsernameExists(hasExistsError);
+            }
+          } else if (data.message?.toLowerCase().includes('username')) {
+            // General message about username
+            const hasExistsError = data.message.toLowerCase().includes('already') || 
+                                 data.message.toLowerCase().includes('taken') || 
+                                 data.message.toLowerCase().includes('exists');
+            setUsernameExists(hasExistsError);
+          } else {
+            // Validation errors not related to username existence
+            setUsernameExists(false);
+          }
+        } else if (status === 400) {
+          // 400 Bad Request - could be validation or other issues
+          if (data.errors && data.errors.username) {
+            const usernameErrors = data.errors.username;
+            if (Array.isArray(usernameErrors)) {
+              const hasExistsError = usernameErrors.some(error => 
+                error.toLowerCase().includes('already') || 
+                error.toLowerCase().includes('taken') || 
+                error.toLowerCase().includes('exists')
+              );
+              setUsernameExists(hasExistsError);
+            } else {
+              const hasExistsError = usernameErrors.toLowerCase().includes('already') || 
+                                   usernameErrors.toLowerCase().includes('taken') || 
+                                   usernameErrors.toLowerCase().includes('exists');
+              setUsernameExists(hasExistsError);
+            }
+          } else {
+            // Other validation errors, assume username is available
+            setUsernameExists(false);
+          }
+        } else {
+          // For other HTTP errors, we can't determine availability reliably
+          setUsernameCheckError(true);
+        }
+      } else {
+        // Network or other errors
+        setUsernameCheckError(true);
+        if (err.code === 'ECONNABORTED') {
+          console.log('Username check timed out');
+        }
+      }
+    } finally {
+      setUsernameChecking(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(f => ({ ...f, [name]: value }));
@@ -218,10 +327,21 @@ export default function RegisterPage() {
       setEmailDebounceTimer(timer);
     }
 
-    // For username, we reset the exists state when user types
-    // since we don't have a check API
+    // Debounced username checking
     if (name === 'username') {
       setUsernameExists(false);
+      setUsernameCheckError(false);
+
+      if (usernameDebounceTimer) clearTimeout(usernameDebounceTimer);
+
+      // Only check if username meets basic requirements
+      if (value.length > 3 && /^[a-zA-Z0-9_]+$/.test(value)) {
+        const timer = setTimeout(() => {
+          checkUsernameAvailability(value);
+        }, 1000); // Slightly longer delay for username check
+
+        setUsernameDebounceTimer(timer);
+      }
     }
   };
 
@@ -266,8 +386,9 @@ export default function RegisterPage() {
       newErr.username = ['Username cannot exceed 20 characters.'];
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
       newErr.username = ['Username can only contain letters, numbers, and underscores.'];
+    } else if (usernameExists) {
+      newErr.username = ['This username is already taken.'];
     }
-    // Remove username exists check from client-side validation
 
     // Email validation
     if (!formData.email.trim()) {
@@ -331,16 +452,27 @@ export default function RegisterPage() {
       return;
     }
 
-    // Check for existing email
+    // Check for existing email or username
     if (emailExists) {
       setErrors({ email: ['This email is already registered.'] });
       toast.error('This email is already registered.');
       return;
     }
 
-    // Check if still checking email
+    if (usernameExists) {
+      setErrors({ username: ['This username is already taken.'] });
+      toast.error('This username is already taken.');
+      return;
+    }
+
+    // Check if still checking email or username
     if (emailChecking) {
       toast.error('Please wait while we verify your email address.');
+      return;
+    }
+
+    if (usernameChecking) {
+      toast.error('Please wait while we verify your username.');
       return;
     }
 
@@ -493,10 +625,10 @@ export default function RegisterPage() {
     }
 
     if (field === 'username') {
-      // For username, only show client-side validation and server error state
-      if (formData.username && !realtimeErrors.username && fieldTouched.username && !usernameExists) return <Check className="w-5 h-5 text-green-500" />;
-      if (usernameExists) return <X className="w-5 h-5 text-red-500" />;
-      if (realtimeErrors.username) return <X className="w-5 h-5 text-red-500" />;
+      if (usernameChecking) return <Loader2 className="w-5 h-5 animate-spin text-blue-500" />;
+      if (usernameCheckError) return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      if (formData.username && !realtimeErrors.username && !usernameExists && fieldTouched.username) return <Check className="w-5 h-5 text-green-500" />;
+      if (usernameExists || realtimeErrors.username) return <X className="w-5 h-5 text-red-500" />;
     }
 
     // For other fields
@@ -505,6 +637,21 @@ export default function RegisterPage() {
       return <Check className="w-5 h-5 text-green-500" />;
     }
 
+    return null;
+  };
+
+  // Helper function to get field error message
+  const getFieldError = (field) => {
+    // Check for specific availability errors first (these should show immediately)
+    if (field === 'username' && usernameExists) return 'This username is already taken. Please choose another.';
+    if (field === 'email' && emailExists) return 'This email is already registered. Please use a different email.';
+    
+    // Real-time validation errors
+    if (realtimeErrors[field]) return realtimeErrors[field];
+    
+    // Server-side validation errors
+    if (errors[field] && errors[field].length > 0) return errors[field][0];
+    
     return null;
   };
 
@@ -593,9 +740,7 @@ export default function RegisterPage() {
                   onBlur={handleBlur}
                   className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:ring-2 focus:outline-none"
                   style={{
-                    borderColor: realtimeErrors[field] || 
-                                (field === 'email' && emailExists) || 
-                                (field === 'username' && usernameExists)
+                    borderColor: getFieldError(field)
                       ? theme.colors.error
                       : '#D1D5DB',
                     color: theme.colors.textDark
@@ -626,17 +771,10 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Real-time error messages */}
-              {realtimeErrors[field] && (
+              {/* Enhanced error messages display */}
+              {getFieldError(field) && (
                 <p className="text-sm mt-1" style={{ color: theme.colors.error }}>
-                  {realtimeErrors[field]}
-                </p>
-              )}
-
-              {/* Username server error display */}
-              {field === 'username' && usernameExists && (
-                <p className="text-sm mt-1" style={{ color: theme.colors.error }}>
-                  This username is already taken
+                  {getFieldError(field)}
                 </p>
               )}
 
@@ -668,13 +806,13 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isLoading || emailExists || usernameExists || !isOnline}
+            disabled={isLoading || emailExists || usernameExists || !isOnline || emailChecking || usernameChecking}
             className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2"
             style={{
               background: `linear-gradient(to right,
                 ${theme.colors.orange},
                 ${theme.colors.orangeDark})`,
-              opacity: (isLoading || emailExists || usernameExists || !isOnline) ? 0.6 : 1
+              opacity: (isLoading || emailExists || usernameExists || !isOnline || emailChecking || usernameChecking) ? 0.6 : 1
             }}
           >
             {isLoading ? (
@@ -686,6 +824,11 @@ export default function RegisterPage() {
               <>
                 <WifiOff className="w-5 h-5" />
                 No Connection
+              </>
+            ) : emailChecking || usernameChecking ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Validating...
               </>
             ) : (
               'Create Account'

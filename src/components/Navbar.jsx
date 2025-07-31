@@ -3,13 +3,13 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChefHat, User, LogOut, UserCircle, Clock, Menu, X, ShoppingCart, Home, BookOpen, Phone } from 'lucide-react';
 import theme from '../theme';
 import toast from 'react-hot-toast';
+import elephantLogo from '../assets/elephant-logo.svg';
 
 const NAV_ITEMS = [
   { label: 'Home', to: '/', icon: <Home /> },
   { label: 'Menu', to: '/menu', icon: <BookOpen /> },
   { label: 'About', to: '/about', icon: <UserCircle /> },
   { label: 'Cart', to: '/cart', icon: <ShoppingCart /> },
-  { label: 'Contact', to: '/contact', icon: <Phone /> }
 ];
 
 const SESSION_CONFIG = {
@@ -207,100 +207,148 @@ const Navbar = ({ scrollY }) => {
   return (
     <>
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
+          {/* Logo - Made Larger */}
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
-              <ChefHat className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 overflow-hidden rounded-full shadow-lg ring-2 ring-white/20 transition-transform duration-300 hover:scale-105">
+              <img 
+                src={elephantLogo} 
+                alt="Elephant Logo" 
+                className="object-cover w-full h-full" 
+              />
             </div>
-            <h1 className="text-2xl font-bold" style={{ color: isSolid ? theme.colors.textDark : 'white' }}>Savoria</h1>
+            <h1 
+              className="text-lg sm:text-xl md:text-2xl font-bold tracking-wide" 
+              style={{ color: isSolid ? theme.colors.textDark : 'white' }}
+            >
+              FILA
+            </h1>
           </div>
 
-          {/* Mobile Hamburger Menu */}
-          <button className="block md:hidden" onClick={toggleMobileMenu}>
-            {isMobileMenuOpen ? <X className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} /> : <Menu className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />}
-          </button>
-
           {/* Desktop Navbar Links */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex space-x-6 lg:space-x-8">
             {NAV_ITEMS.map(({ label, to, icon }) => (
               <Link
                 key={label}
                 to={to}
-                className="font-medium flex items-center gap-2 hover:scale-105 transition-all duration-300"
+                className="font-medium flex items-center gap-2 hover:scale-105 transition-all duration-300 px-2 py-1 rounded-lg hover:bg-white/10"
                 style={{
                   color: isSolid ? theme.colors.textDark : 'white',
                   borderBottom: location.pathname === to ? `2px solid ${theme.colors.orange}` : '2px solid transparent'
                 }}
               >
-                {icon}
-                <span>{label}</span>
+                <span className="w-5 h-5">{icon}</span>
+                <span className="text-sm lg:text-base">{label}</span>
               </Link>
             ))}
           </div>
 
-          {/* User Dropdown */}
-          {isSessionActive ? (
-            <div className="relative" ref={dropdownRef}>
-              <button onClick={toggleDropdown} className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 relative" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
-                <User className="w-5 h-5 text-white" />
-                {showSessionWarning && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                )}
-              </button>
+          {/* Right Side - User Actions and Mobile Menu */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* User Dropdown or Login Button */}
+            {isSessionActive ? (
+              <div className="relative" ref={dropdownRef}>
+              <button 
+  onClick={toggleDropdown} 
+  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 relative shadow-lg" 
+  style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}
+>
+  <User className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+  {showSessionWarning && (
+    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-md"></div>
+  )}
+</button>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border overflow-hidden">
-                  {user && (
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium" style={{ color: theme.colors.textDark }}>
-                        {user.name || user.email}
-                      </p>
-                      <p className="text-xs" style={{ color: theme.colors.textGray }}>
-                        {user.email}
-                      </p>
-                    </div>
-                  )}
-
-                  {sessionTimeLeft && (
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <div className="flex items-center gap-2 text-xs">
-                        <Clock className="w-3 h-3" style={{ color: theme.colors.orange }} />
-                        <span style={{ color: theme.colors.textGray }}>Session expires in: {formatTime(sessionTimeLeft)}</span>
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
+                    {user && (
+                      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                        <p className="text-sm font-semibold truncate" style={{ color: theme.colors.textDark }}>
+                          {user.name || user.email}
+                        </p>
+                        <p className="text-xs truncate" style={{ color: theme.colors.textGray }}>
+                          {user.email}
+                        </p>
                       </div>
-                      {showSessionWarning && (
-                        <div className="mt-2 flex gap-2">
-                          <button onClick={extendSession} className="flex-1 px-3 py-1 text-xs bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors">Extend</button>
-                          <button onClick={endSession} className="flex-1 px-3 py-1 text-xs bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">End Now</button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    )}
 
-                  <div className="py-2">
-                    <button onClick={handleViewProfile} className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200" style={{ color: theme.colors.textDark }}>
-                      <UserCircle className="w-4 h-4" />
-                      <span className="text-sm">View Profile</span>
-                    </button>
-                    
-                    <button onClick={handleLogout} className="w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-red-50 transition-colors duration-200 text-red-600">
-                      <LogOut className="w-4 h-4" />
-                      <span className="text-sm">Logout</span>
-                    </button>
+                    {sessionTimeLeft && (
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <div className="flex items-center gap-2 text-xs mb-2">
+                          <Clock className="w-4 h-4" style={{ color: theme.colors.orange }} />
+                          <span style={{ color: theme.colors.textGray }}>
+                            Session expires in: <span className="font-mono font-semibold">{formatTime(sessionTimeLeft)}</span>
+                          </span>
+                        </div>
+                        {showSessionWarning && (
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={extendSession} 
+                              className="flex-1 px-3 py-2 text-xs bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                            >
+                              Extend
+                            </button>
+                            <button 
+                              onClick={endSession} 
+                              className="flex-1 px-3 py-2 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+                            >
+                              End Now
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="py-2">
+                      <button 
+                        onClick={handleViewProfile} 
+                        className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200" 
+                        style={{ color: theme.colors.textDark }}
+                      >
+                        <UserCircle className="w-5 h-5" />
+                        <span className="text-sm font-medium">View Profile</span>
+                      </button>
+                      
+                      <button 
+                        onClick={handleLogout} 
+                        className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-red-50 transition-colors duration-200 text-red-600"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="text-sm font-medium">Logout</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+            ) : (
+    <button 
+  onClick={() => navigate('/login')} 
+  className="px-6 py-2 sm:px-8 sm:py-2.5 rounded-full font-semibold text-white transition-all duration-300 hover:scale-105 shadow-lg text-base sm:text-lg" 
+  style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}
+>
+  Login
+</button>
+            )}
+
+            {/* Mobile Hamburger Menu */}
+            <button 
+              className="block md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors" 
+              onClick={toggleMobileMenu}
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />
+              ) : (
+                <Menu className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />
               )}
-            </div>
-          ) : (
-            <button onClick={() => navigate('/login')} className="px-6 py-2 rounded-full font-medium text-white transition-all duration-300 hover:scale-105" style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}>
-              Login
             </button>
-          )}
+          </div>
         </div>
 
-        {/* Mobile Menu - Professional Sliding Menu */}
-        <div className={`md:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden bg-white/95 backdrop-blur-md border-t border-gray-100`}>
-          <div className="px-4 py-4 space-y-1">
+        {/* Mobile Menu - Improved Sliding Menu */}
+        <div className={`md:hidden transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        } overflow-hidden bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-lg`}>
+          <div className="px-4 py-3 space-y-1">
             {NAV_ITEMS.map(({ label, to, icon }) => (
               <Link
                 key={label}
@@ -311,9 +359,7 @@ const Navbar = ({ scrollY }) => {
                     : 'hover:bg-gray-50'
                 }`}
                 onClick={() => setIsMobileMenuOpen(false)}
-                style={{
-                  color: theme.colors.textDark,
-                }}
+                style={{ color: theme.colors.textDark }}
               >
                 <span className="w-5 h-5 flex-shrink-0">{icon}</span>
                 <span>{label}</span>
@@ -329,10 +375,10 @@ const Navbar = ({ scrollY }) => {
         </div>
       </nav>
 
-      {/* Session Warning Modal */}
+      {/* Session Warning Modal - Improved */}
       {showSessionWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300">
             <div className="flex items-start gap-4 mb-6">
               <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Clock className="w-6 h-6" style={{ color: theme.colors.orange }} />
@@ -342,7 +388,10 @@ const Navbar = ({ scrollY }) => {
                   Session Expiring Soon
                 </h3>
                 <p className="text-sm" style={{ color: theme.colors.textGray }}>
-                  Your session will expire in <span className="font-semibold">{sessionTimeLeft ? formatTime(sessionTimeLeft) : '0:00'}</span>
+                  Your session will expire in{' '}
+                  <span className="font-mono font-semibold text-orange-600">
+                    {sessionTimeLeft ? formatTime(sessionTimeLeft) : '0:00'}
+                  </span>
                 </p>
               </div>
             </div>
@@ -354,13 +403,13 @@ const Navbar = ({ scrollY }) => {
             <div className="flex flex-col sm:flex-row gap-3">
               <button 
                 onClick={extendSession} 
-                className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold text-sm"
+                className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
               >
                 Extend Session
               </button>
               <button 
                 onClick={endSession} 
-                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-semibold text-sm"
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-semibold text-sm shadow-md hover:shadow-lg"
               >
                 End Session
               </button>

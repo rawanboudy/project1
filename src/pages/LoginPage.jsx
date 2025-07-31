@@ -40,7 +40,7 @@ const LoginPage = () => {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
           // Verify token is still valid by fetching user info
-          const response = await axios.get('/api/Authentication/user');
+          const response = await axios.get('/Authentication/user');
           
           if (response.data) {
             // Token is valid, store user info and redirect

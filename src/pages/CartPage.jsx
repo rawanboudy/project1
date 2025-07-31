@@ -31,7 +31,11 @@ export default function CartPage() {
     try {
       const basketId = getBasketId();
       const res = await axios.get(`/basket/${basketId}`);
-      setBasketData(res.data);
+      setBasketData({
+  ...res.data,
+  items: Array.isArray(res.data.items) ? res.data.items : []
+});
+
     } catch (err) {
       if (err.response?.status === 404) {
         // Basket not found, create empty basket
@@ -129,10 +133,17 @@ export default function CartPage() {
   };
 
   // Calculate totals
-  const subtotal = basketData?.items.reduce((sum, item) => 
-    sum + (item.price * item.quantity), 0) || 0;
-  const shippingPrice = basketData?.shippingPrice || 0;
-  const total = subtotal + shippingPrice;
+let subtotal = 0;
+let shippingPrice = 0;
+let total = 0;
+
+if (basketData && Array.isArray(basketData.items)) {
+  subtotal = basketData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  shippingPrice = basketData.shippingPrice || 0;
+  total = subtotal + shippingPrice;
+}
+
+
 
   if (loading) {
     return (
@@ -232,7 +243,8 @@ export default function CartPage() {
         )}
 
         {/* Empty Cart State */}
-        {!basketData?.items || basketData.items.length === 0 ? (
+       {!basketData || !Array.isArray(basketData.items) || basketData.items.length === 0 ? (
+
           <div className="text-center py-20 animate-in fade-in duration-500">
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full blur-3xl opacity-20 animate-pulse"></div>

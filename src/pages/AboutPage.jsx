@@ -22,7 +22,7 @@ export default function AboutPage() {
           transition={{ duration: 0.8 }}
           className="text-center text-white px-6 lg:px-0"
         >
-          <h1 className="text-5xl lg:text-6xl font-extrabold drop-shadow-lg">About Savoria</h1>
+          <h1 className="text-5xl lg:text-6xl font-extrabold drop-shadow-lg">About Fila</h1>
           <p className="mt-3 text-lg lg:text-xl tracking-wide">
             Discover our journey, values, and the passion fueling every dish.
           </p>
@@ -47,7 +47,7 @@ export default function AboutPage() {
             transition={{ delay: 0.3 }}
           >
             In 2024, a group of culinary enthusiasts and tech innovators joined forces to
-            reimagine home dining. Savoria was born from our desire to make gourmet meals
+            reimagine home dining. Fila was born from our desire to make gourmet meals
             accessible with just a few taps. We blend handcrafted recipes with cutting-edge
             technology to bring an elevated restaurant experience to your home.
           </motion.p>
