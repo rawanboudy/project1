@@ -485,23 +485,23 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
   const total = subtotal + shippingPrice;
 
   const renderLocationForm = () => (
-    <div className="max-w-4xl mx-auto">
-      <div className="grid lg:grid-cols-3 gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
         {/* Main Form */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 relative overflow-hidden">
+        <div className="xl:col-span-2">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 relative overflow-hidden">
             {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-gray-900/10 to-black/10 rounded-full translate-y-12 -translate-x-12"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-12 translate-x-12 sm:-translate-y-16 sm:translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-gray-900/10 to-black/10 rounded-full translate-y-10 -translate-x-10 sm:translate-y-12 sm:-translate-x-12"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <MapPin className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-black">Delivery Address</h2>
-                  <p className="text-gray-600">Where should we deliver your amazing order?</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-black">Delivery Address</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Where should we deliver your amazing order?</p>
                 </div>
               </div>
 
@@ -509,15 +509,15 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
               {apiErrors.general && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                   <div className="flex items-center gap-2 text-red-800">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">{apiErrors.general}</span>
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium text-sm sm:text-base">{apiErrors.general}</span>
                   </div>
                 </div>
               )}
 
-              <form onSubmit={handleAddressSubmit} className="space-y-6">
+              <form onSubmit={handleAddressSubmit} className="space-y-4 sm:space-y-6">
                 {/* Name Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="group">
                     <label className="block text-sm font-semibold text-black mb-2">
                       First Name *
@@ -529,7 +529,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         value={locationData.firstname}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                           apiErrors.firstname 
                             ? 'border-red-400 focus:border-red-500' 
                             : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -537,7 +537,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         placeholder="Enter your first name"
                       />
                       {apiErrors.firstname && (
-                        <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                        <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                           {apiErrors.firstname}
                         </div>
                       )}
@@ -555,7 +555,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         value={locationData.lastname}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                           apiErrors.lastname 
                             ? 'border-red-400 focus:border-red-500' 
                             : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -563,7 +563,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         placeholder="Enter your last name"
                       />
                       {apiErrors.lastname && (
-                        <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                        <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                           {apiErrors.lastname}
                         </div>
                       )}
@@ -583,7 +583,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                       value={locationData.street}
                       onChange={handleInputChange}
                       required
-                      className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                         apiErrors.street 
                           ? 'border-red-400 focus:border-red-500' 
                           : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -591,14 +591,14 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                       placeholder="Enter your street address"
                     />
                     {apiErrors.street && (
-                      <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                      <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                         {apiErrors.street}
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="group">
                     <label className="block text-sm font-semibold text-black mb-2">
                       City *
@@ -610,7 +610,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         value={locationData.city}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                           apiErrors.city 
                             ? 'border-red-400 focus:border-red-500' 
                             : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -618,7 +618,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         placeholder="Enter your city"
                       />
                       {apiErrors.city && (
-                        <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                        <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                           {apiErrors.city}
                         </div>
                       )}
@@ -635,7 +635,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         value={locationData.country}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                        className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                           apiErrors.country 
                             ? 'border-red-400 focus:border-red-500' 
                             : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -647,7 +647,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                         ))}
                       </select>
                       {apiErrors.country && (
-                        <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                        <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                           {apiErrors.country}
                         </div>
                       )}
@@ -666,7 +666,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                       name="phone"
                       value={locationData.phone}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg ${
+                      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-lg text-sm sm:text-base ${
                         apiErrors.phone 
                           ? 'border-red-400 focus:border-red-500' 
                           : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
@@ -674,7 +674,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                       placeholder="Enter your phone number"
                     />
                     {apiErrors.phone && (
-                      <div className="absolute -bottom-6 left-0 text-red-500 text-sm font-medium animate-pulse">
+                      <div className="absolute -bottom-6 left-0 text-red-500 text-xs sm:text-sm font-medium animate-pulse">
                         {apiErrors.phone}
                       </div>
                     )}
@@ -691,36 +691,36 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                     value={locationData.deliveryInstructions}
                     onChange={handleInputChange}
                     rows="3"
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:border-orange-500 focus:shadow-lg group-hover:border-orange-300"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:border-orange-500 focus:shadow-lg group-hover:border-orange-300 text-sm sm:text-base"
                     placeholder="Any special instructions for delivery..."
                   />
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex gap-4 pt-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6">
                   <button
                     type="button"
                     onClick={() => navigate('/cart')}
-                    className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 font-medium"
+                    className="w-full sm:flex-1 py-3 px-4 sm:px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm sm:text-base"
                   >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     Back to Cart
                   </button>
                   
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-3 px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="w-full sm:flex-1 py-3 px-4 sm:px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm sm:text-base"
                   >
                     {loading ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         Saving...
                       </>
                     ) : (
                       <>
                         Continue
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                       </>
                     )}
                   </button>
@@ -731,8 +731,8 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         </div>
 
         {/* Order Summary Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-24">
+        <div className="xl:col-span-1">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 sticky top-20 sm:top-24">
             <h3 className="text-lg font-bold text-black mb-4">Order Summary</h3>
             
             <div className="space-y-3 mb-6">
@@ -741,18 +741,18 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                   <img 
                     src={item.pictureUrl} 
                     alt={item.productName}
-                    className="w-12 h-12 object-cover rounded-lg"
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-black truncate">{item.productName}</p>
+                    <p className="font-medium text-xs sm:text-sm text-black truncate">{item.productName}</p>
                     <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-semibold text-black">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold text-black text-sm sm:text-base">${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
               
               {basketData?.items?.length > 3 && (
-                <p className="text-sm text-gray-500">+{basketData.items.length - 3} more items</p>
+                <p className="text-xs sm:text-sm text-gray-500">+{basketData.items.length - 3} more items</p>
               )}
             </div>
 
@@ -761,16 +761,16 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                 <span className="text-gray-600">Subtotal:</span>
                 <span className="font-semibold">${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
+              <div className="flex justify-between text-base sm:text-lg font-bold text-black pt-2 border-t">
                 <span>Total:</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="mt-6 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div className="flex items-center gap-2 text-black">
-                <Shield className="w-4 h-4" />
-                <span className="text-sm font-medium">Secure Checkout</span>
+                <Shield className="w-4 h-4 flex-shrink-0" />
+                <span className="text-xs sm:text-sm font-medium">Secure Checkout</span>
               </div>
               <p className="text-xs text-gray-600 mt-1">Your payment information is protected</p>
             </div>
@@ -781,30 +781,30 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
   );
 
   const renderDeliveryMethods = () => (
-    <div className="max-w-4xl mx-auto">
-      <div className="grid lg:grid-cols-3 gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 relative overflow-hidden">
+        <div className="xl:col-span-2">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 relative overflow-hidden">
             {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-20 translate-x-20"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-16 translate-x-16 sm:-translate-y-20 sm:translate-x-20"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Truck className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-black">Delivery Method</h2>
-                  <p className="text-gray-600">Choose your preferred delivery option</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-black">Delivery Method</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Choose your preferred delivery option</p>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {deliveryMethods.map((method) => (
                   <div
                     key={method.id}
-                    className={`relative p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:scale-105 ${
+                    className={`relative p-4 sm:p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg transform hover:scale-105 ${
                       selectedDeliveryMethod?.id === method.id
                         ? 'border-orange-500 bg-orange-50 shadow-lg'
                         : 'border-gray-200 hover:border-orange-300 bg-white'
@@ -812,29 +812,29 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                     onClick={() => setSelectedDeliveryMethod(method)}
                   >
                     {selectedDeliveryMethod?.id === method.id && (
-                      <div className="absolute top-4 right-4 w-6 h-6 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Package className="w-5 h-5 text-gray-600" />
-                          <h3 className="font-bold text-black">{method.shortName}</h3>
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+                      <div className="flex-1 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                          <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
+                          <h3 className="font-bold text-black text-sm sm:text-base">{method.shortName}</h3>
                         </div>
-                        <p className="text-gray-600 mb-2">{method.description}</p>
+                        <p className="text-gray-600 mb-2 text-sm sm:text-base">{method.description}</p>
                         <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <p className="text-sm text-gray-500">{method.deliveryTime}</p>
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                          <p className="text-xs sm:text-sm text-gray-500">{method.deliveryTime}</p>
                         </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="text-2xl font-bold text-black">
+                      <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">
+                        <p className="text-xl sm:text-2xl font-bold text-black">
                           {method.cost === 0 ? 'Free' : `${method.cost.toFixed(2)}`}
                         </p>
                         {method.cost === 0 && (
-                          <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full mt-1">
+                          <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full mt-0 sm:mt-1">
                             <Star className="w-3 h-3" />
                             Popular
                           </div>
@@ -846,16 +846,16 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
               </div>
 
               {deliveryMethods.length === 0 && (
-                <div className="text-center py-12">
-                  <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500 text-lg">No delivery methods available</p>
+                <div className="text-center py-8 sm:py-12">
+                  <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500 text-base sm:text-lg">No delivery methods available</p>
                 </div>
               )}
 
-              <div className="flex gap-4 pt-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 sm:pt-8">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium"
+                  className="w-full sm:flex-1 py-3 px-4 sm:px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm sm:text-base"
                 >
                   Back to Address
                 </button>
@@ -863,7 +863,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!selectedDeliveryMethod}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="w-full sm:flex-1 py-3 px-4 sm:px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm sm:text-base"
                 >
                   Continue to Summary
                 </button>
@@ -873,18 +873,18 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         </div>
 
         {/* Summary Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-24">
+        <div className="xl:col-span-1">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 sticky top-20 sm:top-24">
             <h3 className="text-lg font-bold text-black mb-4">Delivery Summary</h3>
             
             {selectedDeliveryMethod && (
-              <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 mb-6">
+              <div className="p-3 sm:p-4 bg-orange-50 rounded-xl border border-orange-200 mb-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Truck className="w-4 h-4 text-orange-600" />
-                  <span className="font-semibold text-orange-900">{selectedDeliveryMethod.shortName}</span>
+                  <Truck className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                  <span className="font-semibold text-orange-900 text-sm sm:text-base">{selectedDeliveryMethod.shortName}</span>
                 </div>
-                <p className="text-sm text-orange-700">{selectedDeliveryMethod.deliveryTime}</p>
-                <p className="text-lg font-bold text-orange-900 mt-2">
+                <p className="text-xs sm:text-sm text-orange-700">{selectedDeliveryMethod.deliveryTime}</p>
+                <p className="text-base sm:text-lg font-bold text-orange-900 mt-2">
                   {selectedDeliveryMethod.cost === 0 ? 'Free' : `${selectedDeliveryMethod.cost.toFixed(2)}`}
                 </p>
               </div>
@@ -901,7 +901,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                   {selectedDeliveryMethod?.cost === 0 ? 'Free' : `${(selectedDeliveryMethod?.cost || 0).toFixed(2)}`}
                 </span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
+              <div className="flex justify-between text-base sm:text-lg font-bold text-black pt-2 border-t">
                 <span>Total:</span>
                 <span>${(subtotal + (selectedDeliveryMethod?.cost || 0)).toFixed(2)}</span>
               </div>
@@ -913,23 +913,23 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
   );
 
   const renderOrderSummary = () => (
-    <div className="max-w-5xl mx-auto">
-      <div className="grid lg:grid-cols-3 gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-4 sm:space-y-6">
           {/* Order Details */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 relative overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 lg:p-8 relative overflow-hidden">
             {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-12 translate-x-12 sm:-translate-y-16 sm:translate-x-16"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Check className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-black">Order Summary</h2>
-                  <p className="text-gray-600">Review your order before placing it</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-black">Order Summary</h2>
+                  <p className="text-sm sm:text-base text-gray-600">Review your order before placing it</p>
                 </div>
               </div>
 
@@ -937,25 +937,25 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
               {apiErrors.general && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                   <div className="flex items-center gap-2 text-red-800">
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">{apiErrors.general}</span>
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium text-sm sm:text-base">{apiErrors.general}</span>
                   </div>
                 </div>
               )}
 
               {/* Delivery Address */}
-              <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200">
-                <h3 className="font-bold mb-3 text-black flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-gray-600" />
+              <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                <h3 className="font-bold mb-3 text-black flex items-center gap-2 text-sm sm:text-base">
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
                   Delivery Address
                 </h3>
-                <div className="text-gray-700 leading-relaxed">
+                <div className="text-gray-700 leading-relaxed text-sm sm:text-base">
                   <p className="font-semibold">{locationData.firstname} {locationData.lastname}</p>
                   <p>{locationData.street}</p>
                   <p>{locationData.city}, {locationData.country}</p>
                   {locationData.phone && (
                     <div className="flex items-center gap-2 mt-2">
-                      <Phone className="w-4 h-4 text-gray-500" />
+                      <Phone className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
                       <p>{locationData.phone}</p>
                     </div>
                   )}
@@ -964,26 +964,26 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
 
               {/* Delivery Method */}
               {selectedDeliveryMethod && (
-                <div className="mb-8 p-6 bg-orange-50 rounded-2xl border border-orange-200">
-                  <h3 className="font-bold mb-3 text-black flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-orange-600" />
+                <div className="mb-6 sm:mb-8 p-4 sm:p-6 bg-orange-50 rounded-2xl border border-orange-200">
+                  <h3 className="font-bold mb-3 text-black flex items-center gap-2 text-sm sm:text-base">
+                    <Truck className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 flex-shrink-0" />
                     Delivery Method
                   </h3>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold text-black">{selectedDeliveryMethod.shortName}</p>
-                      <p className="text-sm text-gray-600">{selectedDeliveryMethod.description}</p>
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4">
+                    <div className="flex-1">
+                      <p className="font-semibold text-black text-sm sm:text-base">{selectedDeliveryMethod.shortName}</p>
+                      <p className="text-xs sm:text-sm text-gray-600">{selectedDeliveryMethod.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Clock className="w-4 h-4 text-gray-500" />
-                        <p className="text-sm text-gray-500">{selectedDeliveryMethod.deliveryTime}</p>
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                        <p className="text-xs sm:text-sm text-gray-500">{selectedDeliveryMethod.deliveryTime}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-black">
+                    <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">
+                      <p className="text-lg sm:text-xl font-bold text-black">
                         {selectedDeliveryMethod.cost === 0 ? 'Free' : `${selectedDeliveryMethod.cost.toFixed(2)}`}
                       </p>
                       {selectedDeliveryMethod.cost === 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full mt-0 sm:mt-1">
                           <Star className="w-3 h-3" />
                           Great Deal!
                         </span>
@@ -994,35 +994,35 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
               )}
 
               {/* Order Items */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-black flex items-center gap-2">
-                  <Package className="w-5 h-5 text-gray-600" />
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="font-bold text-black flex items-center gap-2 text-sm sm:text-base">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0" />
                   Order Items ({basketData?.items?.length || 0})
                 </h3>
                 {basketData?.items?.map((item, index) => (
-                  <div key={index} className="flex gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-300">
+                  <div key={index} className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-shadow duration-300">
                     <img 
                       src={item.pictureUrl} 
                       alt={item.productName}
-                      className="w-16 h-16 object-cover rounded-lg"
+                      className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
                     />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-black">{item.productName}</h4>
-                      <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                      <p className="text-sm text-gray-500">${item.price} each</p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-black text-sm sm:text-base truncate">{item.productName}</h4>
+                      <p className="text-xs sm:text-sm text-gray-600">Quantity: {item.quantity}</p>
+                      <p className="text-xs sm:text-sm text-gray-500">${item.price} each</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-black">${(item.price * item.quantity).toFixed(2)}</p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-lg sm:text-xl font-bold text-black">${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 sm:pt-8">
                 <button
                   onClick={() => setStep(2)}
-                  className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium"
+                  className="w-full sm:flex-1 py-3 px-4 sm:px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm sm:text-base"
                 >
                   Back to Delivery
                 </button>
@@ -1030,16 +1030,16 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                 <button
                   onClick={handleOrderSubmit}
                   disabled={submitting}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 py-3 px-4 sm:px-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   {submitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Placing Order...
                     </>
                   ) : (
                     <>
-                      <CreditCard className="w-5 h-5" />
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                       Place Order
                     </>
                   )}
@@ -1050,12 +1050,12 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         </div>
 
         {/* Final Summary Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-24">
-            <h3 className="text-lg font-bold text-black mb-6">Final Total</h3>
+        <div className="xl:col-span-1">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 sticky top-20 sm:top-24">
+            <h3 className="text-lg font-bold text-black mb-4 sm:mb-6">Final Total</h3>
             
             {/* Order Breakdown */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Items ({basketData?.items?.length || 0}):</span>
                 <span className="font-semibold">${subtotal.toFixed(2)}</span>
@@ -1066,36 +1066,36 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                   {shippingPrice === 0 ? 'Free' : `${shippingPrice.toFixed(2)}`}
                 </span>
               </div>
-              <div className="border-t pt-3">
-                <div className="flex justify-between text-xl font-bold text-black">
+              <div className="border-t pt-2 sm:pt-3">
+                <div className="flex justify-between text-lg sm:text-xl font-bold text-black">
                   <span>Total:</span>
-                  <span className="text-2xl">${total.toFixed(2)}</span>
+                  <span className="text-xl sm:text-2xl">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             {/* Security Badge */}
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
+            <div className="p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 mb-4 sm:mb-6">
               <div className="flex items-center gap-2 text-black mb-2">
-                <Shield className="w-5 h-5" />
-                <span className="font-semibold">Secure Payment</span>
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="font-semibold text-xs sm:text-sm">Secure Payment</span>
               </div>
-              
+              <p className="text-xs text-gray-600">Your information is protected</p>
             </div>
 
             {/* Quick Items Preview */}
             <div className="space-y-2">
-              <h4 className="font-semibold text-black text-sm">Items in your order:</h4>
+              <h4 className="font-semibold text-black text-xs sm:text-sm">Items in your order:</h4>
               {basketData?.items?.slice(0, 3).map((item, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  <span className="text-gray-600 truncate">{item.productName}</span>
-                  <span className="text-gray-500 ml-auto">×{item.quantity}</span>
+                <div key={index} className="flex items-center gap-2 text-xs sm:text-sm">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                  <span className="text-gray-600 truncate flex-1">{item.productName}</span>
+                  <span className="text-gray-500 flex-shrink-0">×{item.quantity}</span>
                 </div>
               ))}
               {basketData?.items?.length > 3 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full flex-shrink-0"></div>
                   <span className="text-gray-500">+{basketData.items.length - 3} more items</span>
                 </div>
               )}
@@ -1109,12 +1109,12 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
   // Loading state while basket data is being fetched
   if (!basketData) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <div className="bg-gray-50 rounded-2xl p-8 shadow-xl">
-            <h3 className="text-xl font-semibold text-black mb-2">Loading checkout...</h3>
-            <p className="text-gray-600">Preparing your order details</p>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4 sm:mb-6"></div>
+          <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 shadow-xl max-w-sm mx-auto">
+            <h3 className="text-lg sm:text-xl font-semibold text-black mb-2">Loading checkout...</h3>
+            <p className="text-sm sm:text-base text-gray-600">Preparing your order details</p>
           </div>
         </div>
       </div>
@@ -1125,28 +1125,28 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 py-8 mt-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mt-14 sm:mt-16">
         {/* Progress Steps */}
-        <div className="mb-12">
-          <div className="flex items-center justify-center">
+        <div className="mb-8 sm:mb-12 overflow-x-auto">
+          <div className="flex items-center justify-center min-w-max px-4">
             {[1, 2, 3].map((stepNum, index) => (
               <div key={stepNum} className="flex items-center">
                 <div className="relative">
                   <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 ${
                       step >= stepNum
                         ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
                         : 'bg-gray-100 text-gray-400 border-2 border-gray-200'
                     }`}
                   >
-                    {step > stepNum ? <Check className="w-6 h-6" /> : stepNum}
+                    {step > stepNum ? <Check className="w-5 h-5 sm:w-6 sm:h-6" /> : stepNum}
                   </div>
                   {step >= stepNum && (
                     <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl opacity-20 animate-pulse"></div>
                   )}
                 </div>
-                <div className="ml-3 mr-6">
-                  <div className={`text-sm font-bold ${
+                <div className="ml-2 sm:ml-3 mr-4 sm:mr-6">
+                  <div className={`text-xs sm:text-sm font-bold ${
                     step >= stepNum ? 'text-black' : 'text-gray-400'
                   }`}>
                     {stepNum === 1 && 'Delivery Address'}
@@ -1162,7 +1162,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                   </div>
                 </div>
                 {index < 2 && (
-                  <div className={`w-20 h-1 rounded-full transition-all duration-300 ${
+                  <div className={`w-12 sm:w-20 h-1 rounded-full transition-all duration-300 ${
                     step > stepNum ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gray-200'
                   }`} />
                 )}
@@ -1179,7 +1179,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         </div>
       </div>
 
-      {/* Custom Styles - FIXED: Removed jsx attribute */}
+      {/* Custom Styles */}
       <style>
         {`
           @keyframes fadeIn {
@@ -1193,6 +1193,13 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
           
           .group:hover .group-hover\\:border-orange-300 {
             border-color: #fed7aa;
+          }
+          
+          /* Ensure proper scrolling on mobile */
+          @media (max-width: 640px) {
+            .sticky {
+              position: relative;
+            }
           }
         `}
       </style>
