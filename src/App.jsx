@@ -14,6 +14,7 @@ import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute
 import OrderHistoryPage from './pages/OrderHistory';
 import OrderSuccess from './pages/OrderSuccess';
 import OrderTracking from './pages/orderTracking';
+import ForgotPasswordPage from './pages/forgetPassword';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* Private Routes */}
         <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />

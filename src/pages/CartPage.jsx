@@ -161,7 +161,7 @@ export default function CartPage() {
       <Navbar />
       
       {/* Enhanced Professional Header Section - Fully Responsive */}
-      <div className="bg-white/80 backdrop-blur-xl border-b border-orange-100 shadow-sm sticky top-0 z-40 mt-16 sm:mt-20">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-orange-100 shadow-sm sticky top-0 z-40 mt-20 sm:mt-20">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
           <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             
