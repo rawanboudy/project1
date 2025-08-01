@@ -313,19 +313,7 @@ const LoginPage = () => {
 
       // Display the enhanced toast with orange styling on the right
       toast.success(randomMessage, {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: `linear-gradient(135deg, ${theme.colors.orange} 0%, ${theme.colors.orangeDark} 100%)`,
-          color: 'white',
-          fontWeight: '600',
-          fontSize: '15px',
-          padding: '12px 20px',
-          borderRadius: '10px',
-          boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3)',
-          border: `2px solid ${theme.colors.orangeLight}`,
-          maxWidth: '280px',
-        },
+  
         icon: '🎉',
       });
       

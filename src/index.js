@@ -10,11 +10,15 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <App />
-    {/* <-- Add the Toaster here so your toasts can show anywhere */}
-    <Toaster 
-      position="top-right" 
+    <Toaster
+      position="top-right"
+      containerStyle={{
+        // bump it down 80px from the top:
+        top: '50px',
+        // if you want to shift it horizontally, you can adjust right/left too:
+        // right: '20px'
+      }}
       toastOptions={{
-        // Default options for all toasts
         duration: 3000,
         style: {
           borderRadius: '8px',

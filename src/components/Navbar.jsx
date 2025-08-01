@@ -379,19 +379,7 @@ const Navbar = ({ scrollY }) => {
               </button>
             )}
 
-            {/* Mobile Hamburger Menu (only shown when not logged in) */}
-            {!isLoggedIn && (
-              <button 
-                className="block md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors" 
-                onClick={toggleMobileMenu}
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />
-                ) : (
-                  <Menu className="w-6 h-6" style={{ color: isSolid ? theme.colors.textDark : 'white' }} />
-                )}
-              </button>
-            )}
+            
           </div>
         </div>
 

@@ -14,3 +14,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* src/index.css (or whatever your global stylesheet is) */
+/* this selector is the actual container that react-hot-toast uses */
+.react-hot-toast {
+  top: 100px !important;
+}
+
