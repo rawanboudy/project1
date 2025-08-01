@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../axiosConfig';
-import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye, Heart } from 'lucide-react';
+import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye, Heart, Filter, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import theme from '../theme';
 import Navbar from '../components/Navbar';
@@ -26,6 +26,7 @@ export default function MenuPage() {
   const [cartSuccess, setCartSuccess] = useState({});
   const [favoriteLoading, setFavoriteLoading] = useState({});
   const [userFavorites, setUserFavorites] = useState([]);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [brandFilter, setBrandFilter] = useState('');
   const [typeFilter,  setTypeFilter]  = useState('');
@@ -33,7 +34,7 @@ export default function MenuPage() {
   const [sort,        setSort]        = useState('');
   const [pageIndex,   setPageIndex]   = useState(1);
   const [quantities,  setQuantities]  = useState({});
-  const pageSize = 8;
+  const pageSize = 12; // Increased for better grid layout
 
   // Fetch products and user favorites on mount
   useEffect(() => {
@@ -346,246 +347,300 @@ export default function MenuPage() {
     }
   };
 
+  // Filter component for both desktop and mobile
+  const FilterSection = ({ className = "", onClose = null }) => (
+    <div className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 ${className}`}>
+      {onClose && (
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Filters</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {!onClose && <h2 className="text-xl font-semibold mb-4">Filters</h2>}
+      
+      <div className="space-y-4">
+        {/* Search */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Search</label>
+          <input
+            type="text"
+            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+            placeholder="Search dishes..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPageIndex(1); }}
+          />
+        </div>
+        
+        {/* Brand */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Brand</label>
+          <select
+            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+            value={brandFilter}
+            onChange={e => { setBrandFilter(e.target.value); setPageIndex(1); }}
+          >
+            {brands.map(b => (
+              <option key={b} value={b}>
+                {b || 'All Brands'}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Type */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Type</label>
+          <select
+            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+            value={typeFilter}
+            onChange={e => { setTypeFilter(e.target.value); setPageIndex(1); }}
+          >
+            {types.map(t => (
+              <option key={t} value={t}>
+                {t || 'All Types'}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Sort */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Sort By</label>
+          <select
+            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+            value={sort}
+            onChange={e => { setSort(e.target.value); setPageIndex(1); }}
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">
       <Navbar />
 
-      {/* Hero Section */}
-      <header className="relative h-80 flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600">
-        <div className="text-center px-4">
-          <h1 className="text-5xl font-bold text-white mb-2">
-            Explore Our Culinary Creations
-          </h1>
-          <p className="text-lg text-orange-200 max-w-xl mx-auto">
-            Handcrafted dishes, curated flavors. Refine your search with our filters.
-          </p>
-        </div>
-      </header>
+      {/* Proper spacing from navbar - added pt-16 for fixed navbar */}
+      <div className="pt-16">
+        {/* Hero Section - Responsive heights and text sizes */}
+        <header className="relative h-48 sm:h-64 md:h-80 flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600">
+          <div className="text-center px-4 max-w-4xl mx-auto">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2">
+              Explore Our Culinary Creations
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg text-orange-200 max-w-xl mx-auto">
+              Handcrafted dishes, curated flavors. Refine your search with our filters.
+            </p>
+          </div>
+        </header>
 
-      {/* Content Grid */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-8 px-6 -mt-20">
-        {/* Sidebar Filters */}
-        <aside className="md:col-span-1 bg-white rounded-xl shadow-lg p-6 sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
-          <h2 className="text-xl font-semibold mb-4">Filters</h2>
-          <div className="space-y-4">
-            {/* Brand */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Brand</label>
-              <select
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200"
-                value={brandFilter}
-                onChange={e => { setBrandFilter(e.target.value); setPageIndex(1); }}
-              >
-                {brands.map(b => (
-                  <option key={b} value={b}>
-                    {b || 'All Brands'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Type */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
-              <select
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200"
-                value={typeFilter}
-                onChange={e => { setTypeFilter(e.target.value); setPageIndex(1); }}
-              >
-                {types.map(t => (
-                  <option key={t} value={t}>
-                    {t || 'All Types'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Sort */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Sort By</label>
-              <select
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200"
-                value={sort}
-                onChange={e => { setSort(e.target.value); setPageIndex(1); }}
-              >
-                {SORT_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Search</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200"
-                placeholder="Search dishes..."
-                value={search}
-                onChange={e => { setSearch(e.target.value); setPageIndex(1); }}
-              />
+        {/* Mobile Filter Button */}
+        <div className="lg:hidden px-4 sm:px-6 -mt-8 relative z-10">
+          <button
+            onClick={() => setShowMobileFilters(true)}
+            className="bg-white rounded-full shadow-lg px-4 py-2 flex items-center space-x-2 text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <Filter className="w-5 h-5" />
+            <span className="font-medium">Filters</span>
+          </button>
+        </div>
+
+        {/* Mobile Filter Overlay */}
+        {showMobileFilters && (
+          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
+            <div className="w-full bg-white rounded-t-xl max-h-[90vh] overflow-y-auto">
+              <FilterSection onClose={() => setShowMobileFilters(false)} />
             </div>
           </div>
-        </aside>
+        )}
 
-        {/* Products List */}
-        <section className="md:col-span-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-600 text-center">{error}</p>
+        {/* Content Grid - Responsive layout */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12 lg:-mt-20">
+          {/* Desktop Sidebar Filters */}
+          <aside className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <FilterSection />
             </div>
-          )}
+          </aside>
 
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
-            </div>
-          ) : (
-            <motion.div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {pageData.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
-                >
-                  {/* Favorite Button - Positioned absolutely */}
-                  <button
-                    onClick={() => toggleFavorite(item)}
-                    disabled={favoriteLoading[item.id]}
-                    className={`absolute top-4 right-4 z-10 p-2 rounded-full transition-all duration-200 ${
-                      userFavorites.includes(item.id)
-                        ? 'bg-red-500 text-white shadow-lg'
-                        : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
-                    } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+          {/* Products List - Responsive grid */}
+          <section className="lg:col-span-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+              </div>
+            ) : (
+              <motion.div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                {pageData.map((item, idx) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
                   >
-                    {favoriteLoading[item.id] ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Heart 
-                        className={`w-5 h-5 ${
-                          userFavorites.includes(item.id) ? 'fill-current' : ''
-                        }`} 
-                      />
-                    )}
-                  </button>
+                    {/* Favorite Button - Responsive sizing */}
+                    <button
+                      onClick={() => toggleFavorite(item)}
+                      disabled={favoriteLoading[item.id]}
+                      className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
+                        userFavorites.includes(item.id)
+                          ? 'bg-red-500 text-white shadow-lg'
+                          : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
+                      } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+                    >
+                      {favoriteLoading[item.id] ? (
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                      ) : (
+                        <Heart 
+                          className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                            userFavorites.includes(item.id) ? 'fill-current' : ''
+                          }`} 
+                        />
+                      )}
+                    </button>
 
-                  <div className="overflow-hidden h-48 flex-shrink-0">
-                    <img
-                      src={item.pictureUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                    />
-                  </div>
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="mb-4 flex-grow">
-                      <h3 className="text-xl font-semibold mb-2 line-clamp-2 min-h-[3.5rem]" style={{ color: theme.colors.textDark }}>
-                        {item.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm line-clamp-3 min-h-[4rem]">
-                        {item.description}
-                      </p>
+                    {/* Image - Responsive height */}
+                    <div className="overflow-hidden h-32 sm:h-40 md:h-48 flex-shrink-0">
+                      <img
+                        src={item.pictureUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
                     </div>
                     
-                    {/* Price and Rating */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xl font-extrabold" style={{ color: theme.colors.orange }}>
-                        ${(item.price || 0).toFixed(2)}
-                      </span>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="text-sm font-medium">
-                          {item.rating?.toFixed(1) || '–'}
+                    {/* Content - Responsive padding and text sizes */}
+                    <div className="p-4 sm:p-6 flex flex-col flex-grow">
+                      <div className="mb-3 sm:mb-4 flex-grow">
+                        <h3 className="text-lg sm:text-xl font-semibold mb-2 line-clamp-2 min-h-[3rem] sm:min-h-[3.5rem]" style={{ color: theme.colors.textDark }}>
+                          {item.name}
+                        </h3>
+                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-3 min-h-[3rem] sm:min-h-[4rem]">
+                          {item.description}
+                        </p>
+                      </div>
+                      
+                      {/* Price and Rating - Responsive text sizes */}
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <span className="text-lg sm:text-xl font-extrabold" style={{ color: theme.colors.orange }}>
+                          ${(item.price || 0).toFixed(2)}
                         </span>
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-current" />
+                          <span className="text-xs sm:text-sm font-medium">
+                            {item.rating?.toFixed(1) || '–'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Quantity Controls - Responsive sizing */}
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                          >
+                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <span className="w-6 sm:w-8 text-center font-medium text-sm">
+                            {quantities[item.id] || 1}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                          >
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Button Container - Responsive button sizes */}
+                      <div className="space-y-2 mt-auto">
+                        {/* View Product Button */}
+                        <button
+                          onClick={() => viewProduct(item.id)}
+                          className="w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
+                        >
+                          <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span>View Product</span>
+                        </button>
+
+                        {/* Add to Cart Button */}
+                        <button
+                          onClick={() => addToCart(item)}
+                          disabled={cartLoading[item.id]}
+                          className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
+                            cartSuccess[item.id]
+                              ? 'bg-green-500 text-white'
+                              : cartLoading[item.id]
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
+                          }`}
+                        >
+                          {cartLoading[item.id] ? (
+                            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                          ) : cartSuccess[item.id] ? (
+                            <>
+                              <span>Added!</span>
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                              <span>Add to Cart</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
-                    {/* Quantity Controls */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-sm font-medium text-gray-700">Quantity:</span>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-8 text-center font-medium">
-                          {quantities[item.id] || 1}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Button Container */}
-                    <div className="space-y-2 mt-auto">
-                      {/* View Product Button */}
-                      <button
-                        onClick={() => viewProduct(item.id)}
-                        className="w-full py-3 px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform"
-                      >
-                        <Eye className="w-5 h-5" />
-                        <span>View Product</span>
-                      </button>
-
-                      {/* Add to Cart Button */}
-                      <button
-                        onClick={() => addToCart(item)}
-                        disabled={cartLoading[item.id]}
-                        className={`w-full py-3 px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
-                          cartSuccess[item.id]
-                            ? 'bg-green-500 text-white'
-                            : cartLoading[item.id]
-                            ? 'bg-gray-400 text-white cursor-not-allowed'
-                            : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
-                        }`}
-                      >
-                        {cartLoading[item.id] ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : cartSuccess[item.id] ? (
-                          <>
-                            <span>Added!</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCart className="w-5 h-5" />
-                            <span>Add to Cart</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-
-          {/* Pagination */}
-          <div className="flex justify-center items-center gap-4 mt-12">
-            <button
-              onClick={() => setPageIndex(n => Math.max(1, n - 1))}
-              disabled={pageIndex === 1}
-              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              <span>Prev</span>
-            </button>
-            <span className="font-medium">Page {pageIndex} of {totalPages}</span>
-            <button
-              onClick={() => setPageIndex(n => Math.min(totalPages, n + 1))}
-              disabled={pageIndex === totalPages}
-              className="flex items-center space-x-1 px-3 py-1 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>Next</span>
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </section>
+            {/* Pagination - Responsive sizing and spacing */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setPageIndex(n => Math.max(1, n - 1))}
+                  disabled={pageIndex === 1}
+                  className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Prev</span>
+                </button>
+                <span className="font-medium text-sm sm:text-base whitespace-nowrap">
+                  Page {pageIndex} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPageIndex(n => Math.min(totalPages, n + 1))}
+                  disabled={pageIndex === totalPages}
+                  className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
       <Footer />
