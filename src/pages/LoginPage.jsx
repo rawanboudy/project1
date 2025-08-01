@@ -14,7 +14,6 @@ const LoginPage = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -33,9 +32,8 @@ const LoginPage = () => {
     const checkExistingSession = async () => {
       try {
         const token = localStorage.getItem('token');
-        const rememberMeStatus = localStorage.getItem('rememberMe') === 'true';
         
-        if (token && rememberMeStatus) {
+        if (token) {
           // Set axios default header for authentication
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
@@ -56,6 +54,10 @@ const LoginPage = () => {
         localStorage.removeItem('userInfo');
         localStorage.removeItem('tokenExpiry');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenType');
+        localStorage.removeItem('userPermissions');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('sessionId');
         delete axios.defaults.headers.common['Authorization'];
         
         if (error.response?.status === 401) {
@@ -70,20 +72,8 @@ const LoginPage = () => {
     checkExistingSession();
   }, [navigate]);
 
-  // Check for remembered credentials on component mount
+  // Check for session expiration and login attempts on component mount
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    const rememberedPassword = localStorage.getItem('rememberedPassword');
-    const rememberMeStatus = localStorage.getItem('rememberMe') === 'true';
-    
-    if (rememberMeStatus && rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRememberMe(true);
-      if (rememberedPassword) {
-        setPassword(atob(rememberedPassword)); // Basic decode (use proper encryption in production)
-      }
-    }
-
     // Check for existing session expiration
     const sessionExpiredFlag = sessionStorage.getItem('sessionExpired');
     if (sessionExpiredFlag === 'true') {
@@ -171,19 +161,6 @@ const LoginPage = () => {
     return errors;
   };
 
-  // Handle remember me functionality
-  const handleRememberMe = () => {
-    if (rememberMe) {
-      localStorage.setItem('rememberedEmail', email);
-      localStorage.setItem('rememberedPassword', btoa(password)); // Basic encode (use proper encryption in production)
-      localStorage.setItem('rememberMe', 'true');
-    } else {
-      localStorage.removeItem('rememberedEmail');
-      localStorage.removeItem('rememberedPassword');
-      localStorage.removeItem('rememberMe');
-    }
-  };
-
   // Store all token information
   const storeTokenInfo = (responseData) => {
     // Store main token
@@ -226,9 +203,6 @@ const LoginPage = () => {
     if (responseData.sessionId) {
       localStorage.setItem('sessionId', responseData.sessionId);
     }
-
-    // Store remember me preference
-    localStorage.setItem('rememberMe', rememberMe.toString());
   };
 
   // Handle login attempts and blocking
@@ -285,79 +259,75 @@ const LoginPage = () => {
     try {
       const response = await axios.post('Authentication/login', {
         email: email.trim().toLowerCase(),
-        password,
-        rememberMe // Send remember me preference to backend
+        password
       });
 
       // Success handling
-
       
       // Store all token information
       storeTokenInfo(response.data);
-     // Fetch user data using the same pattern as ProfilePage
-let firstName = 'User'; // Default fallback
-try {
-  const userResponse = await axios.get('/Authentication/user');
-  const userData = userResponse.data;
-  
-  // Use the exact same logic as ProfilePage for getting the name
-  firstName = userData.firstname || userData.username || 'User';
-  
-  // Also store the user info in localStorage like ProfilePage does
-  localStorage.setItem('userInfo', JSON.stringify(userData));
-} catch (error) {
-  console.warn('Could not fetch user data for welcome message:', error);
-  
-  // Try to get from stored userInfo as fallback
-  const storedUserInfo = localStorage.getItem('userInfo');
-  if (storedUserInfo) {
-    try {
-      const parsedUser = JSON.parse(storedUserInfo);
-      firstName = parsedUser.firstname || parsedUser.username || 'User';
-    } catch (parseError) {
-      console.warn('Could not parse stored user info:', parseError);
-    }
-  }
-  
-  // Final fallback - use data from login response if available
-  const fallbackData = response.data.user || response.data;
-  if (fallbackData && !firstName !== 'User') {
-    firstName = fallbackData.firstname || fallbackData.username || 'User';
-  }
-}
-
-// Create cool but simple success messages
-const successMessages = [
-  `🔥 Welcome back, ${firstName}!`,
-  `✨ Hey ${firstName}! You're in!`,
-  `🚀 ${firstName} is back!`,
-  `⭐ Welcome ${firstName}!`,
-  `🎯 Ready to go, ${firstName}?`
-];
-
-// Pick a random message for variety
-const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
-
-// Display the enhanced toast with orange styling on the right
-toast.success(randomMessage, {
-  duration: 3000,
-  position: 'top-right',
-  style: {
-    background: `linear-gradient(135deg, ${theme.colors.orange} 0%, ${theme.colors.orangeDark} 100%)`,
-    color: 'white',
-    fontWeight: '600',
-    fontSize: '15px',
-    padding: '12px 20px',
-    borderRadius: '10px',
-    boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3)',
-    border: `2px solid ${theme.colors.orangeLight}`,
-    maxWidth: '280px',
-  },
-  icon: '🎉',
-});
       
-      // Handle remember me
-      handleRememberMe();
+      // Fetch user data using the same pattern as ProfilePage
+      let firstName = 'User'; // Default fallback
+      try {
+        const userResponse = await axios.get('/Authentication/user');
+        const userData = userResponse.data;
+        
+        // Use the exact same logic as ProfilePage for getting the name
+        firstName = userData.firstname || userData.username || 'User';
+        
+        // Also store the user info in localStorage like ProfilePage does
+        localStorage.setItem('userInfo', JSON.stringify(userData));
+      } catch (error) {
+        console.warn('Could not fetch user data for welcome message:', error);
+        
+        // Try to get from stored userInfo as fallback
+        const storedUserInfo = localStorage.getItem('userInfo');
+        if (storedUserInfo) {
+          try {
+            const parsedUser = JSON.parse(storedUserInfo);
+            firstName = parsedUser.firstname || parsedUser.username || 'User';
+          } catch (parseError) {
+            console.warn('Could not parse stored user info:', parseError);
+          }
+        }
+        
+        // Final fallback - use data from login response if available
+        const fallbackData = response.data.user || response.data;
+        if (fallbackData && firstName === 'User') {
+          firstName = fallbackData.firstname || fallbackData.username || 'User';
+        }
+      }
+
+      // Create cool but simple success messages
+      const successMessages = [
+        `🔥 Welcome back, ${firstName}!`,
+        `✨ Hey ${firstName}! You're in!`,
+        `🚀 ${firstName} is back!`,
+        `⭐ Welcome ${firstName}!`,
+        `🎯 Ready to go, ${firstName}?`
+      ];
+
+      // Pick a random message for variety
+      const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
+
+      // Display the enhanced toast with orange styling on the right
+      toast.success(randomMessage, {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: `linear-gradient(135deg, ${theme.colors.orange} 0%, ${theme.colors.orangeDark} 100%)`,
+          color: 'white',
+          fontWeight: '600',
+          fontSize: '15px',
+          padding: '12px 20px',
+          borderRadius: '10px',
+          boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3)',
+          border: `2px solid ${theme.colors.orangeLight}`,
+          maxWidth: '280px',
+        },
+        icon: '🎉',
+      });
       
       // Reset failed attempts
       handleSuccessfulLogin();
@@ -536,7 +506,6 @@ toast.success(randomMessage, {
           <h2 className="text-3xl font-semibold" style={{ color: theme.colors.textDark }}>
             Sign in 
           </h2>
-        
         </div>
 
         {/* Network Status Indicator */}
@@ -625,17 +594,7 @@ toast.success(randomMessage, {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2" style={{ color: theme.colors.textGray }}>
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="accent-orange-500"
-                disabled={isLoading || isBlocked}
-              />
-              Remember me
-            </label>
+          <div className="flex justify-end text-sm">
             <button 
               type="button" 
               className="hover:underline" 
