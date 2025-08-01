@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from '../axiosConfig';
 import { Trash2, Plus, Minus, Loader2, ShoppingCart, ArrowLeft, Package, Truck } from 'lucide-react';
 import theme from '../theme';
@@ -13,6 +13,7 @@ export default function CartPage() {
   const [updateLoading, setUpdateLoading] = useState({});
   const [removingItems, setRemovingItems] = useState(new Set());
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState(new Map());
   const navigate = useNavigate();
 
   // Get basket ID from localStorage or generate one
@@ -58,89 +59,153 @@ export default function CartPage() {
     fetchCart();
   }, []);
 
+  // Debounced API update function
+  const debouncedUpdate = useCallback(
+    debounce(async (updatedBasket) => {
+      try {
+        await axios.post('/basket', updatedBasket);
+        // Clear any pending updates for successfully synced items
+        setPendingUpdates(new Map());
+        setError('');
+      } catch (err) {
+        setError('Could not sync changes. Your changes are saved locally but may not persist.');
+        // Optionally retry logic here
+        console.error('Failed to sync basket:', err);
+      }
+    }, 800), // 800ms delay
+    []
+  );
+
   const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity < 1) {
       await removeItem(itemId);
       return;
     }
 
-    setUpdateLoading(prev => ({ ...prev, [itemId]: true }));
-    
-    try {
-      // Create updated basket data
-      const updatedItems = basketData.items.map(item => 
+    // Optimistic update - update UI immediately
+    setBasketData(prevBasket => {
+      if (!prevBasket) return prevBasket;
+      
+      const updatedItems = prevBasket.items.map(item => 
         item.id === itemId ? { ...item, quantity: newQuantity } : item
       );
 
       const updatedBasket = {
-        ...basketData,
+        ...prevBasket,
         items: updatedItems
       };
 
-      await axios.post('/basket', updatedBasket);
-      await fetchCart();
-    } catch (err) {
-      setError('Could not update quantity. Please try again.');
-    } finally {
+      // Track pending update
+      setPendingUpdates(prev => new Map(prev).set(itemId, newQuantity));
+      
+      // Debounced API call
+      debouncedUpdate(updatedBasket);
+      
+      return updatedBasket;
+    });
+
+    // Show loading state briefly for user feedback
+    setUpdateLoading(prev => ({ ...prev, [itemId]: true }));
+    setTimeout(() => {
       setUpdateLoading(prev => ({ ...prev, [itemId]: false }));
-    }
+    }, 300);
   };
 
   const removeItem = async (itemId) => {
+    // Optimistic update - remove from UI immediately
     setRemovingItems(prev => new Set(prev).add(itemId));
     setUpdateLoading(prev => ({ ...prev, [itemId]: true }));
     
-    try {
-      const updatedItems = basketData.items.filter(item => item.id !== itemId);
+    // Update basket data immediately
+    setBasketData(prevBasket => {
+      if (!prevBasket) return prevBasket;
+      
+      const updatedItems = prevBasket.items.filter(item => item.id !== itemId);
       
       const updatedBasket = {
-        ...basketData,
+        ...prevBasket,
         items: updatedItems
       };
 
-      await axios.post('/basket', updatedBasket);
-      
-      // Add delay for smooth animation
+      // Make API call in background
       setTimeout(async () => {
-        await fetchCart();
-        setRemovingItems(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(itemId);
-          return newSet;
-        });
-      }, 300);
-    } catch (err) {
-      setError('Could not remove item. Please try again.');
+        try {
+          await axios.post('/basket', updatedBasket);
+          setError('');
+        } catch (err) {
+          setError('Could not remove item from server. It may reappear on refresh.');
+          console.error('Failed to remove item:', err);
+        }
+      }, 0);
+
+      return updatedBasket;
+    });
+    
+    // Animation delay
+    setTimeout(() => {
       setRemovingItems(prev => {
         const newSet = new Set(prev);
         newSet.delete(itemId);
         return newSet;
       });
-    } finally {
       setUpdateLoading(prev => ({ ...prev, [itemId]: false }));
-    }
+    }, 300);
   };
 
   const clearCart = async () => {
     try {
-      await axios.delete(`/basket/${basketData.id}`);
-      await fetchCart();
+      // Optimistic update
+      setBasketData(prev => ({
+        ...prev,
+        items: []
+      }));
       setShowClearConfirm(false);
+      
+      // API call in background
+      await axios.delete(`/basket/${basketData.id}`);
+      setError('');
     } catch (err) {
-      setError('Could not clear cart. Please try again.');
+      setError('Could not clear cart on server. Items may reappear on refresh.');
+      // Optionally revert the optimistic update here
     }
   };
 
-  // Calculate totals
-  let subtotal = 0;
-  let shippingPrice = 0;
-  let total = 0;
+  // Batch quantity updates for better performance
+  const batchUpdateQuantity = useCallback((updates) => {
+    setBasketData(prevBasket => {
+      if (!prevBasket) return prevBasket;
+      
+      const updatedItems = prevBasket.items.map(item => {
+        const newQuantity = updates.get(item.id);
+        return newQuantity !== undefined ? { ...item, quantity: newQuantity } : item;
+      });
 
-  if (basketData && Array.isArray(basketData.items)) {
-    subtotal = basketData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    shippingPrice = basketData.shippingPrice || 0;
-    total = subtotal + shippingPrice;
-  }
+      const updatedBasket = {
+        ...prevBasket,
+        items: updatedItems.filter(item => item.quantity > 0)
+      };
+
+      // Debounced API call
+      debouncedUpdate(updatedBasket);
+      
+      return updatedBasket;
+    });
+  }, [debouncedUpdate]);
+
+  // Calculate totals - memoized for performance
+  const { subtotal, shippingPrice, total } = React.useMemo(() => {
+    let subtotal = 0;
+    let shippingPrice = 0;
+    let total = 0;
+
+    if (basketData && Array.isArray(basketData.items)) {
+      subtotal = basketData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      shippingPrice = basketData.shippingPrice || 0;
+      total = subtotal + shippingPrice;
+    }
+
+    return { subtotal, shippingPrice, total };
+  }, [basketData]);
 
   if (loading) {
     return (
@@ -178,6 +243,9 @@ export default function CartPage() {
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-600 mt-1 truncate">
                   {basketData?.items?.length || 0} {basketData?.items?.length === 1 ? 'item' : 'items'} in your cart
+                  {pendingUpdates.size > 0 && (
+                    <span className="ml-2 text-orange-500 animate-pulse">• Syncing...</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -302,6 +370,12 @@ export default function CartPage() {
                                 ${item.price.toFixed(2)}
                               </span>
                               <span className="text-gray-500 text-xs sm:text-sm">per item</span>
+                              {pendingUpdates.has(item.id) && (
+                                <div className="flex items-center text-orange-500 text-xs">
+                                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                  <span>Syncing...</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -412,4 +486,17 @@ export default function CartPage() {
       <Footer />
     </div>
   );
+}
+
+// Utility function for debouncing
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
