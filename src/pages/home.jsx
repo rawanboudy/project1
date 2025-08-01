@@ -225,13 +225,7 @@ const RestaurantHomepage = () => {
 
         <div className="relative z-10 h-full flex items-center justify-center text-center">
           <div className="max-w-4xl mx-auto px-6">
-            <div className="mb-6 opacity-0 animate-fadeInUp" 
-                 style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
-              <span className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white/90"
-                    style={{ backgroundColor: `${theme.colors.orange}40` }}>
-                ✨ Award Winning Restaurant
-              </span>
-            </div>
+            
             
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 opacity-0 animate-fadeInUp"
                 style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
@@ -259,15 +253,7 @@ const RestaurantHomepage = () => {
                 </span>
               </button>
               
-              <button 
-                className="group px-8 py-4 rounded-full font-bold text-white border-2 border-white/30 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
-                onClick={() => setIsVideoPlaying(!isVideoPlaying)}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  {isVideoPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  Watch Story
-                </span>
-              </button>
+           
             </div>
           </div>
         </div>
@@ -329,12 +315,7 @@ const RestaurantHomepage = () => {
                 ))}
               </div>
 
-              <button className="group px-8 py-4 rounded-full font-bold text-white border-2 border-white/30 backdrop-blur-sm hover:bg-white/10 transition-all duration-300">
-                <span className="flex items-center gap-2">
-                  Book Experience
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
+           
             </div>
           </div>
         </div>

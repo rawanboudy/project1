@@ -34,7 +34,7 @@ export default function SignatureDishes() {
           position: relative;
         }
 
-        /* Floating circles */
+        /* Floating circles - Responsive */
         .shape-circle {
           position: absolute;
           border-radius: 50%;
@@ -43,63 +43,121 @@ export default function SignatureDishes() {
         }
 
         .shape-circle.small { 
-          width: 120px; /* Increased size */
-          height: 120px; 
+          width: 80px;
+          height: 80px;
           top: 5%; 
-          left: 75%; 
+          left: 70%; 
         }
         .shape-circle.large { 
-          width: 250px; /* Increased size */
-          height: 250px; 
+          width: 150px;
+          height: 150px;
           bottom: 5%; 
-          right: -40px; /* Adjusted for better visibility */
+          right: -20px;
+        }
+
+        /* Responsive floating circles */
+        @media (min-width: 640px) {
+          .shape-circle.small { 
+            width: 120px;
+            height: 120px; 
+            left: 75%; 
+          }
+          .shape-circle.large { 
+            width: 250px;
+            height: 250px;
+            right: -40px;
+          }
         }
 
         .section-header {
           text-align: center;
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
           animation: fadeInUp 0.8s ease-out both;
+          padding: 0 1rem;
         }
 
         .section-title {
-          font-size: 2.5rem;
+          font-size: 1.75rem;
           font-weight: 900;
           background: linear-gradient(135deg, #1f2937, #fb8c00);
           -webkit-background-clip: text;
           color: transparent;
         }
 
+        /* Responsive title sizes */
+        @media (min-width: 640px) {
+          .section-title {
+            font-size: 2.5rem;
+          }
+        }
+
         .section-subtitle {
           color: #6b7280;
           margin-top: 0.25rem;
-          font-size: 1rem;
+          font-size: 0.875rem;
+        }
+
+        @media (min-width: 640px) {
+          .section-subtitle {
+            font-size: 1rem;
+          }
         }
 
         .dishes-container {
           display: flex;
-          gap: 1.5rem;
-          flex-wrap: wrap;
+          gap: 1rem;
+          flex-direction: column;
+          align-items: center;
           justify-content: center;
-          max-width: 800px; /* Reduced width for smaller white area */
+          max-width: 95%;
           margin: 0 auto;
-          padding-top: 2rem; /* Added padding to avoid overlap */
+          padding: 1rem;
+          background: transparent;
+        }
+
+        /* Responsive container layout */
+        @media (min-width: 768px) {
+          .dishes-container {
+            flex-direction: row;
+            gap: 1.5rem;
+            max-width: 800px;
+            padding-top: 2rem;
+          }
         }
 
         .curved-path-container {
           position: relative;
-          width: 350px; /* Reduced size to fit better in the smaller white area */
-          height: 350px; /* Reduced size to fit better in the smaller white area */
+          width: 280px;
+          height: 280px;
           flex-shrink: 0;
           margin-bottom: 1rem;
-          margin-left: 10px; /* Adjusted margin */
-          overflow: visible; /* Ensure circle is fully visible */
+          overflow: visible;/* Keep dish within bounds */
+          background: transparent;
         }
 
-        .curved-path-svg {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
+        /* Responsive curve container */
+        @media (min-width: 640px) {
+          .curved-path-container {
+            width: 320px;
+            height: 320px;
+          }
         }
+
+        @media (min-width: 768px) {
+          .curved-path-container {
+            width: 350px;
+            height: 350px;
+            margin-left: 10px;
+            margin-bottom: 1rem;
+          }
+        }
+
+       .curved-path-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 1; /* lower than dish image */
+}
+
 
         .path-glow {
           fill: none;
@@ -109,14 +167,39 @@ export default function SignatureDishes() {
           filter: blur(5px);
         }
 
-        .dish-animator { position: relative; z-index: 2; }
+        .dish-animator { 
+          position: relative; 
+          z-index: 3; 
+          width: 100%;
+          height: 100%;
+          background: transparent;
+        }
+
         .animated-dish {
-          width: 160px;
-          height: 160px;
+          z-index: 4;
+          width: 120px;
+          height: 120px;
           position: absolute;
-          offset-path: circle(160px at 175px 175px);
+          offset-path: circle(120px at 140px 140px);
           offset-rotate: auto;
           animation: dishFlowComplete 7s ease-in-out forwards;
+        }
+
+        /* Responsive dish sizes and paths */
+        @media (min-width: 640px) {
+          .animated-dish {
+            width: 140px;
+            height: 140px;
+            offset-path: circle(140px at 160px 160px);
+          }
+        }
+
+        @media (min-width: 768px) {
+          .animated-dish {
+            width: 160px;
+            height: 160px;
+            offset-path: circle(160px at 175px 175px);
+          }
         }
 
         .dish-image {
@@ -135,12 +218,22 @@ export default function SignatureDishes() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          padding-left: 3rem;
-          align-items: flex-start;
+          align-items: center;
+          text-align: center;
+          padding: 0 1rem;
+        }
+
+        /* Responsive name display */
+        @media (min-width: 768px) {
+          .dish-name-display {
+            padding-left: 3rem;
+            align-items: flex-start;
+            text-align: left;
+          }
         }
 
         .display-name {
-          font-size: 2rem;
+          font-size: 1.5rem;
           font-weight: 800;
           margin: 0;
           background: linear-gradient(135deg, #fb8c00, #f57c00);
@@ -152,14 +245,27 @@ export default function SignatureDishes() {
                      namePulse 1.5s ease-in-out 1s infinite alternate;
         }
 
+        /* Responsive name size */
+        @media (min-width: 640px) {
+          .display-name {
+            font-size: 1.75rem;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .display-name {
+            font-size: 2rem;
+          }
+        }
+
         .explore-btn {
           margin-top: 1.5rem;
-          padding: 0.875rem 2rem;
+          padding: 0.75rem 1.5rem;
           background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
           color: white;
           border: none;
           border-radius: 50px;
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-weight: 600;
           cursor: pointer;
           display: inline-flex;
@@ -174,6 +280,14 @@ export default function SignatureDishes() {
           transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           text-transform: uppercase;
           letter-spacing: 0.5px;
+        }
+
+        /* Responsive button size */
+        @media (min-width: 640px) {
+          .explore-btn {
+            padding: 0.875rem 2rem;
+            font-size: 1rem;
+          }
         }
 
         .explore-btn::before {
@@ -193,6 +307,14 @@ export default function SignatureDishes() {
           box-shadow: 0 12px 35px rgba(251, 140, 0, 0.4), 
                       0 6px 15px rgba(0, 0, 0, 0.15);
         }
+                      .curved-path-wrapper {
+  width: 350px;
+  height: 350px;
+  overflow: visible;
+  flex-shrink: 0;
+  position: relative;
+}
+
 
         .explore-btn:hover::before {
           left: 100%;
@@ -205,8 +327,21 @@ export default function SignatureDishes() {
 
         .dish-indicators {
           display: flex;
-          gap: 0.75rem;
+          gap: 0.5rem;
           margin-top: 1rem;
+          justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+          .dish-indicators {
+            gap: 0.75rem;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .dish-indicators {
+            justify-content: flex-start;
+          }
         }
 
         .indicator {
@@ -250,6 +385,21 @@ export default function SignatureDishes() {
         @keyframes namePulse {
           to { transform: translateX(0) scale(1.03); }
         }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 767px) {
+          .animated-dish {
+            /* Ensure dish stays within mobile container bounds */
+            top: 10px;
+            left: 10px;
+          }
+          
+          .curved-path-container {
+            /* Add padding to prevent dish from going outside */
+            padding: 20px;
+            box-sizing: border-box;
+          }
+        }
       `}</style>
 
       {/* floating shapes */}
@@ -264,6 +414,7 @@ export default function SignatureDishes() {
 
       <div className="dishes-container">
         {/* left: track + dish */}
+        <div className="curved-path-wrapper">
         <div className="curved-path-container">
           <svg className="curved-path-svg" viewBox="0 0 500 500">
             <circle className="path-glow" cx="250" cy="250" r="200" />
@@ -273,6 +424,7 @@ export default function SignatureDishes() {
               <img src={currentDish.pictureUrl} className="dish-image" alt={currentDish.name} />
             </div>
           </div>
+        </div>
         </div>
 
         {/* right: name, dots & CTA */}

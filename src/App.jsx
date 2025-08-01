@@ -13,6 +13,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute
 import OrderHistoryPage from './pages/OrderHistory';
 import OrderSuccess from './pages/OrderSuccess';
+import OrderTracking from './pages/orderTracking';
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
         <Route path="/checkout" element={<PrivateRoute element={<CheckoutPage />} />} />
            <Route path="/profile/history" element={<PrivateRoute element={<OrderHistoryPage />} />} />
            <Route path="/order-success" element={<PrivateRoute element={<OrderSuccess />} />} />
+           <Route path="/profile/order/:id" element={<PrivateRoute element={<OrderTracking />} />} />
+
       </Routes>
     </Router>
   );

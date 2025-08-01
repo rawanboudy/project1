@@ -395,7 +395,8 @@ export default function CartPage() {
                     <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-700 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                     <span className="relative flex items-center justify-center">
                       <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                      <span className="hidden sm:inline">Proceed to </span>Checkout
+                      <span className="hidden sm:inline mr-2">Proceed to</span>
+                      Checkout
                       <div className="ml-2 transform group-hover:translate-x-1 transition-transform duration-200">
                         →
                       </div>

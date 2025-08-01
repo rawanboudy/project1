@@ -347,85 +347,205 @@ export default function MenuPage() {
     }
   };
 
-  // Filter component for both desktop and mobile
-  const FilterSection = ({ className = "", onClose = null }) => (
-    <div className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 ${className}`}>
-      {onClose && (
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Filters</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-      {!onClose && <h2 className="text-xl font-semibold mb-4">Filters</h2>}
+  // Enhanced Filter Section - FIXED VERSION
+  const FilterSection = ({ className = "", onClose = null }) => {
+    // Local state for mobile filters to prevent immediate updates
+    const [localSearch, setLocalSearch] = useState('');
+    const [localBrandFilter, setLocalBrandFilter] = useState('');
+    const [localTypeFilter, setLocalTypeFilter] = useState('');
+    const [localSort, setLocalSort] = useState('');
+
+    // Initialize local state only once when component mounts
+    useEffect(() => {
+      if (onClose) { // Mobile mode - initialize with current values
+        setLocalSearch(search);
+        setLocalBrandFilter(brandFilter);
+        setLocalTypeFilter(typeFilter);
+        setLocalSort(sort);
+      }
+    }, [onClose]); // Removed dependencies that were causing re-renders
+
+    // Apply filters function for mobile
+    const applyFilters = () => {
+      setSearch(localSearch);
+      setBrandFilter(localBrandFilter);
+      setTypeFilter(localTypeFilter);
+      setSort(localSort);
+      setPageIndex(1);
+      if (onClose) onClose();
+    };
+
+    // Clear all filters
+    const clearFilters = () => {
+      const newValues = { search: '', brand: '', type: '', sort: '' };
       
-      <div className="space-y-4">
-        {/* Search */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Search</label>
-          <input
-            type="text"
-            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
-            placeholder="Search dishes..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPageIndex(1); }}
-          />
-        </div>
+      setLocalSearch(newValues.search);
+      setLocalBrandFilter(newValues.brand);
+      setLocalTypeFilter(newValues.type);
+      setLocalSort(newValues.sort);
+      
+      if (!onClose) { // Desktop mode - apply immediately
+        setSearch(newValues.search);
+        setBrandFilter(newValues.brand);
+        setTypeFilter(newValues.type);
+        setSort(newValues.sort);
+        setPageIndex(1);
+      }
+    };
+
+    // Handle input changes for desktop (immediate) vs mobile (local)
+    const handleSearchChange = (value) => {
+      if (onClose) { // Mobile mode
+        setLocalSearch(value);
+      } else { // Desktop mode - apply immediately
+        setSearch(value);
+        setPageIndex(1);
+      }
+    };
+
+    const handleBrandChange = (value) => {
+      if (onClose) { // Mobile mode
+        setLocalBrandFilter(value);
+      } else { // Desktop mode - apply immediately
+        setBrandFilter(value);
+        setPageIndex(1);
+      }
+    };
+
+    const handleTypeChange = (value) => {
+      if (onClose) { // Mobile mode
+        setLocalTypeFilter(value);
+      } else { // Desktop mode - apply immediately
+        setTypeFilter(value);
+        setPageIndex(1);
+      }
+    };
+
+    const handleSortChange = (value) => {
+      if (onClose) { // Mobile mode
+        setLocalSort(value);
+      } else { // Desktop mode - apply immediately
+        setSort(value);
+        setPageIndex(1);
+      }
+    };
+
+    // Use appropriate values based on mode
+    const currentSearch = onClose ? localSearch : search;
+    const currentBrand = onClose ? localBrandFilter : brandFilter;
+    const currentType = onClose ? localTypeFilter : typeFilter;
+    const currentSort = onClose ? localSort : sort;
+
+    return (
+      <div className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 ${className}`}>
+        {onClose && (
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Filters</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+        {!onClose && <h2 className="text-xl font-semibold mb-4">Filters</h2>}
         
-        {/* Brand */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Brand</label>
-          <select
-            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
-            value={brandFilter}
-            onChange={e => { setBrandFilter(e.target.value); setPageIndex(1); }}
-          >
-            {brands.map(b => (
-              <option key={b} value={b}>
-                {b || 'All Brands'}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Type */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Type</label>
-          <select
-            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
-            value={typeFilter}
-            onChange={e => { setTypeFilter(e.target.value); setPageIndex(1); }}
-          >
-            {types.map(t => (
-              <option key={t} value={t}>
-                {t || 'All Types'}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Sort */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Sort By</label>
-          <select
-            className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
-            value={sort}
-            onChange={e => { setSort(e.target.value); setPageIndex(1); }}
-          >
-            {SORT_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-4">
+          {/* Search */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Search</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              placeholder="Search dishes..."
+              value={currentSearch}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+          </div>
+          
+          {/* Brand */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Brand</label>
+            <select
+              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              value={currentBrand}
+              onChange={(e) => handleBrandChange(e.target.value)}
+            >
+              {brands.map(b => (
+                <option key={b} value={b}>
+                  {b || 'All Brands'}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Type */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Type</label>
+            <select
+              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              value={currentType}
+              onChange={(e) => handleTypeChange(e.target.value)}
+            >
+              {types.map(t => (
+                <option key={t} value={t}>
+                  {t || 'All Types'}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Sort */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Sort By</label>
+            <select
+              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              value={currentSort}
+              onChange={(e) => handleSortChange(e.target.value)}
+            >
+              {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mobile Action Buttons */}
+          {onClose && (
+            <div className="flex flex-col space-y-2 pt-4 border-t">
+              <div className="flex space-x-2">
+                <button
+                  onClick={applyFilters}
+                  className="flex-1 bg-gradient-to-r from-orange-400 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all duration-200 flex items-center justify-center"
+                >
+                  Apply Filters
+                </button>
+                <button
+                  onClick={clearFilters}
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              {/* Results count indicator */}
+              <div className="text-center text-sm text-gray-600 pt-2">
+                {(() => {
+                  let tempFiltered = allProducts;
+                  if (localBrandFilter) tempFiltered = tempFiltered.filter(p => p.brandName === localBrandFilter);
+                  if (localTypeFilter) tempFiltered = tempFiltered.filter(p => p.typeName === localTypeFilter);
+                  if (localSearch) tempFiltered = tempFiltered.filter(p => p.name.toLowerCase().includes(localSearch.toLowerCase()));
+                  return `${tempFiltered.length} ${tempFiltered.length === 1 ? 'result' : 'results'} found`;
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">
