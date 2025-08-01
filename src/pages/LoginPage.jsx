@@ -290,10 +290,71 @@ const LoginPage = () => {
       });
 
       // Success handling
-      toast.success('Login successful. Redirecting...');
+
       
       // Store all token information
       storeTokenInfo(response.data);
+     // Fetch user data using the same pattern as ProfilePage
+let firstName = 'User'; // Default fallback
+try {
+  const userResponse = await axios.get('/Authentication/user');
+  const userData = userResponse.data;
+  
+  // Use the exact same logic as ProfilePage for getting the name
+  firstName = userData.firstname || userData.username || 'User';
+  
+  // Also store the user info in localStorage like ProfilePage does
+  localStorage.setItem('userInfo', JSON.stringify(userData));
+} catch (error) {
+  console.warn('Could not fetch user data for welcome message:', error);
+  
+  // Try to get from stored userInfo as fallback
+  const storedUserInfo = localStorage.getItem('userInfo');
+  if (storedUserInfo) {
+    try {
+      const parsedUser = JSON.parse(storedUserInfo);
+      firstName = parsedUser.firstname || parsedUser.username || 'User';
+    } catch (parseError) {
+      console.warn('Could not parse stored user info:', parseError);
+    }
+  }
+  
+  // Final fallback - use data from login response if available
+  const fallbackData = response.data.user || response.data;
+  if (fallbackData && !firstName !== 'User') {
+    firstName = fallbackData.firstname || fallbackData.username || 'User';
+  }
+}
+
+// Create cool but simple success messages
+const successMessages = [
+  `🔥 Welcome back, ${firstName}!`,
+  `✨ Hey ${firstName}! You're in!`,
+  `🚀 ${firstName} is back!`,
+  `⭐ Welcome ${firstName}!`,
+  `🎯 Ready to go, ${firstName}?`
+];
+
+// Pick a random message for variety
+const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
+
+// Display the enhanced toast with orange styling on the right
+toast.success(randomMessage, {
+  duration: 3000,
+  position: 'top-right',
+  style: {
+    background: `linear-gradient(135deg, ${theme.colors.orange} 0%, ${theme.colors.orangeDark} 100%)`,
+    color: 'white',
+    fontWeight: '600',
+    fontSize: '15px',
+    padding: '12px 20px',
+    borderRadius: '10px',
+    boxShadow: '0 8px 20px rgba(251, 146, 60, 0.3)',
+    border: `2px solid ${theme.colors.orangeLight}`,
+    maxWidth: '280px',
+  },
+  icon: '🎉',
+});
       
       // Handle remember me
       handleRememberMe();
