@@ -9,8 +9,13 @@ const OrderSuccess = () => {
   const navigate = useNavigate();   
   const { state } = useLocation();   
   const order = state?.orderDetails;    
-  
+    
   const [userData, setUserData] = useState({}); 
+  
+  // <-- scroll to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
   
   useEffect(() => {   
     const fetchUserData = async () => {     
@@ -21,14 +26,12 @@ const OrderSuccess = () => {
         try {         
           const addressResponse = await axios.get('/Authentication/address');         
           userData.address = addressResponse.data;       
-        } catch (addressErr) {         
-          console.log('No address found or error fetching address:', addressErr);         
+        } catch {         
           userData.address = null;       
         }        
         
         setUserData(userData);     
-      } catch (err) {       
-        console.error('Failed to fetch user data:', err);       
+      } catch {       
         setUserData({});     
       }   
     };    
@@ -58,9 +61,6 @@ const OrderSuccess = () => {
             Order Summary           
           </h2>           
           <p className="text-sm text-gray-700 mb-2">             
-            <strong>Order ID:</strong> {order?.id || 'N/A'}           
-          </p>           
-          <p className="text-sm text-gray-700 mb-2">             
             <strong>Name:</strong> {userData.firstname} {userData.lastname}           
           </p>         
           <p className="text-sm text-gray-700 mb-2">   
@@ -81,14 +81,8 @@ const OrderSuccess = () => {
           </button>           
           <button             
             onClick={() => {
-              // Navigate to order tracking page with the order ID
-              if (order?.id) {
-                navigate(`/profile/order/${order.id}`);
-
-              } else {
-                // Fallback to general orders page if no order ID
-                navigate('/profile/order');
-              }
+              if (order?.id) navigate(`/profile/order/${order.id}`);
+              else          navigate('/profile/order');
             }}             
             className="py-3 px-6 border-2 border-orange-500 text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition-all duration-300 flex items-center gap-2"           
           >             
@@ -97,7 +91,7 @@ const OrderSuccess = () => {
           </button>         
         </div>       
       </div>        
-      
+        
       <style>         
         {`           
           @keyframes fadeIn {             

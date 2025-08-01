@@ -35,6 +35,9 @@ export default function MenuPage() {
   const [pageIndex,   setPageIndex]   = useState(1);
   const [quantities,  setQuantities]  = useState({});
   const pageSize = 12; // Increased for better grid layout
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}, []);
 
   // Fetch products and user favorites on mount
   useEffect(() => {

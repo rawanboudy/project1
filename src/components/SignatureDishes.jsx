@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { Link } from 'react-router-dom';
 export default function SignatureDishes() {
   const featuredDishes = [
     { id: 1, name: "Grilled Salmon", description: "Fresh Atlantic salmon with herbs and lemon", pictureUrl: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop" },
@@ -444,9 +444,9 @@ export default function SignatureDishes() {
               />
             ))}
           </div>
-          <button className="explore-btn">
-            Explore More Items
-          </button>
+        <Link to="/menu" className="explore-btn">
+  Explore More Items
+</Link>
         </div>
       </div>
     </div>
