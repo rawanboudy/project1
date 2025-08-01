@@ -83,7 +83,7 @@ useEffect(() => {
             Continue Shopping
           </button>
           <button
-            onClick={() => navigate('/profile/orders')}
+            onClick={() => navigate('/profile/history')}
             className="py-3 px-6 border-2 border-orange-500 text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition-all duration-300 flex items-center gap-2"
           >
             View Orders

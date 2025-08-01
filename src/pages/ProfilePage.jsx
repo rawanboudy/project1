@@ -195,44 +195,8 @@ export default function ProfilePage() {
       
       <div className="max-w-7xl mx-auto px-4 py-6 mt-16">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar */}
-          <div className="lg:w-64 w-full">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Account</h2>
-              <nav className="space-y-2">
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg bg-orange-50 text-orange-700 border border-orange-200"
-                  onClick={() => navigate('/profile')}
-                >
-                  <User className="w-4 h-4" />
-                  Profile
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                  onClick={() => navigate('/profile/favorites')}
-                >
-                  <Heart className="w-4 h-4" />
-                  Favorites
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                  onClick={() => navigate('/profile/history')}
-                >
-                  <Building className="w-4 h-4" />
-                  History
-                </button>
-                <hr className="my-4 border-gray-200" />
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </nav>
-            </div>
-          </div>
-
+         
+          
           {/* Main Content */}
           <div className="flex-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">

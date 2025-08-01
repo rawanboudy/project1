@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChefHat, User, LogOut, UserCircle, Clock, Menu, X, ShoppingCart, Home, BookOpen, Phone } from 'lucide-react';
+import { ChefHat, User, LogOut, UserCircle, Clock, Menu, X, ShoppingCart, Home, BookOpen, Phone, History, Heart } from 'lucide-react';
 import theme from '../theme';
 import toast from 'react-hot-toast';
 import elephantLogo from '../assets/elephant-logo.svg';
@@ -196,6 +196,16 @@ const Navbar = ({ scrollY }) => {
     navigate('/profile');
   };
 
+  const handleHistory = () => {
+    setIsDropdownOpen(false);
+    navigate('/profile/history');
+  };
+
+  const handleFavourites = () => {
+    setIsDropdownOpen(false);
+    navigate('/profile/favorites');
+  };
+
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -307,6 +317,24 @@ const Navbar = ({ scrollY }) => {
                       >
                         <UserCircle className="w-5 h-5" />
                         <span className="text-sm font-medium">View Profile</span>
+                      </button>
+                      
+                      <button 
+                        onClick={handleHistory} 
+                        className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200" 
+                        style={{ color: theme.colors.textDark }}
+                      >
+                        <History className="w-5 h-5" />
+                        <span className="text-sm font-medium">History</span>
+                      </button>
+                      
+                      <button 
+                        onClick={handleFavourites} 
+                        className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors duration-200" 
+                        style={{ color: theme.colors.textDark }}
+                      >
+                        <Heart className="w-5 h-5" />
+                        <span className="text-sm font-medium">Favourites</span>
                       </button>
                       
                       <button 
