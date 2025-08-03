@@ -40,6 +40,25 @@ const CheckoutPage = () => {
     return basketId;
   };
 
+  // Helper function to convert delivery time to sequential hours (1st = 1 hour, 2nd = 2 hours, etc.)
+  const formatDeliveryTimeToHours = (deliveryTime, methodId) => {
+    if (!deliveryTime) return 'Contact for details';
+    
+    // Find the index of this delivery method in the array
+    const methodIndex = deliveryMethods.findIndex(method => method.id === methodId);
+    
+    // If method found, use index + 1 as hours, otherwise fallback to simple replacement
+    if (methodIndex !== -1) {
+      const hours = methodIndex + 1;
+      return `${hours} hour${hours > 1 ? 's' : ''}`;
+    }
+    
+    // Fallback to simple replacement if method not found
+    return deliveryTime
+      .replace(/days/gi, 'hours')
+      .replace(/day/gi, 'hour');
+  };
+
   // Load basket data and user info
   useEffect(() => {
     const userInfo = localStorage.getItem('userInfo');
@@ -518,7 +537,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
             <Truck className="w-4 h-4 text-orange-600 flex-shrink-0" />
             <span className="font-semibold text-orange-900 text-sm">{selectedDeliveryMethod.shortName}</span>
           </div>
-          <p className="text-xs text-orange-700">{selectedDeliveryMethod.deliveryTime}</p>
+          <p className="text-xs text-orange-700">{formatDeliveryTimeToHours(selectedDeliveryMethod.deliveryTime, selectedDeliveryMethod.id)}</p>
         </div>
       )}
 
@@ -532,7 +551,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Delivery:</span>
             <span className="font-semibold">
-              {shippingPrice === 0 ? 'Free' : `$${shippingPrice.toFixed(2)}`}
+              {shippingPrice === 0 ? 'Free' : `${shippingPrice.toFixed(2)}`}
             </span>
           </div>
         )}
@@ -931,7 +950,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                     <p className="text-gray-600 mb-2 text-sm">{method.description}</p>
                     <div className="flex items-center gap-2">
                       <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                      <p className="text-xs text-gray-500">{method.deliveryTime}</p>
+                      <p className="text-xs text-gray-500">{formatDeliveryTimeToHours(method.deliveryTime, method.id)}</p>
                     </div>
                   </div>
                   <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">
@@ -1044,7 +1063,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
                   <p className="text-xs text-gray-600">{selectedDeliveryMethod.description}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                    <p className="text-xs text-gray-500">{selectedDeliveryMethod.deliveryTime}</p>
+                    <p className="text-xs text-gray-500">{formatDeliveryTimeToHours(selectedDeliveryMethod.deliveryTime, selectedDeliveryMethod.id)}</p>
                   </div>
                 </div>
                 <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">

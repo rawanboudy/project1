@@ -665,12 +665,7 @@ useEffect(() => {
                         <span className="text-lg sm:text-xl font-extrabold" style={{ color: theme.colors.orange }}>
                           ${(item.price || 0).toFixed(2)}
                         </span>
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-current" />
-                          <span className="text-xs sm:text-sm font-medium">
-                            {item.rating?.toFixed(1) || '–'}
-                          </span>
-                        </div>
+                     
                       </div>
 
                       {/* Quantity Controls - Responsive sizing */}

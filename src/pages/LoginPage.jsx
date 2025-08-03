@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../axiosConfig';
 import theme from '../theme';
-import toast from 'react-hot-toast';
 import {
   Eye, EyeOff, Mail, Lock, AlertCircle, Loader2, Wifi, WifiOff, Shield, AlertTriangle
 } from 'lucide-react';
@@ -43,7 +42,6 @@ const LoginPage = () => {
           if (response.data) {
             // Token is valid, store user info and redirect
             localStorage.setItem('userInfo', JSON.stringify(response.data));
-            toast.success('Welcome back! Logging you in automatically.');
             navigate('/');
             return;
           }
@@ -151,11 +149,9 @@ const LoginPage = () => {
       errors.email = ['Please enter a valid email address'];
     }
 
-    // Password validation
+    // Password validation - only check if password exists
     if (!password) {
       errors.password = ['Password is required'];
-    } else if (password.length < 6) {
-      errors.password = ['Password must be at least 6 characters'];
     }
 
     return errors;
@@ -231,14 +227,12 @@ const LoginPage = () => {
   const handleLogin = async () => {
     // Check if user is blocked
     if (isBlocked) {
-      toast.error(`Please wait ${Math.ceil(blockTimeRemaining / 60)} minutes before trying again.`);
       return;
     }
 
     // Check network connectivity
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
-      toast.error('No internet connection. Please check your network.');
       return;
     }
 
@@ -252,7 +246,6 @@ const LoginPage = () => {
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
       setIsLoading(false);
-      toast.error('Please fix the highlighted errors.');
       return;
     }
 
@@ -298,24 +291,6 @@ const LoginPage = () => {
           firstName = fallbackData.firstname || fallbackData.username || 'User';
         }
       }
-
-      // Create cool but simple success messages
-      const successMessages = [
-        `🔥 Welcome back, ${firstName}!`,
-        `✨ Hey ${firstName}! You're in!`,
-        `🚀 ${firstName} is back!`,
-        `⭐ Welcome ${firstName}!`,
-        `🎯 Ready to go, ${firstName}?`
-      ];
-
-      // Pick a random message for variety
-      const randomMessage = successMessages[Math.floor(Math.random() * successMessages.length)];
-
-      // Display the enhanced toast with orange styling on the right
-      toast.success(randomMessage, {
-  
-        icon: '🎉',
-      });
       
       // Reset failed attempts
       handleSuccessfulLogin();
@@ -334,90 +309,74 @@ const LoginPage = () => {
             // Bad Request - Validation errors
             if (data.errors) {
               setFieldErrors(data.errors);
-              toast.error('Please fix the highlighted errors.');
             } else if (data.message) {
               setGeneralError(data.message);
-              toast.error(data.message);
             } else {
               setGeneralError('Invalid request. Please check your input.');
-              toast.error('Invalid request. Please check your input.');
             }
             break;
 
           case 401:
             // Unauthorized - Invalid credentials
             setGeneralError(data.message || 'Invalid email or password.');
-            toast.error(data.message || 'Invalid email or password.');
             handleFailedLogin();
             break;
 
           case 403:
             // Forbidden - Account locked, suspended, etc.
             setGeneralError(data.message || 'Account access denied. Please contact support.');
-            toast.error(data.message || 'Account access denied. Please contact support.');
             break;
 
           case 404:
             // Not Found - Account doesn't exist
             setGeneralError('Account not found. Please check your email or create a new account.');
-            toast.error('Account not found. Please check your email or create a new account.');
             break;
 
           case 409:
             // Conflict - Account needs verification, etc.
             setGeneralError(data.message || 'Account verification required. Please check your email.');
-            toast.error(data.message || 'Account verification required. Please check your email.');
             break;
 
           case 422:
             // Unprocessable Entity - Validation errors
             if (data.errors) {
               setFieldErrors(data.errors);
-              toast.error('Please fix the highlighted errors.');
             } else {
               setGeneralError(data.message || 'Invalid data provided.');
-              toast.error(data.message || 'Invalid data provided.');
             }
             break;
 
           case 429:
             // Too Many Requests - Rate limiting
             setGeneralError(data.message || 'Too many requests. Please try again later.');
-            toast.error(data.message || 'Too many requests. Please try again later.');
             break;
 
           case 500:
             // Internal Server Error
             setGeneralError('Server error. Please try again later.');
-            toast.error('Server error. Please try again later.');
             break;
 
           case 502:
             // Bad Gateway
             setGeneralError('Service temporarily unavailable. Please try again later.');
-            toast.error('Service temporarily unavailable. Please try again later.');
             break;
 
           case 503:
             // Service Unavailable
             setGeneralError('Service is under maintenance. Please try again later.');
-            toast.error('Service is under maintenance. Please try again later.');
             break;
 
           case 504:
             // Gateway Timeout
             setGeneralError('Request timeout. Please try again.');
-            toast.error('Request timeout. Please try again.');
             break;
 
           default:
             // Any other HTTP error
             if (data?.message) {
               setGeneralError(data.message);
-              toast.error(data.message);
             } else {
               setGeneralError(`Unexpected error (${status}). Please try again.`);
-              toast.error(`Unexpected error (${status}). Please try again.`);
             }
             break;
         }
@@ -426,18 +385,14 @@ const LoginPage = () => {
         // Network error - request was made but no response received
         if (err.code === 'ECONNABORTED') {
           setGeneralError('Request timeout. Please try again.');
-          toast.error('Request timeout. Please try again.');
         } else if (err.code === 'ERR_NETWORK') {
           setGeneralError('Network error. Please check your connection.');
-          toast.error('Network error. Please check your connection.');
         } else {
           setGeneralError('Unable to connect to server. Please try again.');
-          toast.error('Unable to connect to server. Please try again.');
         }
       } else {
         // Something else happened
         setGeneralError('An unexpected error occurred. Please try again.');
-        toast.error('An unexpected error occurred. Please try again.');
       }
     } finally {
       setIsLoading(false);
