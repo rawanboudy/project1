@@ -31,7 +31,7 @@ export default function RegisterPage() {
   const [emailChecking, setEmailChecking] = useState(false);
   const [emailCheckError, setEmailCheckError] = useState(false);
 
-  // Username checking states
+  // Username checking states - REMOVED problematic checking
   const [usernameExists, setUsernameExists] = useState(false);
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameCheckError, setUsernameCheckError] = useState(false);
@@ -47,7 +47,6 @@ export default function RegisterPage() {
 
   // Debouncing for API calls
   const [emailDebounceTimer, setEmailDebounceTimer] = useState(null);
-  const [usernameDebounceTimer, setUsernameDebounceTimer] = useState(null);
 
   const icons = {
     firstName: <User className="w-5 h-5" />,
@@ -96,46 +95,45 @@ export default function RegisterPage() {
 
     switch (field) {
       case 'firstName':
-        if (value.length < 3) return 'First name should be at least 3 characters';
-        if (!/^[a-zA-Z\s]+$/.test(value)) return 'First name can only contain letters and spaces';
+        if (value.length < 3) return 'First Name must be at least 3 characters long.';
+        if (!/^[a-zA-Z\s]+$/.test(value)) return 'First name can only contain letters and spaces.';
         if (allFormData.lastName && value.toLowerCase() === allFormData.lastName.toLowerCase()) {
-          return 'First name should not be the same as last name';
+          return 'First Name and Last Name cannot be the same.';
         }
         return null;
 
       case 'lastName':
-        if (value.length < 3) return 'Last name should be at least 3 characters';
-        if (!/^[a-zA-Z\s]+$/.test(value)) return 'Last name can only contain letters and spaces';
+        if (value.length < 3) return 'Last Name must be at least 3 characters long.';
+        if (!/^[a-zA-Z\s]+$/.test(value)) return 'Last name can only contain letters and spaces.';
         if (allFormData.firstName && value.toLowerCase() === allFormData.firstName.toLowerCase()) {
-          return 'Last name should not be the same as first name';
+          return 'First Name and Last Name cannot be the same.';
         }
         return null;
 
       case 'username':
-        if (value.length <= 3) return 'Username must be more than 3 characters';
-        if (value.length > 20) return 'Username cannot exceed 20 characters';
-        if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores';
-        // Don't return username exists error here - let getFieldError handle it
+        if (value.length < 3) return 'Username must be at least 3 characters long.';
+        if (value.length > 20) return 'Username cannot exceed 20 characters.';
+        if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores.';
         return null;
 
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) return 'Please enter a valid email address';
-        if (value.length > 254) return 'Email address is too long';
-        // Don't return email exists error here - let getFieldError handle it
+        if (!emailRegex.test(value)) return 'Please enter a valid email address.';
+        if (value.length > 254) return 'Email address is too long.';
         return null;
 
       case 'password':
-        if (value.length < 8) return 'Password must be at least 8 characters';
-        if (value.length > 128) return 'Password cannot exceed 128 characters';
+        if (value.length < 8) return 'Hey! Your password is too short. Make it at least 8 characters.';
+        if (value.length > 128) return 'Password cannot exceed 128 characters.';
         const strength = passwordStrength;
-        if (!strength.uppercase) return 'Password must contain at least one uppercase letter';
-        if (!strength.lowercase) return 'Password must contain at least one lowercase letter';
-        if (!strength.number) return 'Password must contain at least one number';
+        if (!strength.uppercase) return 'Include at least one uppercase letter (A-Z) in your password.';
+        if (!strength.lowercase) return 'Include at least one lowercase letter (a-z) in your password.';
+        if (!strength.number) return 'Add at least one number (0-9) to your password.';
+        if (!strength.special) return 'Add a special character like !@#$%^&* to your password.';
         return null;
 
       case 'phoneNumber':
-        if (!/^\+?[\d\s\-\(\)]{10,15}$/.test(value)) return 'Please enter a valid phone number';
+        if (!/^\+?[\d\s\-\(\)]{10,15}$/.test(value)) return 'Please enter a valid phone number.';
         return null;
 
       default:
@@ -153,7 +151,7 @@ export default function RegisterPage() {
       }
     });
     setRealtimeErrors(newRealtimeErrors);
-  }, [formData, fieldTouched, passwordStrength]); // Removed emailExists and usernameExists from dependencies
+  }, [formData, fieldTouched, passwordStrength]);
 
   // Password strength checker
   const checkPasswordStrength = (password) => {
@@ -166,12 +164,13 @@ export default function RegisterPage() {
     });
   };
 
-  // Debounced email check using the correct API endpoint
+  // Email availability check using the correct API endpoint
   const checkEmailAvailability = async (email) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
 
     setEmailChecking(true);
     setEmailCheckError(false);
+    setEmailExists(false);
 
     try {
       const response = await axios.get(
@@ -185,123 +184,45 @@ export default function RegisterPage() {
       console.error('Email check failed', err);
       setEmailCheckError(true);
       if (err.code === 'ECONNABORTED') {
-        toast.error('Email check timed out. Please try again.');
+        console.log('Email check timed out');
       }
     } finally {
       setEmailChecking(false);
     }
   };
 
-  // Username availability check using registration API
-  const checkUsernameAvailability = async (username) => {
-    if (!username || username.length <= 3 || !/^[a-zA-Z0-9_]+$/.test(username)) return;
-
-    setUsernameChecking(true);
-    setUsernameCheckError(false);
-
+  // Auto-login function after successful registration
+  const performAutoLogin = async (email, password) => {
     try {
-      // Create a test registration request with minimal data to check username
-      const testData = {
-        firstName: 'Test',
-        lastName: 'User',
-        username: username.trim(),
-        email: `test${Date.now()}@example.com`, // Use unique dummy email
-        password: 'TestPassword123',
-        phoneNumber: '+1234567890'
-      };
+      const loginResponse = await axios.post('Authentication/login', {
+        email: email.trim().toLowerCase(),
+        password: password
+      });
 
-      await axios.post('Authentication/register', testData, { timeout: 5000 });
-      
-      // If registration succeeds, it means username is available but we don't want to actually register
-      // This shouldn't happen with our dummy data, but if it does, username is available
-      setUsernameExists(false);
-    } catch (err) {
-      console.error('Username check response:', err.response?.data);
-      
-      if (err.response) {
-        const { status, data } = err.response;
-        
-        // Check if the error is specifically about username conflict
-        if (status === 409) {
-          // 409 Conflict - resource already exists
-          if (data.message?.toLowerCase().includes('username') || 
-              (data.errors && data.errors.username)) {
-            setUsernameExists(true);
-          } else {
-            // Conflict is about email or other field, username might be available
-            setUsernameExists(false);
-          }
-        } else if (status === 422) {
-          // 422 Unprocessable Entity - validation failed
-          if (data.errors && data.errors.username) {
-            // Server returned specific username validation errors
-            const usernameErrors = data.errors.username;
-            if (Array.isArray(usernameErrors)) {
-              // Check if any error message indicates username already exists
-              const hasExistsError = usernameErrors.some(error => 
-                error.toLowerCase().includes('already') || 
-                error.toLowerCase().includes('taken') || 
-                error.toLowerCase().includes('exists')
-              );
-              setUsernameExists(hasExistsError);
-            } else if (typeof usernameErrors === 'string') {
-              // Single error message
-              const hasExistsError = usernameErrors.toLowerCase().includes('already') || 
-                                   usernameErrors.toLowerCase().includes('taken') || 
-                                   usernameErrors.toLowerCase().includes('exists');
-              setUsernameExists(hasExistsError);
-            }
-          } else if (data.message?.toLowerCase().includes('username')) {
-            // General message about username
-            const hasExistsError = data.message.toLowerCase().includes('already') || 
-                                 data.message.toLowerCase().includes('taken') || 
-                                 data.message.toLowerCase().includes('exists');
-            setUsernameExists(hasExistsError);
-          } else {
-            // Validation errors not related to username existence
-            setUsernameExists(false);
-          }
-        } else if (status === 400) {
-          // 400 Bad Request - could be validation or other issues
-          if (data.errors && data.errors.username) {
-            const usernameErrors = data.errors.username;
-            if (Array.isArray(usernameErrors)) {
-              const hasExistsError = usernameErrors.some(error => 
-                error.toLowerCase().includes('already') || 
-                error.toLowerCase().includes('taken') || 
-                error.toLowerCase().includes('exists')
-              );
-              setUsernameExists(hasExistsError);
-            } else {
-              const hasExistsError = usernameErrors.toLowerCase().includes('already') || 
-                                   usernameErrors.toLowerCase().includes('taken') || 
-                                   usernameErrors.toLowerCase().includes('exists');
-              setUsernameExists(hasExistsError);
-            }
-          } else {
-            // Other validation errors, assume username is available
-            setUsernameExists(false);
-          }
-        } else {
-          // For other HTTP errors, we can't determine availability reliably
-          setUsernameCheckError(true);
-        }
-      } else {
-        // Network or other errors
-        setUsernameCheckError(true);
-        if (err.code === 'ECONNABORTED') {
-          console.log('Username check timed out');
-        }
+      if (loginResponse.data && loginResponse.data.token) {
+        localStorage.setItem('token', loginResponse.data.token);
+        localStorage.setItem('user', JSON.stringify({
+          username: loginResponse.data.username,
+          email: loginResponse.data.email
+        }));
+
+        navigate('/');
+        return true;
       }
-    } finally {
-      setUsernameChecking(false);
+      return false;
+    } catch (loginErr) {
+      console.error('Auto-login failed:', loginErr);
+      navigate('/login');
+      return false;
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(f => ({ ...f, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: null }));
+    
+    // Clear errors for this field
+    setErrors(prev => ({ ...prev, [name]: [] }));
     setGeneralError('');
     setSuccessMessage('');
 
@@ -327,21 +248,9 @@ export default function RegisterPage() {
       setEmailDebounceTimer(timer);
     }
 
-    // Debounced username checking
+    // Reset username existence when typing (will be checked on submit)
     if (name === 'username') {
       setUsernameExists(false);
-      setUsernameCheckError(false);
-
-      if (usernameDebounceTimer) clearTimeout(usernameDebounceTimer);
-
-      // Only check if username meets basic requirements
-      if (value.length > 3 && /^[a-zA-Z0-9_]+$/.test(value)) {
-        const timer = setTimeout(() => {
-          checkUsernameAvailability(value);
-        }, 1000); // Slightly longer delay for username check
-
-        setUsernameDebounceTimer(timer);
-      }
     }
   };
 
@@ -359,35 +268,33 @@ export default function RegisterPage() {
     if (!formData.firstName.trim()) {
       newErr.firstName = ['First name is required.'];
     } else if (formData.firstName.length < 3) {
-      newErr.firstName = ['First name should be at least 3 characters.'];
+      newErr.firstName = ['First Name must be at least 3 characters long.'];
     } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName)) {
       newErr.firstName = ['First name can only contain letters and spaces.'];
     } else if (formData.lastName && formData.firstName.toLowerCase() === formData.lastName.toLowerCase()) {
-      newErr.firstName = ['First name should not be the same as last name.'];
+      newErr.firstName = ['First Name and Last Name cannot be the same.'];
     }
 
     // Last name validation
     if (!formData.lastName.trim()) {
       newErr.lastName = ['Last name is required.'];
     } else if (formData.lastName.length < 3) {
-      newErr.lastName = ['Last name should be at least 3 characters.'];
+      newErr.lastName = ['Last Name must be at least 3 characters long.'];
     } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName)) {
       newErr.lastName = ['Last name can only contain letters and spaces.'];
     } else if (formData.firstName && formData.lastName.toLowerCase() === formData.firstName.toLowerCase()) {
-      newErr.lastName = ['Last name should not be the same as first name.'];
+      newErr.lastName = ['First Name and Last Name cannot be the same.'];
     }
 
     // Username validation
     if (!formData.username.trim()) {
       newErr.username = ['Username is required.'];
-    } else if (formData.username.length <= 3) {
-      newErr.username = ['Username must be more than 3 characters.'];
+    } else if (formData.username.length < 3) {
+      newErr.username = ['Username must be at least 3 characters long.'];
     } else if (formData.username.length > 20) {
       newErr.username = ['Username cannot exceed 20 characters.'];
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
       newErr.username = ['Username can only contain letters, numbers, and underscores.'];
-    } else if (usernameExists) {
-      newErr.username = ['This username is already taken.'];
     }
 
     // Email validation
@@ -400,7 +307,7 @@ export default function RegisterPage() {
       } else if (formData.email.length > 254) {
         newErr.email = ['Email address is too long.'];
       } else if (emailExists) {
-        newErr.email = ['This email is already registered.'];
+        newErr.email = ['This email is already taken. Try logging in instead?'];
       }
     }
 
@@ -408,13 +315,19 @@ export default function RegisterPage() {
     if (!formData.password) {
       newErr.password = ['Password is required.'];
     } else if (formData.password.length < 8) {
-      newErr.password = ['Password must be at least 8 characters.'];
+      newErr.password = ['Hey! Your password is too short. Make it at least 8 characters.'];
     } else if (formData.password.length > 128) {
       newErr.password = ['Password cannot exceed 128 characters.'];
     } else {
       const strength = passwordStrength;
-      if (!strength.uppercase || !strength.lowercase || !strength.number) {
-        newErr.password = ['Password must contain uppercase, lowercase, and number.'];
+      if (!strength.uppercase) {
+        newErr.password = ['Include at least one uppercase letter (A-Z) in your password.'];
+      } else if (!strength.lowercase) {
+        newErr.password = ['Include at least one lowercase letter (a-z) in your password.'];
+      } else if (!strength.number) {
+        newErr.password = ['Add at least one number (0-9) to your password.'];
+      } else if (!strength.special) {
+        newErr.password = ['Add a special character like !@#$%^&* to your password.'];
       }
     }
 
@@ -428,13 +341,170 @@ export default function RegisterPage() {
     return newErr;
   };
 
+  // Process server errors and map them to appropriate fields
+// Process server errors and map them to appropriate fields
+const processServerErrors = (errorData) => {
+  const newErrors = {};
+  console.log('Processing server errors:', errorData); // Debug log
+  
+  // Handle different error response formats
+  if (errorData.errors) {
+    // Check if errors is an array (like your case)
+    if (Array.isArray(errorData.errors)) {
+      console.log('Processing array errors:', errorData.errors);
+      
+      errorData.errors.forEach((errorMsg, index) => {
+        console.log(`Processing array error ${index}:`, errorMsg);
+        
+        if (typeof errorMsg === 'string') {
+          const lowerMessage = errorMsg.toLowerCase();
+          
+          // Map error messages to specific fields based on content
+          if (lowerMessage.includes('username')) {
+            if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
+              newErrors.username = [errorMsg];
+              setUsernameExists(true);
+            } else {
+              newErrors.username = [errorMsg];
+            }
+          } else if (lowerMessage.includes('email')) {
+            if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
+              newErrors.email = [errorMsg];
+              setEmailExists(true);
+            } else {
+              newErrors.email = [errorMsg];
+            }
+          } else if (lowerMessage.includes('first name')) {
+            newErrors.firstName = [errorMsg];
+          } else if (lowerMessage.includes('last name')) {
+            newErrors.lastName = [errorMsg];
+          } else if (lowerMessage.includes('password')) {
+            newErrors.password = [errorMsg];
+          } else if (lowerMessage.includes('phone')) {
+            newErrors.phoneNumber = [errorMsg];
+          } else {
+            // If we can't determine the field, set as general error
+            setGeneralError(errorMsg);
+          }
+        }
+      });
+    } 
+    // Handle object format errors (your original code)
+    else if (typeof errorData.errors === 'object') {
+      Object.keys(errorData.errors).forEach(field => {
+        const fieldKey = field.toLowerCase();
+        const errorMessages = Array.isArray(errorData.errors[field]) 
+          ? errorData.errors[field] 
+          : [errorData.errors[field]];
+        
+        console.log(`Processing field error: ${field} -> ${fieldKey}:`, errorMessages);
+        
+        // Map common field names
+        if (fieldKey === 'firstname' || fieldKey === 'first_name') {
+          newErrors.firstName = errorMessages;
+        } else if (fieldKey === 'lastname' || fieldKey === 'last_name') {
+          newErrors.lastName = errorMessages;
+        } else if (fieldKey === 'username') {
+          newErrors.username = errorMessages;
+          const errorText = errorMessages.join(' ').toLowerCase();
+          if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
+            setUsernameExists(true);
+          }
+        } else if (fieldKey === 'email') {
+          newErrors.email = errorMessages;
+          const errorText = errorMessages.join(' ').toLowerCase();
+          if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
+            setEmailExists(true);
+          }
+        } else if (fieldKey === 'password') {
+          newErrors.password = errorMessages;
+        } else if (fieldKey === 'phonenumber' || fieldKey === 'phone_number') {
+          newErrors.phoneNumber = errorMessages;
+        } else {
+          // For unknown fields, try to match with form data keys
+          const matchingKey = Object.keys(formData).find(key => key.toLowerCase() === fieldKey);
+          if (matchingKey) {
+            newErrors[matchingKey] = errorMessages;
+          }
+        }
+      });
+    }
+  }
+  
+  // Handle single error messages that might indicate specific field issues
+  const errorMessage = errorData.message || errorData.errorMessage || '';
+  if (errorMessage && Object.keys(newErrors).length === 0) {
+    const lowerMessage = errorMessage.toLowerCase();
+    console.log('Processing error message:', errorMessage);
+    
+    // Only process the main error message if we haven't already processed specific errors
+    if (lowerMessage.includes('username')) {
+      if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
+        newErrors.username = ['This username is already taken. Please choose another.'];
+        setUsernameExists(true);
+      } else if (lowerMessage.includes('characters')) {
+        newErrors.username = ['Username must be at least 3 characters long.'];
+      } else {
+        newErrors.username = [errorMessage];
+      }
+    } else if (lowerMessage.includes('email')) {
+      if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
+        newErrors.email = ['This email is already taken. Try logging in instead?'];
+        setEmailExists(true);
+      } else if (lowerMessage.includes('valid')) {
+        newErrors.email = ['Please enter a valid email address.'];
+      } else {
+        newErrors.email = [errorMessage];
+      }
+    } else if (lowerMessage.includes('password')) {
+      if (lowerMessage.includes('short')) {
+        newErrors.password = ['Hey! Your password is too short. Make it at least 8 characters.'];
+      } else if (lowerMessage.includes('digit')) {
+        newErrors.password = ['Add at least one number (0-9) to your password.'];
+      } else if (lowerMessage.includes('lowercase')) {
+        newErrors.password = ['Include at least one lowercase letter (a-z) in your password.'];
+      } else if (lowerMessage.includes('uppercase')) {
+        newErrors.password = ['Include at least one uppercase letter (A-Z) in your password.'];
+      } else if (lowerMessage.includes('special')) {
+        newErrors.password = ['Add a special character like !@#$%^&* to your password.'];
+      } else {
+        newErrors.password = [errorMessage];
+      }
+    } else if (lowerMessage.includes('first name')) {
+      if (lowerMessage.includes('same')) {
+        newErrors.firstName = ['First Name and Last Name cannot be the same.'];
+      } else if (lowerMessage.includes('characters')) {
+        newErrors.firstName = ['First Name must be at least 3 characters long.'];
+      } else {
+        newErrors.firstName = [errorMessage];
+      }
+    } else if (lowerMessage.includes('last name')) {
+      if (lowerMessage.includes('same')) {
+        newErrors.lastName = ['First Name and Last Name cannot be the same.'];
+      } else if (lowerMessage.includes('characters')) {
+        newErrors.lastName = ['Last Name must be at least 3 characters long.'];
+      } else {
+        newErrors.lastName = [errorMessage];
+      }
+    } else if (lowerMessage.includes('phone')) {
+      newErrors.phoneNumber = [errorMessage];
+    } else if (lowerMessage !== 'validation failed') {
+      // Only set as general error if it's not a generic validation message
+      console.log('Setting as general error:', errorMessage);
+      setGeneralError(errorMessage);
+    }
+  }
+  
+  console.log('Final processed errors:', newErrors);
+  return newErrors;
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Check network connectivity
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
-      toast.error('No internet connection. Please check your network.');
       return;
     }
 
@@ -445,34 +515,18 @@ export default function RegisterPage() {
     const clientErrors = validate();
     if (Object.keys(clientErrors).length) {
       setErrors(clientErrors);
-      
-      // Show toast with specific errors
-      const errorMessages = Object.values(clientErrors).flat();
-      errorMessages.forEach(msg => toast.error(msg));
       return;
     }
 
-    // Check for existing email or username
+    // Check if email exists (from real-time check)
     if (emailExists) {
-      setErrors({ email: ['This email is already registered.'] });
-      toast.error('This email is already registered.');
+      setErrors({ email: ['This email is already taken. Try logging in instead?'] });
       return;
     }
 
-    if (usernameExists) {
-      setErrors({ username: ['This username is already taken.'] });
-      toast.error('This username is already taken.');
-      return;
-    }
-
-    // Check if still checking email or username
+    // Check if still checking email
     if (emailChecking) {
-      toast.error('Please wait while we verify your email address.');
-      return;
-    }
-
-    if (usernameChecking) {
-      toast.error('Please wait while we verify your username.');
+      setGeneralError('Please wait while we verify your email.');
       return;
     }
 
@@ -480,135 +534,98 @@ export default function RegisterPage() {
     setErrors({});
 
     try {
-      await axios.post('Authentication/register', {
-        ...formData,
-        email: formData.email.trim().toLowerCase(),
+      const registrationData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        username: formData.username.trim()
+        username: formData.username.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        phoneNumber: formData.phoneNumber.trim()
+      };
+
+      console.log('Sending registration data:', registrationData);
+
+      const response = await axios.post('Authentication/register', registrationData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
-      setSuccessMessage('Registration completed successfully! Redirecting to login...');
-      toast.success('Registration successful! Redirecting to login...');
+      console.log('Registration successful:', response.data);
+      setSuccessMessage('Registration completed successfully! Logging you in...');
+      toast.success('Registration successful! Logging you in...');
 
-      setTimeout(() => navigate('/login'), 2000);
+      // Auto-login after successful registration
+      setTimeout(async () => {
+        const loginSuccess = await performAutoLogin(formData.email, formData.password);
+        if (!loginSuccess) {
+          toast.error('Registration successful, but auto-login failed. Please login manually.');
+        }
+      }, 1000);
 
     } catch (err) {
       console.error('Registration error:', err);
 
       if (err.response) {
         const { status, data } = err.response;
+        console.log('Error response:', { status, data });
 
-        switch (status) {
-          case 400:
-            if (data.errors && typeof data.errors === 'object') {
-              setErrors(data.errors);
-              const errorMessages = Object.values(data.errors).flat();
-              errorMessages.forEach(msg => toast.error(msg));
-            } else if (Array.isArray(data.errors)) {
-              setGeneralError(data.errors[0]);
-              toast.error(data.errors[0]);
-            } else if (data.message) {
-              setGeneralError(data.message);
-              toast.error(data.message);
-            } else {
-              setGeneralError('Invalid request. Please check your input.');
-              toast.error('Invalid request. Please check your input.');
-            }
-            break;
-
-          case 409:
-            // Handle conflict responses (username/email already exists)
-            if (data.message?.toLowerCase().includes('email')) {
-              setErrors({ email: ['This email is already registered.'] });
-              setEmailExists(true);
-              toast.error('This email is already registered.');
-            } else if (data.message?.toLowerCase().includes('username')) {
-              setErrors({ username: ['This username is already taken.'] });
-              setUsernameExists(true);
-              toast.error('This username is already taken.');
-            } else {
-              setGeneralError(data.message || 'Registration conflict. Please try again.');
-              toast.error(data.message || 'Registration conflict. Please try again.');
-            }
-            break;
-
-          case 422:
-            if (data.errors) {
-              setErrors(data.errors);
-              const errorMessages = Object.values(data.errors).flat();
-              errorMessages.forEach(msg => toast.error(msg));
-            } else if (data.message) {
-              // Check if the message indicates username already exists
-              if (data.message.toLowerCase().includes('username')) {
-                setErrors({ username: ['This username is already taken.'] });
+        // Process server errors and map them to fields
+        const fieldErrors = processServerErrors(data);
+        
+        if (Object.keys(fieldErrors).length > 0) {
+          console.log('Setting field errors:', fieldErrors); // Debug log
+          setErrors(fieldErrors);
+        } else {
+          // Fallback error handling based on status codes
+          switch (status) {
+            case 400:
+              setGeneralError(data.message || data.errorMessage || 'Invalid request. Please check your input.');
+              break;
+            case 409:
+              // 409 usually means conflict - check for username/email conflict
+              const conflictMessage = data.message || data.errorMessage || '';
+              if (conflictMessage.toLowerCase().includes('username')) {
+                setErrors({ username: ['This username is already taken. Please choose another.'] });
                 setUsernameExists(true);
-                toast.error('This username is already taken.');
+              } else if (conflictMessage.toLowerCase().includes('email')) {
+                setErrors({ email: ['This email is already taken. Try logging in instead?'] });
+                setEmailExists(true);
               } else {
-                setGeneralError(data.message);
-                toast.error(data.message);
+                setGeneralError(conflictMessage || 'Registration conflict. Please try again.');
               }
-            } else {
-              setGeneralError('Invalid data provided.');
-              toast.error('Invalid data provided.');
-            }
-            break;
-
-          case 429:
-            setGeneralError(data.message || 'Too many requests. Please try again later.');
-            toast.error(data.message || 'Too many requests. Please try again later.');
-            break;
-
-          case 500:
-            setGeneralError('Server error. Please try again later.');
-            toast.error('Server error. Please try again later.');
-            break;
-
-          case 502:
-            setGeneralError('Service temporarily unavailable. Please try again later.');
-            toast.error('Service temporarily unavailable. Please try again later.');
-            break;
-
-          case 503:
-            setGeneralError('Service is under maintenance. Please try again later.');
-            toast.error('Service is under maintenance. Please try again later.');
-            break;
-
-          default:
-            if (data?.message) {
-              // Check if any error message indicates username conflict
-              if (data.message.toLowerCase().includes('username')) {
-                setErrors({ username: ['This username is already taken.'] });
-                setUsernameExists(true);
-                toast.error('This username is already taken.');
-              } else {
-                setGeneralError(data.message);
-                toast.error(data.message);
-              }
-            } else if (data?.errorMessage) {
-              setGeneralError(data.errorMessage);
-              toast.error(data.errorMessage);
-            } else {
+              break;
+            case 422:
+              setGeneralError(data.message || data.errorMessage || 'Invalid data provided.');
+              break;
+            case 429:
+              setGeneralError(data.message || data.errorMessage || 'Too many requests. Please try again later.');
+              break;
+            case 500:
+              setGeneralError('Server error. Please try again later.');
+              break;
+            case 502:
+              setGeneralError('Service temporarily unavailable. Please try again later.');
+              break;
+            case 503:
+              setGeneralError('Service is under maintenance. Please try again later.');
+              break;
+            default:
               setGeneralError(`Registration failed (${status}). Please try again.`);
-              toast.error(`Registration failed (${status}). Please try again.`);
-            }
-            break;
+              break;
+          }
         }
 
       } else if (err.request) {
         if (err.code === 'ECONNABORTED') {
           setGeneralError('Request timeout. Please try again.');
-          toast.error('Request timeout. Please try again.');
         } else if (err.code === 'ERR_NETWORK') {
           setGeneralError('Network error. Please check your connection.');
-          toast.error('Network error. Please check your connection.');
         } else {
           setGeneralError('Unable to connect to server. Please try again.');
-          toast.error('Unable to connect to server. Please try again.');
         }
       } else {
         setGeneralError('An unexpected error occurred. Please try again.');
-        toast.error('An unexpected error occurred. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -620,20 +637,19 @@ export default function RegisterPage() {
     if (field === 'email') {
       if (emailChecking) return <Loader2 className="w-5 h-5 animate-spin text-blue-500" />;
       if (emailCheckError) return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
-      if (formData.email && !realtimeErrors.email && !emailExists && fieldTouched.email) return <Check className="w-5 h-5 text-green-500" />;
-      if (emailExists || realtimeErrors.email) return <X className="w-5 h-5 text-red-500" />;
+      if (emailExists) return <X className="w-5 h-5 text-red-500" />;
+      if (getFieldError(field)) return <X className="w-5 h-5 text-red-500" />;
+      if (formData.email && fieldTouched.email && !getFieldError(field)) return <Check className="w-5 h-5 text-green-500" />;
     }
 
     if (field === 'username') {
-      if (usernameChecking) return <Loader2 className="w-5 h-5 animate-spin text-blue-500" />;
-      if (usernameCheckError) return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
-      if (formData.username && !realtimeErrors.username && !usernameExists && fieldTouched.username) return <Check className="w-5 h-5 text-green-500" />;
-      if (usernameExists || realtimeErrors.username) return <X className="w-5 h-5 text-red-500" />;
+      if (getFieldError(field)) return <X className="w-5 h-5 text-red-500" />;
+      if (formData.username && fieldTouched.username && !getFieldError(field)) return <Check className="w-5 h-5 text-green-500" />;
     }
 
     // For other fields
     if (fieldTouched[field] && formData[field]) {
-      if (realtimeErrors[field]) return <X className="w-5 h-5 text-red-500" />;
+      if (getFieldError(field)) return <X className="w-5 h-5 text-red-500" />;
       return <Check className="w-5 h-5 text-green-500" />;
     }
 
@@ -642,15 +658,17 @@ export default function RegisterPage() {
 
   // Helper function to get field error message
   const getFieldError = (field) => {
-    // Check for specific availability errors first (these should show immediately)
-    if (field === 'username' && usernameExists) return 'This username is already taken. Please choose another.';
-    if (field === 'email' && emailExists) return 'This email is already registered. Please use a different email.';
+    // Server-side validation errors (highest priority)
+    if (errors[field] && errors[field].length > 0) return errors[field][0];
     
-    // Real-time validation errors
+    // Real-time validation errors (lower priority)
     if (realtimeErrors[field]) return realtimeErrors[field];
     
-    // Server-side validation errors
-    if (errors[field] && errors[field].length > 0) return errors[field][0];
+    // Availability errors for email
+    if (field === 'email' && emailExists) return 'This email is already taken. Try logging in instead?';
+    
+    // Availability errors for username
+    if (field === 'username' && usernameExists) return 'This username is already taken. Please choose another.';
     
     return null;
   };
@@ -712,6 +730,7 @@ export default function RegisterPage() {
               color: theme.colors.errorDark
             }}
           >
+            <AlertCircle className="w-4 h-4" />
             <span className="flex-1">{generalError}</span>
           </div>
         )}
@@ -773,7 +792,8 @@ export default function RegisterPage() {
 
               {/* Enhanced error messages display */}
               {getFieldError(field) && (
-                <p className="text-sm mt-1" style={{ color: theme.colors.error }}>
+                <p className="text-sm mt-1 flex items-center gap-1" style={{ color: theme.colors.error }}>
+                  <AlertCircle className="w-4 h-4" />
                   {getFieldError(field)}
                 </p>
               )}
@@ -799,6 +819,12 @@ export default function RegisterPage() {
                       At least one number
                     </span>
                   </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className={`w-2 h-2 rounded-full ${passwordStrength.special ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-500'}>
+                      Special character (!@#$%^&*)
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -806,13 +832,13 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isLoading || emailExists || usernameExists || !isOnline || emailChecking || usernameChecking}
+            disabled={isLoading || emailExists || !isOnline || emailChecking}
             className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2"
             style={{
               background: `linear-gradient(to right,
                 ${theme.colors.orange},
                 ${theme.colors.orangeDark})`,
-              opacity: (isLoading || emailExists || usernameExists || !isOnline || emailChecking || usernameChecking) ? 0.6 : 1
+              opacity: (isLoading || emailExists || !isOnline || emailChecking) ? 0.6 : 1
             }}
           >
             {isLoading ? (
@@ -825,10 +851,10 @@ export default function RegisterPage() {
                 <WifiOff className="w-5 h-5" />
                 No Connection
               </>
-            ) : emailChecking || usernameChecking ? (
+            ) : emailChecking ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Validating...
+                Validating Email...
               </>
             ) : (
               'Create Account'
