@@ -266,9 +266,11 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
     return errors;
   };
 
-  // Handle address form submission - with client-side validation first
+  // Handle address form submission - FIXED VERSION for Mobile
   const handleAddressSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
     
     // Clear previous errors
     setApiErrors({});
@@ -285,14 +287,23 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
     setLoading(true);
     
     try {
+      console.log('Submitting address data:', locationData);
+      
       // Let the API validate and save the data
-      await axios.put('/Authentication/address', {
+      const response = await axios.put('/Authentication/address', {
         firstname: locationData.firstname.trim(),
         lastname: locationData.lastname.trim(),
         street: locationData.street.trim(),
         city: locationData.city.trim(),
         country: locationData.country.trim()
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000 // 10 seconds timeout
       });
+      
+      console.log('Address saved successfully:', response.data);
       
       localStorage.setItem('deliveryAddress', JSON.stringify(locationData));
       toast.success('Delivery address saved successfully!');
@@ -319,6 +330,11 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // FIXED: Mobile button handler for address submission
+  const handleMobileAddressSubmit = () => {
+    handleAddressSubmit();
   };
 
   // Handle final order submission - FIXED VERSION
@@ -566,8 +582,8 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
               </button>
               
               <button
-                type="submit"
-                form="address-form"
+                type="button"
+                onClick={handleMobileAddressSubmit}
                 disabled={loading}
                 className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-sm"
               >
