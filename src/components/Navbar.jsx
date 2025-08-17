@@ -22,11 +22,22 @@ const Navbar = ({ scrollY }) => {
 
   const isSolid = typeof scrollY === 'number' ? scrollY > 50 : true;
 
-  // User session management
+  // User session management - Check multiple sources
   const getUserInfo = () => {
     try {
-      const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
+      // First check userInfo (like ProfilePage does)
+      let userStr = localStorage.getItem('userInfo');
+      if (userStr) {
+        return JSON.parse(userStr);
+      }
+      
+      // Fallback to 'user' key
+      userStr = localStorage.getItem('user');
+      if (userStr) {
+        return JSON.parse(userStr);
+      }
+      
+      return null;
     } catch {
       return null;
     }
@@ -34,6 +45,33 @@ const Navbar = ({ scrollY }) => {
 
   const user = getUserInfo();
   const isLoggedIn = Boolean(localStorage.getItem('token'));
+
+  // Helper function to get display username
+  const getDisplayUsername = () => {
+    if (!user) return 'User';
+    
+    // Priority 1: Use first and last name if both available
+    if (user.firstname && user.lastname) {
+      return `${user.firstname} ${user.lastname}`;
+    }
+    
+    // Priority 2: Use just first name if available
+    if (user.firstname) {
+      return user.firstname;
+    }
+    
+    // Priority 3: Use username if available
+    if (user.username) {
+      return user.username;
+    }
+    
+    // Priority 4: Extract username from email (part before @)
+    if (user.email) {
+      return user.email.split('@')[0];
+    }
+    
+    return 'User';
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -153,10 +191,10 @@ const Navbar = ({ scrollY }) => {
                     {/* Desktop: User Name & Dropdown Arrow */}
                     <div className="hidden sm:flex items-center gap-2">
                       <div className="text-left">
-                        <p className={`text-sm font-semibold leading-tight transition-colors duration-300 ${
+                        <p className={`text-sm font-semibold leading-tight transition-colors duration-300 max-w-24 truncate ${
                           isSolid ? 'text-gray-800' : 'text-white'
                         }`}>
-                          {user?.name ? user.name.split(' ')[0] : 'User'}
+                          {getDisplayUsername()}
                         </p>
                       </div>
                       
@@ -190,12 +228,12 @@ const Navbar = ({ scrollY }) => {
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-md">
                             <span className="text-white font-bold text-sm">
-                              {(user.name || user.email).charAt(0).toUpperCase()}
+                              {getDisplayUsername().charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold truncate" style={{ color: theme.colors.textDark }}>
-                              {user.name || 'User'}
+                              {getDisplayUsername()}
                             </p>
                             <p className="text-xs truncate" style={{ color: theme.colors.textGray }}>
                               {user.email}
@@ -255,19 +293,19 @@ const Navbar = ({ scrollY }) => {
 
                 {/* Mobile Dropdown Menu - Simple List */}
                 {isDropdownOpen && (
-                  <div className="sm:hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                  <div className="sm:hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in-from-top-2 duration-200">
                     {/* Mobile User Header */}
                     {user && (
                       <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-md">
                             <span className="text-white font-bold text-sm">
-                              {(user.name || user.email).charAt(0).toUpperCase()}
+                              {getDisplayUsername().charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold truncate" style={{ color: theme.colors.textDark }}>
-                              {user.name || 'User'}
+                              {getDisplayUsername()}
                             </p>
                             <p className="text-xs truncate" style={{ color: theme.colors.textGray }}>
                               {user.email}

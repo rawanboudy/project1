@@ -1,26 +1,51 @@
+/* Performance-optimized animations */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 30px, 0); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0); 
+  }
 }
 
 @keyframes slideInUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 40px, 0); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0); 
+  }
 }
 
 @keyframes float {
-  0%,100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(5deg); }
+  0%, 100% { 
+    transform: translate3d(0, 0, 0) rotate(0deg); 
+  }
+  50% { 
+    transform: translate3d(0, -20px, 0) rotate(5deg); 
+  }
 }
 
 @keyframes floatDelayed {
-  0%,100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(-3deg); }
+  0%, 100% { 
+    transform: translate3d(0, 0, 0) rotate(0deg); 
+  }
+  50% { 
+    transform: translate3d(0, -15px, 0) rotate(-3deg); 
+  }
 }
 
 @keyframes bounce {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%, 100% { 
+    transform: translate3d(0, 0, 0); 
+  }
+  50% { 
+    transform: translate3d(0, -8px, 0); 
+  }
 }
 
 @keyframes shimmer {
@@ -29,17 +54,71 @@
 }
 
 @keyframes pulseGlow {
-  0%,100% { box-shadow: 0 0 20px rgba(251,140,0,0.3); }
-  50% { box-shadow: 0 0 40px rgba(251,140,0,0.6); }
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(251, 140, 0, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(251, 140, 0, 0.6); 
+  }
 }
 
-.animate-fadeInUp { animation: fadeInUp 1s ease-out both; }
-.animate-slideInUp { opacity:0; animation: slideInUp 0.8s ease-out both; }
-.animate-float { animation: float 6s ease-in-out infinite; }
-.animate-float-delayed { animation: floatDelayed 8s ease-in-out infinite; }
-.animate-bounce { animation: bounce 3s ease-in-out infinite; }
-.animate-shimmer { background: linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent); background-size:200% 100%; animation: shimmer 2s infinite; }
-.animate-pulseGlow { animation: pulseGlow 2s ease-in-out infinite; }
+/* Optimized animation classes */
+.animate-fadeInUp { 
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) both; 
+}
+
+.animate-slideInUp { 
+  opacity: 0; 
+  animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) both; 
+}
+
+.animate-float { 
+  animation: float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-float-delayed { 
+  animation: floatDelayed 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-bounce { 
+  animation: bounce 3s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-shimmer { 
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); 
+  background-size: 200% 100%; 
+  animation: shimmer 2s infinite; 
+}
+
+.animate-pulseGlow { 
+  animation: pulseGlow 2s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* GPU acceleration for smooth animations */
+.animate-fadeInUp,
+.animate-slideInUp,
+.animate-float,
+.animate-float-delayed,
+.animate-bounce {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
 
 /* Section Container */
 .signature-dishes {
@@ -54,10 +133,11 @@
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 1rem;
-  background: linear-gradient(135deg,#1f2937,#fb8c00);
+  background: linear-gradient(135deg, #1f2937, #fb8c00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: fadeInUp 1s ease-out both;
+  background-clip: text;
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .signature-dishes__subtitle {
@@ -65,95 +145,110 @@
   font-size: 1.25rem;
   color: #6b7280;
   margin-bottom: 3rem;
-  animation: fadeInUp 1.2s ease-out both;
+  animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .signature-dishes__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem,1fr));
-  gap:2rem;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 2rem;
 }
 
 .signature-card {
   position: relative;
   background: #fff;
   border-radius: 1.5rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transform: translateY(20px);
+  transform: translate3d(0, 20px, 0);
   opacity: 0;
-  animation: slideInUp 0.8s ease-out both;
+  animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+  will-change: transform, opacity;
 }
+
 .signature-card:nth-child(1) { animation-delay: 0.1s; }
-.signature-card:nth-child(2) { animation-delay: 0.3s; }
-.signature-card:nth-child(3) { animation-delay: 0.5s; }
+.signature-card:nth-child(2) { animation-delay: 0.2s; }
+.signature-card:nth-child(3) { animation-delay: 0.3s; }
 
 .signature-card__img-container {
   position: relative;
   overflow: hidden;
 }
+
 .signature-card__img {
-  width:100%;
-  height:18rem;
-  object-fit:cover;
-  transition: transform 0.7s ease;
+  width: 100%;
+  height: 18rem;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
-.signature-card:hover .signature-card__img { transform: scale(1.1); }
+
+.signature-card:hover .signature-card__img { 
+  transform: scale(1.05); 
+}
 
 .signature-card__info {
-  padding:1.5rem;
+  padding: 1.5rem;
 }
+
 .signature-card__name {
-  font-size:1.5rem;
-  font-weight:600;
-  margin-bottom:0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
+
 .signature-card__desc {
-  color:#6b7280;
-  font-size:1rem;
-  margin-bottom:1rem;
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 1rem;
 }
+
 .signature-card__footer {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
 .signature-card__price {
-  font-size:1.25rem;
-  font-weight:bold;
-  color:#fb8c00;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #fb8c00;
 }
+
 .signature-card__rating {
-  display:flex;
-  align-items:center;
-  background:#fff;
-  padding:0.25rem 0.5rem;
-  border-radius:9999px;
-  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
+
 .signature-card__rating svg {
-  width:1rem;
-  height:1rem;
-  fill:#fb8c00;
-  margin-right:0.25rem;
+  width: 1rem;
+  height: 1rem;
+  fill: #fb8c00;
+  margin-right: 0.25rem;
 }
+
+/* Optimized circular animations */
 @keyframes circularPath {
   0% {
-    transform: translate(-50%, 0) rotate(0deg) translateX(150px) rotate(0deg);
+    transform: translate(-50%, 0) rotate(0deg) translateX(120px) rotate(0deg);
     opacity: 0;
   }
   10% {
     opacity: 1;
   }
   50% {
-    transform: translate(-50%, 0) rotate(180deg) translateX(150px) rotate(-180deg);
+    transform: translate(-50%, 0) rotate(180deg) translateX(120px) rotate(-180deg);
     opacity: 1;
   }
   90% {
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, 0) rotate(360deg) translateX(150px) rotate(-360deg);
+    transform: translate(-50%, 0) rotate(360deg) translateX(120px) rotate(-360deg);
     opacity: 0;
   }
 }
@@ -161,7 +256,7 @@
 .circular-dish-container {
   position: relative;
   width: 100%;
-  height: 400px;
+  height: 350px;
   overflow: hidden;
 }
 
@@ -170,17 +265,19 @@
   top: 50%;
   left: 50%;
   transform-origin: center center;
-  animation: circularPath 10s linear infinite;
+  animation: circularPath 8s linear infinite;
   will-change: transform;
 }
 
 .circular-dish-img {
-  width: 200px;
-  height: 200px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
+
+/* Optimized curved path animation */
 @keyframes moveAlongCurvedPath {
   0% {
     offset-distance: 0%;
@@ -197,30 +294,96 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 600px;
+  height: 500px;
   pointer-events: none;
   z-index: 10;
 }
 
 .dish-animating {
   position: absolute;
-  width: 140px;
-  height: 140px;
-  offset-path: path('M 100,500 Q 500,0 900,100');
+  width: 120px;
+  height: 120px;
+  offset-path: path('M 100,400 Q 400,0 700,100');
   offset-rotate: auto;
-  animation: moveAlongCurvedPath 5s linear forwards;
+  animation: moveAlongCurvedPath 4s ease-in-out forwards;
+  will-change: transform;
 }
 
 .dish-animating img {
   width: 100%;
   height: 100%;
-  border-radius: 24px;
+  border-radius: 20px;
   object-fit: cover;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .dish-info {
-  animation: fadeInUp 0.6s ease-out both;
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* Utility classes for better performance */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
+.gradient-text {
+  background: linear-gradient(135deg, #fb8c00, #f57c00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-enhanced {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, box-shadow;
+}
+
+.btn-enhanced:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(251, 140, 0, 0.3);
+}
+
+/* Loading states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive optimizations */
+@media (max-width: 768px) {
+  .signature-dishes__title {
+    font-size: 2rem;
+  }
+  
+  .circular-dish-img {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .dish-animating {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
