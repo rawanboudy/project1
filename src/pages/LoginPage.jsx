@@ -26,155 +26,37 @@ const LoginPage = () => {
   const MAX_LOGIN_ATTEMPTS = 5;
   const BLOCK_DURATION = 300000; // 5 minutes in milliseconds
 
-  // Safari-compatible storage utility
-  const SafariStorage = {
-    setItem: (key, value) => {
-      try {
-        // Try localStorage first
-        localStorage.setItem(key, value);
-        
-        // For Safari, also set a cookie as fallback
-        if (this.isSafari()) {
-          const expiryDate = new Date();
-          expiryDate.setTime(expiryDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-          document.cookie = `${key}=${encodeURIComponent(value)};expires=${expiryDate.toUTCString()};path=/;SameSite=Lax;Secure=${window.location.protocol === 'https:'}`;
-        }
-        return true;
-      } catch (error) {
-        console.warn('Storage failed, using cookie fallback:', error);
-        // Fallback to cookie
-        const expiryDate = new Date();
-        expiryDate.setTime(expiryDate.getTime() + (30 * 24 * 60 * 60 * 1000));
-        document.cookie = `${key}=${encodeURIComponent(value)};expires=${expiryDate.toUTCString()};path=/;SameSite=Lax;Secure=${window.location.protocol === 'https:'}`;
-        return true;
-      }
-    },
-
-    getItem: (key) => {
-      try {
-        // Try localStorage first
-        const value = localStorage.getItem(key);
-        if (value !== null) {
-          return value;
-        }
-      } catch (error) {
-        console.warn('localStorage access failed:', error);
-      }
-
-      // Fallback to cookie
-      const name = key + "=";
-      const decodedCookie = decodeURIComponent(document.cookie);
-      const ca = decodedCookie.split(';');
-      for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') {
-          c = c.substring(1);
-        }
-        if (c.indexOf(name) === 0) {
-          return decodeURIComponent(c.substring(name.length, c.length));
-        }
-      }
-      return null;
-    },
-
-    removeItem: (key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn('localStorage removal failed:', error);
-      }
-      
-      // Remove cookie
-      document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-    },
-
-    isSafari: () => {
-      const userAgent = navigator.userAgent;
-      return /^((?!chrome|android).)*safari/i.test(userAgent) || 
-             /iPad|iPhone|iPod/.test(userAgent);
-    }
-  };
-
-  // Enhanced token validation with Safari compatibility
-  const isTokenValid = (token) => {
-    if (!token) return false;
-    
-    try {
-      // Basic JWT structure check
-      const parts = token.split('.');
-      if (parts.length !== 3) return false;
-      
-      // Try to decode payload
-      const payload = JSON.parse(atob(parts[1]));
-      
-      // Check if token is expired (with 5-minute buffer)
-      if (payload.exp) {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const bufferTime = 300; // 5 minutes
-        return payload.exp > (currentTime + bufferTime);
-      }
-      
-      // If no exp claim, check stored expiry
-      const storedExpiry = SafariStorage.getItem('tokenExpiry');
-      if (storedExpiry) {
-        const expiryTime = new Date(storedExpiry).getTime();
-        return expiryTime > (Date.now() + (5 * 60 * 1000)); // 5 minute buffer
-      }
-      
-      return true; // If no expiry info, assume valid
-    } catch (error) {
-      console.warn('Token validation error:', error);
-      return false;
-    }
-  };
-
-  // Enhanced session check with Safari compatibility
+  // Check for existing valid session on component mount
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
-        const token = SafariStorage.getItem('token');
+        const token = localStorage.getItem('token');
         
-        if (token && isTokenValid(token)) {
+        if (token) {
           // Set axios default header for authentication
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           
-          try {
-            // Verify token is still valid by fetching user info
-            const response = await axios.get('/Authentication/user', {
-              timeout: 10000, // 10 second timeout
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            });
-            
-            if (response.data) {
-              // Token is valid, store user info and redirect
-              SafariStorage.setItem('userInfo', JSON.stringify(response.data));
-              SafariStorage.setItem('lastActivity', Date.now().toString());
-              navigate('/');
-              return;
-            }
-          } catch (apiError) {
-            console.warn('User verification failed:', apiError);
-            // If API call fails but token looks valid, still proceed
-            if (apiError.response?.status !== 401 && apiError.response?.status !== 403) {
-              // Network error, but token might be valid
-              const userInfo = SafariStorage.getItem('userInfo');
-              if (userInfo) {
-                navigate('/');
-                return;
-              }
-            }
+          // Verify token is still valid by fetching user info
+          const response = await axios.get('/Authentication/user');
+          
+          if (response.data) {
+            // Token is valid, store user info and redirect
+            localStorage.setItem('userInfo', JSON.stringify(response.data));
+            navigate('/');
+            return;
           }
         }
-        
-        // Token is invalid or expired, clear stored data
-        clearAuthData();
-        
       } catch (error) {
-        console.error('Session check error:', error);
-        clearAuthData();
+        // Token is invalid or expired, clear stored data
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenType');
+        localStorage.removeItem('userPermissions');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('sessionId');
+        delete axios.defaults.headers.common['Authorization'];
         
         if (error.response?.status === 401) {
           setSessionExpired(true);
@@ -188,17 +70,6 @@ const LoginPage = () => {
     checkExistingSession();
   }, [navigate]);
 
-  // Clear all authentication data
-  const clearAuthData = () => {
-    const keysToRemove = [
-      'token', 'userInfo', 'tokenExpiry', 'refreshToken', 'tokenType',
-      'userPermissions', 'userRoles', 'sessionId', 'lastActivity'
-    ];
-    
-    keysToRemove.forEach(key => SafariStorage.removeItem(key));
-    delete axios.defaults.headers.common['Authorization'];
-  };
-
   // Check for session expiration and login attempts on component mount
   useEffect(() => {
     // Check for existing session expiration
@@ -210,7 +81,7 @@ const LoginPage = () => {
     }
 
     // Check if user is currently blocked
-    const blockEndTime = SafariStorage.getItem('loginBlockEndTime');
+    const blockEndTime = localStorage.getItem('loginBlockEndTime');
     if (blockEndTime && new Date().getTime() < parseInt(blockEndTime)) {
       setIsBlocked(true);
       const remaining = parseInt(blockEndTime) - new Date().getTime();
@@ -218,7 +89,7 @@ const LoginPage = () => {
     }
 
     // Get current login attempts
-    const attempts = parseInt(SafariStorage.getItem('loginAttempts') || '0');
+    const attempts = parseInt(localStorage.getItem('loginAttempts') || '0');
     setLoginAttempts(attempts);
   }, []);
 
@@ -253,8 +124,8 @@ const LoginPage = () => {
         setBlockTimeRemaining(prev => {
           if (prev <= 1) {
             setIsBlocked(false);
-            SafariStorage.removeItem('loginBlockEndTime');
-            SafariStorage.removeItem('loginAttempts');
+            localStorage.removeItem('loginBlockEndTime');
+            localStorage.removeItem('loginAttempts');
             setLoginAttempts(0);
             setGeneralError('');
             return 0;
@@ -266,45 +137,6 @@ const LoginPage = () => {
 
     return () => clearInterval(interval);
   }, [isBlocked, blockTimeRemaining]);
-
-  // Activity tracking for Safari
-  useEffect(() => {
-    const updateActivity = () => {
-      const token = SafariStorage.getItem('token');
-      if (token && isTokenValid(token)) {
-        SafariStorage.setItem('lastActivity', Date.now().toString());
-      }
-    };
-
-    // Update activity on various user interactions
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    events.forEach(event => {
-      document.addEventListener(event, updateActivity, { passive: true });
-    });
-
-    // Periodic activity check
-    const activityInterval = setInterval(() => {
-      const lastActivity = SafariStorage.getItem('lastActivity');
-      const token = SafariStorage.getItem('token');
-      
-      if (token && lastActivity) {
-        const timeSinceLastActivity = Date.now() - parseInt(lastActivity);
-        // If inactive for more than 30 days, clear session
-        if (timeSinceLastActivity > (30 * 24 * 60 * 60 * 1000)) {
-          clearAuthData();
-          setSessionExpired(true);
-          setGeneralError('Session expired due to inactivity. Please log in again.');
-        }
-      }
-    }, 60000); // Check every minute
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivity);
-      });
-      clearInterval(activityInterval);
-    };
-  }, []);
 
   // Input validation
   const validateInputs = () => {
@@ -325,62 +157,47 @@ const LoginPage = () => {
     return errors;
   };
 
-  // Store all token information with Safari compatibility
+  // Store all token information
   const storeTokenInfo = (responseData) => {
-    try {
-      // Store main token
-      if (responseData.token) {
-        SafariStorage.setItem('token', responseData.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
-      }
+    // Store main token
+    if (responseData.token) {
+      localStorage.setItem('token', responseData.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
+    }
 
-      // Store refresh token if available
-      if (responseData.refreshToken) {
-        SafariStorage.setItem('refreshToken', responseData.refreshToken);
-      }
+    // Store refresh token if available
+    if (responseData.refreshToken) {
+      localStorage.setItem('refreshToken', responseData.refreshToken);
+    }
 
-      // Store token expiry if available
-      if (responseData.expiresAt || responseData.expires_at || responseData.exp) {
-        const expiryTime = responseData.expiresAt || responseData.expires_at || responseData.exp;
-        SafariStorage.setItem('tokenExpiry', expiryTime);
-      } else {
-        // Set default expiry to 30 days from now if not provided
-        const defaultExpiry = new Date();
-        defaultExpiry.setDate(defaultExpiry.getDate() + 30);
-        SafariStorage.setItem('tokenExpiry', defaultExpiry.toISOString());
-      }
+    // Store token expiry if available
+    if (responseData.expiresAt || responseData.expires_at || responseData.exp) {
+      const expiryTime = responseData.expiresAt || responseData.expires_at || responseData.exp;
+      localStorage.setItem('tokenExpiry', expiryTime);
+    }
 
-      // Store user information
-      if (responseData.user) {
-        SafariStorage.setItem('userInfo', JSON.stringify(responseData.user));
-      }
+    // Store user information
+    if (responseData.user) {
+      localStorage.setItem('userInfo', JSON.stringify(responseData.user));
+    }
 
-      // Store any additional token metadata
-      if (responseData.tokenType || responseData.token_type) {
-        SafariStorage.setItem('tokenType', responseData.tokenType || responseData.token_type);
-      }
+    // Store any additional token metadata
+    if (responseData.tokenType || responseData.token_type) {
+      localStorage.setItem('tokenType', responseData.tokenType || responseData.token_type);
+    }
 
-      // Store permissions/roles if available
-      if (responseData.permissions) {
-        SafariStorage.setItem('userPermissions', JSON.stringify(responseData.permissions));
-      }
+    // Store permissions/roles if available
+    if (responseData.permissions) {
+      localStorage.setItem('userPermissions', JSON.stringify(responseData.permissions));
+    }
 
-      if (responseData.roles) {
-        SafariStorage.setItem('userRoles', JSON.stringify(responseData.roles));
-      }
+    if (responseData.roles) {
+      localStorage.setItem('userRoles', JSON.stringify(responseData.roles));
+    }
 
-      // Store session ID if available
-      if (responseData.sessionId) {
-        SafariStorage.setItem('sessionId', responseData.sessionId);
-      }
-
-      // Store last activity
-      SafariStorage.setItem('lastActivity', Date.now().toString());
-
-      console.log('Token info stored successfully for Safari compatibility');
-    } catch (error) {
-      console.error('Error storing token info:', error);
-      throw new Error('Failed to store authentication data');
+    // Store session ID if available
+    if (responseData.sessionId) {
+      localStorage.setItem('sessionId', responseData.sessionId);
     }
   };
 
@@ -388,11 +205,11 @@ const LoginPage = () => {
   const handleFailedLogin = () => {
     const newAttempts = loginAttempts + 1;
     setLoginAttempts(newAttempts);
-    SafariStorage.setItem('loginAttempts', newAttempts.toString());
+    localStorage.setItem('loginAttempts', newAttempts.toString());
 
     if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
       const blockEndTime = new Date().getTime() + BLOCK_DURATION;
-      SafariStorage.setItem('loginBlockEndTime', blockEndTime.toString());
+      localStorage.setItem('loginBlockEndTime', blockEndTime.toString());
       setIsBlocked(true);
       setBlockTimeRemaining(Math.ceil(BLOCK_DURATION / 1000));
       setGeneralError(`Too many failed attempts. Please try again in ${Math.ceil(BLOCK_DURATION / 60000)} minutes.`);
@@ -401,8 +218,8 @@ const LoginPage = () => {
 
   // Reset login attempts on successful login
   const handleSuccessfulLogin = () => {
-    SafariStorage.removeItem('loginAttempts');
-    SafariStorage.removeItem('loginBlockEndTime');
+    localStorage.removeItem('loginAttempts');
+    localStorage.removeItem('loginBlockEndTime');
     setLoginAttempts(0);
     setIsBlocked(false);
   };
@@ -433,48 +250,32 @@ const LoginPage = () => {
     }
 
     try {
-      // Enhanced request with Safari-specific headers
       const response = await axios.post('Authentication/login', {
         email: email.trim().toLowerCase(),
         password
-      }, {
-        timeout: 30000, // 30 second timeout for Safari
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'X-Requested-With': 'XMLHttpRequest'
-        }
       });
 
       // Success handling
-      console.log('Login successful:', response.data);
       
-      // Store all token information with Safari compatibility
+      // Store all token information
       storeTokenInfo(response.data);
       
       // Fetch user data using the same pattern as ProfilePage
       let firstName = 'User'; // Default fallback
       try {
-        const userResponse = await axios.get('/Authentication/user', {
-          timeout: 15000,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
+        const userResponse = await axios.get('/Authentication/user');
         const userData = userResponse.data;
         
         // Use the exact same logic as ProfilePage for getting the name
         firstName = userData.firstname || userData.username || 'User';
         
-        // Also store the user info with Safari compatibility
-        SafariStorage.setItem('userInfo', JSON.stringify(userData));
+        // Also store the user info in localStorage like ProfilePage does
+        localStorage.setItem('userInfo', JSON.stringify(userData));
       } catch (error) {
         console.warn('Could not fetch user data for welcome message:', error);
         
         // Try to get from stored userInfo as fallback
-        const storedUserInfo = SafariStorage.getItem('userInfo');
+        const storedUserInfo = localStorage.getItem('userInfo');
         if (storedUserInfo) {
           try {
             const parsedUser = JSON.parse(storedUserInfo);
@@ -494,10 +295,8 @@ const LoginPage = () => {
       // Reset failed attempts
       handleSuccessfulLogin();
 
-      // Add a small delay for Safari to process storage
-      setTimeout(() => {
-        navigate('/');
-      }, 100);
+      // Redirect
+      navigate('/');
 
     } catch (err) {
       console.error('Login error:', err);
@@ -650,9 +449,6 @@ const LoginPage = () => {
           <h2 className="text-3xl font-semibold" style={{ color: theme.colors.textDark }}>
             Sign in 
           </h2>
-          {SafariStorage.isSafari() && (
-            <p className="text-xs text-gray-500 mt-2">Safari detected - Enhanced compatibility mode</p>
-          )}
         </div>
 
         {/* Network Status Indicator */}

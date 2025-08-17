@@ -5,7 +5,7 @@ import theme from '../theme';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
 import SignatureDishes from '../components/SignatureDishes';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const RestaurantHomepage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -13,12 +13,38 @@ const RestaurantHomepage = () => {
   const [scrollY, setScrollY] = useState(0);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [featuredDishes, setFeaturedDishes] = useState([]);
-  const [isLoading, setIsLoading] = useState(false); // Changed to false for immediate render
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hoveredDish, setHoveredDish] = useState(null);
   const [currentDishIndex, setCurrentDishIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(new Set());
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Ensure page always loads from top
+  useEffect(() => {
+    // Force scroll to top when component mounts
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    
+    // Clear any stored scroll position
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    
+    // Additional scroll to top after a slight delay to ensure DOM is ready
+    const scrollToTopTimer = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, 50);
+
+    return () => {
+      clearTimeout(scrollToTopTimer);
+    };
+  }, []);
+
+  // Handle route changes and ensure scroll to top
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   // Optimized hero slides with smaller, faster-loading images
   const heroSlides = useMemo(() => [
@@ -118,7 +144,7 @@ const RestaurantHomepage = () => {
     return (
       <div
         className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-transform transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp group"
-        style={{ animationDelay: `${index * 0.1}s` }} // Reduced delay
+        style={{ animationDelay: `${index * 0.1}s` }}
       >
         <div className="relative">
           <div className={`w-full h-64 bg-gray-200 ${!imageLoaded ? 'animate-pulse' : ''}`}>
@@ -194,7 +220,7 @@ const RestaurantHomepage = () => {
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 4000); // Reduced from 5000ms
+    }, 4000);
     return () => clearInterval(slideInterval);
   }, [heroSlides.length]);
 
@@ -210,7 +236,7 @@ const RestaurantHomepage = () => {
     const fetchDishes = async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
         const response = await fetch(
           'https://elkadyyy-drg9ape4djgmebad.italynorth-01.azurewebsites.net/api/products',
@@ -238,11 +264,9 @@ const RestaurantHomepage = () => {
             preparationTime: item.preparationTime || "25 min"
           }));
           
-          // Only update if we got valid data
           const dishesToShow = formatted.slice(0, 3);
           setFeaturedDishes(dishesToShow);
           
-          // Preload dish images
           dishesToShow.forEach(dish => {
             preloadImage(dish.pictureUrl);
           });
@@ -253,13 +277,11 @@ const RestaurantHomepage = () => {
           console.error('Error fetching dishes:', error);
           setError(error.message);
         }
-        // Keep fallback dishes, don't override
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Delay API call to not block initial render
     const timeoutId = setTimeout(fetchDishes, 100);
     return () => clearTimeout(timeoutId);
   }, [fallbackDishes, preloadImage]);
@@ -331,7 +353,13 @@ const RestaurantHomepage = () => {
                  style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
               <button
                 type="button"
-                onClick={() => navigate('/menu')}
+                onClick={() => {
+                  navigate('/menu');
+                  // Ensure menu page also starts from top
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  }, 100);
+                }}
                 className="group px-8 py-4 rounded-full font-bold text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                 style={{
                   background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`

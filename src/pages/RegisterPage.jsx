@@ -191,7 +191,7 @@ export default function RegisterPage() {
     }
   };
 
-  // Auto-login function after successful registration
+  // Enhanced auto-login function with proper navigation
   const performAutoLogin = async (email, password) => {
     try {
       const loginResponse = await axios.post('Authentication/login', {
@@ -200,19 +200,35 @@ export default function RegisterPage() {
       });
 
       if (loginResponse.data && loginResponse.data.token) {
+        // Store authentication data
         localStorage.setItem('token', loginResponse.data.token);
         localStorage.setItem('user', JSON.stringify({
           username: loginResponse.data.username,
           email: loginResponse.data.email
         }));
 
-        navigate('/');
+        // Clear any existing scroll position data
+        sessionStorage.removeItem('scrollPosition');
+        
+        // Navigate to home page and ensure it starts from top
+        navigate('/', { replace: true });
+        
+        // Scroll to top after navigation with a small delay to ensure page is loaded
+        setTimeout(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        }, 100);
+
         return true;
       }
       return false;
     } catch (loginErr) {
       console.error('Auto-login failed:', loginErr);
-      navigate('/login');
+      // Clear scroll position before navigating to login
+      sessionStorage.removeItem('scrollPosition');
+      navigate('/login', { replace: true });
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }, 100);
       return false;
     }
   };
@@ -342,162 +358,151 @@ export default function RegisterPage() {
   };
 
   // Process server errors and map them to appropriate fields
-// Process server errors and map them to appropriate fields
-const processServerErrors = (errorData) => {
-  const newErrors = {};
-  console.log('Processing server errors:', errorData); // Debug log
-  
-  // Handle different error response formats
-  if (errorData.errors) {
-    // Check if errors is an array (like your case)
-    if (Array.isArray(errorData.errors)) {
-      console.log('Processing array errors:', errorData.errors);
-      
-      errorData.errors.forEach((errorMsg, index) => {
-        console.log(`Processing array error ${index}:`, errorMsg);
-        
-        if (typeof errorMsg === 'string') {
-          const lowerMessage = errorMsg.toLowerCase();
-          
-          // Map error messages to specific fields based on content
-          if (lowerMessage.includes('username')) {
-            if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
-              newErrors.username = [errorMsg];
-              setUsernameExists(true);
-            } else {
-              newErrors.username = [errorMsg];
-            }
-          } else if (lowerMessage.includes('email')) {
-            if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
-              newErrors.email = [errorMsg];
-              setEmailExists(true);
-            } else {
-              newErrors.email = [errorMsg];
-            }
-          } else if (lowerMessage.includes('first name')) {
-            newErrors.firstName = [errorMsg];
-          } else if (lowerMessage.includes('last name')) {
-            newErrors.lastName = [errorMsg];
-          } else if (lowerMessage.includes('password')) {
-            newErrors.password = [errorMsg];
-          } else if (lowerMessage.includes('phone')) {
-            newErrors.phoneNumber = [errorMsg];
-          } else {
-            // If we can't determine the field, set as general error
-            setGeneralError(errorMsg);
-          }
-        }
-      });
-    } 
-    // Handle object format errors (your original code)
-    else if (typeof errorData.errors === 'object') {
-      Object.keys(errorData.errors).forEach(field => {
-        const fieldKey = field.toLowerCase();
-        const errorMessages = Array.isArray(errorData.errors[field]) 
-          ? errorData.errors[field] 
-          : [errorData.errors[field]];
-        
-        console.log(`Processing field error: ${field} -> ${fieldKey}:`, errorMessages);
-        
-        // Map common field names
-        if (fieldKey === 'firstname' || fieldKey === 'first_name') {
-          newErrors.firstName = errorMessages;
-        } else if (fieldKey === 'lastname' || fieldKey === 'last_name') {
-          newErrors.lastName = errorMessages;
-        } else if (fieldKey === 'username') {
-          newErrors.username = errorMessages;
-          const errorText = errorMessages.join(' ').toLowerCase();
-          if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
-            setUsernameExists(true);
-          }
-        } else if (fieldKey === 'email') {
-          newErrors.email = errorMessages;
-          const errorText = errorMessages.join(' ').toLowerCase();
-          if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
-            setEmailExists(true);
-          }
-        } else if (fieldKey === 'password') {
-          newErrors.password = errorMessages;
-        } else if (fieldKey === 'phonenumber' || fieldKey === 'phone_number') {
-          newErrors.phoneNumber = errorMessages;
-        } else {
-          // For unknown fields, try to match with form data keys
-          const matchingKey = Object.keys(formData).find(key => key.toLowerCase() === fieldKey);
-          if (matchingKey) {
-            newErrors[matchingKey] = errorMessages;
-          }
-        }
-      });
-    }
-  }
-  
-  // Handle single error messages that might indicate specific field issues
-  const errorMessage = errorData.message || errorData.errorMessage || '';
-  if (errorMessage && Object.keys(newErrors).length === 0) {
-    const lowerMessage = errorMessage.toLowerCase();
-    console.log('Processing error message:', errorMessage);
+  const processServerErrors = (errorData) => {
+    const newErrors = {};
+    console.log('Processing server errors:', errorData);
     
-    // Only process the main error message if we haven't already processed specific errors
-    if (lowerMessage.includes('username')) {
-      if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
-        newErrors.username = ['This username is already taken. Please choose another.'];
-        setUsernameExists(true);
-      } else if (lowerMessage.includes('characters')) {
-        newErrors.username = ['Username must be at least 3 characters long.'];
-      } else {
-        newErrors.username = [errorMessage];
+    if (errorData.errors) {
+      if (Array.isArray(errorData.errors)) {
+        console.log('Processing array errors:', errorData.errors);
+        
+        errorData.errors.forEach((errorMsg, index) => {
+          console.log(`Processing array error ${index}:`, errorMsg);
+          
+          if (typeof errorMsg === 'string') {
+            const lowerMessage = errorMsg.toLowerCase();
+            
+            if (lowerMessage.includes('username')) {
+              if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
+                newErrors.username = [errorMsg];
+                setUsernameExists(true);
+              } else {
+                newErrors.username = [errorMsg];
+              }
+            } else if (lowerMessage.includes('email')) {
+              if (lowerMessage.includes('taken') || lowerMessage.includes('already') || lowerMessage.includes('exists')) {
+                newErrors.email = [errorMsg];
+                setEmailExists(true);
+              } else {
+                newErrors.email = [errorMsg];
+              }
+            } else if (lowerMessage.includes('first name')) {
+              newErrors.firstName = [errorMsg];
+            } else if (lowerMessage.includes('last name')) {
+              newErrors.lastName = [errorMsg];
+            } else if (lowerMessage.includes('password')) {
+              newErrors.password = [errorMsg];
+            } else if (lowerMessage.includes('phone')) {
+              newErrors.phoneNumber = [errorMsg];
+            } else {
+              setGeneralError(errorMsg);
+            }
+          }
+        });
+      } 
+      else if (typeof errorData.errors === 'object') {
+        Object.keys(errorData.errors).forEach(field => {
+          const fieldKey = field.toLowerCase();
+          const errorMessages = Array.isArray(errorData.errors[field]) 
+            ? errorData.errors[field] 
+            : [errorData.errors[field]];
+          
+          console.log(`Processing field error: ${field} -> ${fieldKey}:`, errorMessages);
+          
+          if (fieldKey === 'firstname' || fieldKey === 'first_name') {
+            newErrors.firstName = errorMessages;
+          } else if (fieldKey === 'lastname' || fieldKey === 'last_name') {
+            newErrors.lastName = errorMessages;
+          } else if (fieldKey === 'username') {
+            newErrors.username = errorMessages;
+            const errorText = errorMessages.join(' ').toLowerCase();
+            if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
+              setUsernameExists(true);
+            }
+          } else if (fieldKey === 'email') {
+            newErrors.email = errorMessages;
+            const errorText = errorMessages.join(' ').toLowerCase();
+            if (errorText.includes('taken') || errorText.includes('exists') || errorText.includes('already')) {
+              setEmailExists(true);
+            }
+          } else if (fieldKey === 'password') {
+            newErrors.password = errorMessages;
+          } else if (fieldKey === 'phonenumber' || fieldKey === 'phone_number') {
+            newErrors.phoneNumber = errorMessages;
+          } else {
+            const matchingKey = Object.keys(formData).find(key => key.toLowerCase() === fieldKey);
+            if (matchingKey) {
+              newErrors[matchingKey] = errorMessages;
+            }
+          }
+        });
       }
-    } else if (lowerMessage.includes('email')) {
-      if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
-        newErrors.email = ['This email is already taken. Try logging in instead?'];
-        setEmailExists(true);
-      } else if (lowerMessage.includes('valid')) {
-        newErrors.email = ['Please enter a valid email address.'];
-      } else {
-        newErrors.email = [errorMessage];
-      }
-    } else if (lowerMessage.includes('password')) {
-      if (lowerMessage.includes('short')) {
-        newErrors.password = ['Hey! Your password is too short. Make it at least 8 characters.'];
-      } else if (lowerMessage.includes('digit')) {
-        newErrors.password = ['Add at least one number (0-9) to your password.'];
-      } else if (lowerMessage.includes('lowercase')) {
-        newErrors.password = ['Include at least one lowercase letter (a-z) in your password.'];
-      } else if (lowerMessage.includes('uppercase')) {
-        newErrors.password = ['Include at least one uppercase letter (A-Z) in your password.'];
-      } else if (lowerMessage.includes('special')) {
-        newErrors.password = ['Add a special character like !@#$%^&* to your password.'];
-      } else {
-        newErrors.password = [errorMessage];
-      }
-    } else if (lowerMessage.includes('first name')) {
-      if (lowerMessage.includes('same')) {
-        newErrors.firstName = ['First Name and Last Name cannot be the same.'];
-      } else if (lowerMessage.includes('characters')) {
-        newErrors.firstName = ['First Name must be at least 3 characters long.'];
-      } else {
-        newErrors.firstName = [errorMessage];
-      }
-    } else if (lowerMessage.includes('last name')) {
-      if (lowerMessage.includes('same')) {
-        newErrors.lastName = ['First Name and Last Name cannot be the same.'];
-      } else if (lowerMessage.includes('characters')) {
-        newErrors.lastName = ['Last Name must be at least 3 characters long.'];
-      } else {
-        newErrors.lastName = [errorMessage];
-      }
-    } else if (lowerMessage.includes('phone')) {
-      newErrors.phoneNumber = [errorMessage];
-    } else if (lowerMessage !== 'validation failed') {
-      // Only set as general error if it's not a generic validation message
-      console.log('Setting as general error:', errorMessage);
-      setGeneralError(errorMessage);
     }
-  }
-  
-  console.log('Final processed errors:', newErrors);
-  return newErrors;
-};
+    
+    const errorMessage = errorData.message || errorData.errorMessage || '';
+    if (errorMessage && Object.keys(newErrors).length === 0) {
+      const lowerMessage = errorMessage.toLowerCase();
+      console.log('Processing error message:', errorMessage);
+      
+      if (lowerMessage.includes('username')) {
+        if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
+          newErrors.username = ['This username is already taken. Please choose another.'];
+          setUsernameExists(true);
+        } else if (lowerMessage.includes('characters')) {
+          newErrors.username = ['Username must be at least 3 characters long.'];
+        } else {
+          newErrors.username = [errorMessage];
+        }
+      } else if (lowerMessage.includes('email')) {
+        if (lowerMessage.includes('taken') || lowerMessage.includes('exists') || lowerMessage.includes('already')) {
+          newErrors.email = ['This email is already taken. Try logging in instead?'];
+          setEmailExists(true);
+        } else if (lowerMessage.includes('valid')) {
+          newErrors.email = ['Please enter a valid email address.'];
+        } else {
+          newErrors.email = [errorMessage];
+        }
+      } else if (lowerMessage.includes('password')) {
+        if (lowerMessage.includes('short')) {
+          newErrors.password = ['Hey! Your password is too short. Make it at least 8 characters.'];
+        } else if (lowerMessage.includes('digit')) {
+          newErrors.password = ['Add at least one number (0-9) to your password.'];
+        } else if (lowerMessage.includes('lowercase')) {
+          newErrors.password = ['Include at least one lowercase letter (a-z) in your password.'];
+        } else if (lowerMessage.includes('uppercase')) {
+          newErrors.password = ['Include at least one uppercase letter (A-Z) in your password.'];
+        } else if (lowerMessage.includes('special')) {
+          newErrors.password = ['Add a special character like !@#$%^&* to your password.'];
+        } else {
+          newErrors.password = [errorMessage];
+        }
+      } else if (lowerMessage.includes('first name')) {
+        if (lowerMessage.includes('same')) {
+          newErrors.firstName = ['First Name and Last Name cannot be the same.'];
+        } else if (lowerMessage.includes('characters')) {
+          newErrors.firstName = ['First Name must be at least 3 characters long.'];
+        } else {
+          newErrors.firstName = [errorMessage];
+        }
+      } else if (lowerMessage.includes('last name')) {
+        if (lowerMessage.includes('same')) {
+          newErrors.lastName = ['First Name and Last Name cannot be the same.'];
+        } else if (lowerMessage.includes('characters')) {
+          newErrors.lastName = ['Last Name must be at least 3 characters long.'];
+        } else {
+          newErrors.lastName = [errorMessage];
+        }
+      } else if (lowerMessage.includes('phone')) {
+        newErrors.phoneNumber = [errorMessage];
+      } else if (lowerMessage !== 'validation failed') {
+        console.log('Setting as general error:', errorMessage);
+        setGeneralError(errorMessage);
+      }
+    }
+    
+    console.log('Final processed errors:', newErrors);
+    return newErrors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -555,13 +560,13 @@ const processServerErrors = (errorData) => {
       setSuccessMessage('Registration completed successfully! Logging you in...');
       toast.success('Registration successful! Logging you in...');
 
-      // Auto-login after successful registration
+      // Auto-login after successful registration with enhanced navigation
       setTimeout(async () => {
         const loginSuccess = await performAutoLogin(formData.email, formData.password);
         if (!loginSuccess) {
           toast.error('Registration successful, but auto-login failed. Please login manually.');
         }
-      }, 1000);
+      }, 1500); // Increased delay slightly for better UX
 
     } catch (err) {
       console.error('Registration error:', err);
@@ -574,7 +579,7 @@ const processServerErrors = (errorData) => {
         const fieldErrors = processServerErrors(data);
         
         if (Object.keys(fieldErrors).length > 0) {
-          console.log('Setting field errors:', fieldErrors); // Debug log
+          console.log('Setting field errors:', fieldErrors);
           setErrors(fieldErrors);
         } else {
           // Fallback error handling based on status codes
@@ -583,7 +588,6 @@ const processServerErrors = (errorData) => {
               setGeneralError(data.message || data.errorMessage || 'Invalid request. Please check your input.');
               break;
             case 409:
-              // 409 usually means conflict - check for username/email conflict
               const conflictMessage = data.message || data.errorMessage || '';
               if (conflictMessage.toLowerCase().includes('username')) {
                 setErrors({ username: ['This username is already taken. Please choose another.'] });
