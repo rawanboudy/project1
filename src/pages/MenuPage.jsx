@@ -11,15 +11,16 @@ import toast from 'react-hot-toast';
 
 const SORT_OPTIONS = [
   { value: '',        label: '–– None ––' },
-  { value: 'priceAsc',  label: 'Price: Low → High' },
-  { value: 'priceDesc', label: 'Price: High → Low' },
-  { value: 'nameAsc',   label: 'Name: A → Z' },
-  { value: 'nameDesc',  label: 'Name: Z → A' },
+  { value: '1',       label: 'Price: Low → High' },
+  { value: '2',       label: 'Price: High → Low' },
+  { value: '0',       label: 'Name: A → Z' },
+  { value: '3',       label: 'Name: Z → A' },
 ];
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const [allProducts, setAllProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [allBrands, setAllBrands] = useState([]);
   const [allTypes, setAllTypes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -57,89 +58,125 @@ export default function MenuPage() {
     return [];
   };
 
-  // Fetch products, brands, and types on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError('');
+  // Fetch products with API parameters
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      console.log('Fetching products with filters:', {
+        brandId: brandFilter,
+        typeId: typeFilter,
+        search,
+        sort,
+        pageIndex,
+        pageSize
+      });
+
+      // Build query parameters
+      const params = new URLSearchParams();
       
+      if (brandFilter) params.append('BrandId', brandFilter);
+      if (typeFilter) params.append('TypeId', typeFilter);
+      if (search) params.append('Search', search);
+      if (sort) params.append('Sort', sort);
+      params.append('PageIndex', pageIndex.toString());
+      params.append('PageSize', pageSize.toString());
+
+      const url = `products?${params.toString()}`;
+      console.log('API URL:', url);
+
+      const response = await axios.get(url);
+      console.log('Products response:', response.data);
+
+      // Handle different response structures
+      let productsData = [];
+      let total = 0;
+
+      if (response.data) {
+        // Check if response has pagination info
+        if (response.data.data && Array.isArray(response.data.data)) {
+          productsData = response.data.data;
+          total = response.data.count || response.data.total || productsData.length;
+        } else if (Array.isArray(response.data)) {
+          productsData = response.data;
+          total = productsData.length;
+        } else {
+          productsData = ensureArray(response.data);
+          total = productsData.length;
+        }
+      }
+
+      console.log('Processed products:', productsData);
+      console.log('Total count:', total);
+
+      setProducts(productsData);
+      setTotalCount(total);
+      
+      // Initialize quantities for new products
+      const newQuantities = {};
+      productsData.forEach(product => {
+        if (product && product.id) {
+          newQuantities[product.id] = quantities[product.id] || 1;
+        }
+      });
+      setQuantities(prev => ({ ...prev, ...newQuantities }));
+
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('Failed to load products. Please try again.');
+      setProducts([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch brands and types separately (these don't change based on filters)
+  useEffect(() => {
+    const fetchBrandsAndTypes = async () => {
       try {
-        // Fetch products
-        console.log('Fetching products...');
-        const productsPromise = axios.get('products');
-        
         // Fetch brands
         setBrandsLoading(true);
-        console.log('Fetching brands...');
         const brandsPromise = axios.get('products/brands');
         
         // Fetch types
         setTypesLoading(true);
-        console.log('Fetching types...');
         const typesPromise = axios.get('products/types');
 
-        // Wait for all requests to complete
-        const [productsResp, brandsResp, typesResp] = await Promise.all([
-          productsPromise,
-          brandsPromise,
-          typesPromise
-        ]);
+        const [brandsResp, typesResp] = await Promise.all([brandsPromise, typesPromise]);
 
-        console.log('Raw products response:', productsResp.data);
-        console.log('Raw brands response:', brandsResp.data);
-        console.log('Raw types response:', typesResp.data);
+        console.log('Brands response:', brandsResp.data);
+        console.log('Types response:', typesResp.data);
 
-        // Process products with proper validation
-        const products = ensureArray(productsResp.data);
-        console.log('Processed products array:', products);
-        setAllProducts(products);
-        
-        // Initialize quantities for all products
-        const initialQuantities = {};
-        if (Array.isArray(products)) {
-          products.forEach(product => {
-            if (product && product.id) {
-              initialQuantities[product.id] = 1;
-            }
-          });
-        }
-        setQuantities(initialQuantities);
-
-        // Process brands with proper validation
-        const brands = ensureArray(brandsResp.data);
-        console.log('Processed brands array:', brands);
-        setAllBrands(brands);
-
-        // Process types with proper validation
-        const types = ensureArray(typesResp.data);
-        console.log('Processed types array:', types);
-        setAllTypes(types);
-
-        // Load user favorites
-        fetchUserFavorites();
+        setAllBrands(ensureArray(brandsResp.data));
+        setAllTypes(ensureArray(typesResp.data));
 
       } catch (err) {
-        console.error('Error fetching data:', err);
-        console.error('Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status
-        });
-        setError('Failed to load menu data. Please try again.');
-        
-        // Set empty arrays as fallback
-        setAllProducts([]);
+        console.error('Error fetching brands/types:', err);
         setAllBrands([]);
         setAllTypes([]);
       } finally {
-        setLoading(false);
         setBrandsLoading(false);
         setTypesLoading(false);
       }
     };
 
-    fetchData();
+    fetchBrandsAndTypes();
+    fetchUserFavorites();
   }, []);
+
+  // Fetch products whenever filters change
+  useEffect(() => {
+    fetchProducts();
+  }, [brandFilter, typeFilter, search, sort, pageIndex]);
+
+  // Reset to page 1 when filters change (except pageIndex itself)
+  useEffect(() => {
+    if (pageIndex !== 1) {
+      setPageIndex(1);
+    }
+  }, [brandFilter, typeFilter, search, sort]);
 
   // Fetch user favorites from localStorage
   const fetchUserFavorites = () => {
@@ -251,13 +288,21 @@ export default function MenuPage() {
   const brands = useMemo(() => {
     if (!Array.isArray(allBrands)) {
       console.warn('allBrands is not an array:', allBrands);
-      return [''];
+      return [{ id: '', name: 'All Brands' }];
     }
-    const brandList = ['', ...allBrands.map(brand => {
-      if (typeof brand === 'string') return brand;
-      if (brand && typeof brand === 'object' && brand.name) return brand.name;
-      return String(brand || '');
-    })];
+    const brandList = [
+      { id: '', name: 'All Brands' },
+      ...allBrands.map(brand => {
+        if (typeof brand === 'string') return { id: brand, name: brand };
+        if (brand && typeof brand === 'object') {
+          return {
+            id: brand.id || brand.value || brand.name,
+            name: brand.name || brand.label || brand
+          };
+        }
+        return { id: String(brand || ''), name: String(brand || '') };
+      })
+    ];
     console.log('Brands for filter:', brandList);
     return brandList;
   }, [allBrands]);
@@ -265,75 +310,27 @@ export default function MenuPage() {
   const types = useMemo(() => {
     if (!Array.isArray(allTypes)) {
       console.warn('allTypes is not an array:', allTypes);
-      return [''];
+      return [{ id: '', name: 'All Types' }];
     }
-    const typeList = ['', ...allTypes.map(type => {
-      if (typeof type === 'string') return type;
-      if (type && typeof type === 'object' && type.name) return type.name;
-      return String(type || '');
-    })];
+    const typeList = [
+      { id: '', name: 'All Types' },
+      ...allTypes.map(type => {
+        if (typeof type === 'string') return { id: type, name: type };
+        if (type && typeof type === 'object') {
+          return {
+            id: type.id || type.value || type.name,
+            name: type.name || type.label || type
+          };
+        }
+        return { id: String(type || ''), name: String(type || '') };
+      })
+    ];
     console.log('Types for filter:', typeList);
     return typeList;
   }, [allTypes]);
 
-  // Apply brand/type/search and sort with proper validation
-  const filtered = useMemo(() => {
-    if (!Array.isArray(allProducts)) {
-      console.warn('allProducts is not an array:', allProducts);
-      return [];
-    }
-
-    let arr = [...allProducts]; // Create a copy to avoid mutation
-    
-    if (brandFilter) {
-      arr = arr.filter(p => p && p.brandName === brandFilter);
-    }
-    
-    if (typeFilter) {
-      arr = arr.filter(p => p && p.typeName === typeFilter);
-    }
-    
-    if (search) {
-      arr = arr.filter(p => {
-        if (!p) return false;
-        const name = String(p.name || '').toLowerCase();
-        const description = String(p.description || '').toLowerCase();
-        const searchTerm = search.toLowerCase();
-        return name.includes(searchTerm) || description.includes(searchTerm);
-      });
-    }
-    
-    switch (sort) {
-      case 'priceAsc':
-        arr = arr.sort((a, b) => (a?.price || 0) - (b?.price || 0));
-        break;
-      case 'priceDesc':
-        arr = arr.sort((a, b) => (b?.price || 0) - (a?.price || 0));
-        break;
-      case 'nameAsc':
-        arr = arr.sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
-        break;
-      case 'nameDesc':
-        arr = arr.sort((a, b) => String(b?.name || '').localeCompare(String(a?.name || '')));
-        break;
-      default:
-        break;
-    }
-    
-    console.log('Filtered products:', arr);
-    return arr;
-  }, [allProducts, brandFilter, typeFilter, search, sort]);
-
-  // Pagination with proper validation
-  const totalPages = Math.ceil((filtered?.length || 0) / pageSize);
-  const pageData = useMemo(() => {
-    if (!Array.isArray(filtered)) {
-      console.warn('filtered is not an array:', filtered);
-      return [];
-    }
-    const start = (pageIndex - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, pageIndex]);
+  // Calculate total pages based on API response
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Handle quantity changes
   const updateQuantity = (productId, change) => {
@@ -502,7 +499,6 @@ export default function MenuPage() {
       setBrandFilter(localBrandFilter);
       setTypeFilter(localTypeFilter);
       setSort(localSort);
-      setPageIndex(1);
       if (onClose) onClose();
     };
 
@@ -520,7 +516,6 @@ export default function MenuPage() {
         setBrandFilter(newValues.brand);
         setTypeFilter(newValues.type);
         setSort(newValues.sort);
-        setPageIndex(1);
       }
     };
 
@@ -530,7 +525,6 @@ export default function MenuPage() {
         setLocalSearch(value);
       } else { // Desktop mode - apply immediately
         setSearch(value);
-        setPageIndex(1);
       }
     };
 
@@ -539,7 +533,6 @@ export default function MenuPage() {
         setLocalBrandFilter(value);
       } else { // Desktop mode - apply immediately
         setBrandFilter(value);
-        setPageIndex(1);
       }
     };
 
@@ -548,7 +541,6 @@ export default function MenuPage() {
         setLocalTypeFilter(value);
       } else { // Desktop mode - apply immediately
         setTypeFilter(value);
-        setPageIndex(1);
       }
     };
 
@@ -557,7 +549,6 @@ export default function MenuPage() {
         setLocalSort(value);
       } else { // Desktop mode - apply immediately
         setSort(value);
-        setPageIndex(1);
       }
     };
 
@@ -609,9 +600,9 @@ export default function MenuPage() {
                 value={currentBrand}
                 onChange={(e) => handleBrandChange(e.target.value)}
               >
-                {Array.isArray(brands) && brands.map((b, index) => (
-                  <option key={`brand-${index}-${b}`} value={b}>
-                    {b || 'All Brands'}
+                {Array.isArray(brands) && brands.map((brand, index) => (
+                  <option key={`brand-${index}-${brand.id}`} value={brand.id}>
+                    {brand.name}
                   </option>
                 ))}
               </select>
@@ -632,9 +623,9 @@ export default function MenuPage() {
                 value={currentType}
                 onChange={(e) => handleTypeChange(e.target.value)}
               >
-                {Array.isArray(types) && types.map((t, index) => (
-                  <option key={`type-${index}-${t}`} value={t}>
-                    {t || 'All Types'}
+                {Array.isArray(types) && types.map((type, index) => (
+                  <option key={`type-${index}-${type.id}`} value={type.id}>
+                    {type.name}
                   </option>
                 ))}
               </select>
@@ -674,13 +665,9 @@ export default function MenuPage() {
                   Clear All
                 </button>
               </div>
-              
-              
             </div>
           )}
         </div>
-
-       
       </div>
     );
   };
@@ -703,9 +690,8 @@ export default function MenuPage() {
             {/* Debug info in hero */}
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-2 text-xs text-orange-100">
-                Products: {Array.isArray(allProducts) ? allProducts.length : 'Not array'} | 
-                Brands: {Array.isArray(allBrands) ? allBrands.length : 'Not array'} | 
-                Types: {Array.isArray(allTypes) ? allTypes.length : 'Not array'}
+                Products: {products.length} | Total: {totalCount} |
+                Brands: {allBrands.length} | Types: {allTypes.length}
               </div>
             )}
           </div>
@@ -750,17 +736,17 @@ export default function MenuPage() {
 
             {/* Results summary */}
             <div className="mb-4 text-sm text-gray-600">
-              Showing {Array.isArray(pageData) ? pageData.length : 0} of {Array.isArray(filtered) ? filtered.length : 0} products
+              Showing {products.length} of {totalCount} products
               {search && ` for "${search}"`}
-              {brandFilter && ` in ${brandFilter}`}
-              {typeFilter && ` of type ${typeFilter}`}
+              {brandFilter && brands.find(b => b.id === brandFilter) && ` in ${brands.find(b => b.id === brandFilter)?.name}`}
+              {typeFilter && types.find(t => t.id === typeFilter) && ` of type ${types.find(t => t.id === typeFilter)?.name}`}
             </div>
 
             {loading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
               </div>
-            ) : !Array.isArray(pageData) || pageData.length === 0 ? (
+            ) : !Array.isArray(products) || products.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-gray-400 text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
@@ -777,7 +763,6 @@ export default function MenuPage() {
                       setBrandFilter('');
                       setTypeFilter('');
                       setSort('');
-                      setPageIndex(1);
                     }}
                     className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                   >
@@ -787,7 +772,7 @@ export default function MenuPage() {
               </div>
             ) : (
               <motion.div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                {pageData.map((item, idx) => {
+                {products.map((item, idx) => {
                   // Ensure item exists and has required properties
                   if (!item || !item.id) {
                     console.warn('Invalid item found:', item);
@@ -935,7 +920,7 @@ export default function MenuPage() {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setPageIndex(n => Math.max(1, n - 1))}
-                    disabled={pageIndex === 1}
+                    disabled={pageIndex === 1 || loading}
                     className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -946,7 +931,7 @@ export default function MenuPage() {
                   </span>
                   <button
                     onClick={() => setPageIndex(n => Math.min(totalPages, n + 1))}
-                    disabled={pageIndex === totalPages}
+                    disabled={pageIndex === totalPages || loading}
                     className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
                     <span>Next</span>
