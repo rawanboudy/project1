@@ -46,182 +46,181 @@ export default function MenuPage() {
   }, []);
 
   // Enhanced helper function to ensure data is an array and handle various API response formats
-const ensureArray = (data) => {
-  console.log('Raw data received:', data);
-  
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object') {
-    // Check common API response patterns
-    if (Array.isArray(data.data)) return data.data;
-    if (Array.isArray(data.items)) return data.items;
-    if (Array.isArray(data.products)) return data.products;
-    if (Array.isArray(data.results)) return data.results;
-    if (Array.isArray(data.value)) return data.value;
+  const ensureArray = (data) => {
+    console.log('Raw data received:', data);
     
-    // If it's an object with enumerable properties, convert to array
-    const keys = Object.keys(data);
-    if (keys.length > 0 && keys.every(key => !isNaN(key))) {
-      return Object.values(data);
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      // Check common API response patterns
+      if (Array.isArray(data.data)) return data.data;
+      if (Array.isArray(data.items)) return data.items;
+      if (Array.isArray(data.products)) return data.products;
+      if (Array.isArray(data.results)) return data.results;
+      if (Array.isArray(data.value)) return data.value;
+      
+      // If it's an object with enumerable properties, convert to array
+      const keys = Object.keys(data);
+      if (keys.length > 0 && keys.every(key => !isNaN(key))) {
+        return Object.values(data);
+      }
     }
-  }
-  return [];
-};
-
-
-  // Improved function to normalize category/type data
-  const normalizeFilterData = (data, type = 'category') => {
-  console.log(`Normalizing ${type} data:`, data);
-  
-  if (!Array.isArray(data)) {
-    console.warn(`${type} data is not an array:`, data);
     return [];
-  }
-  
-  return data.map((item, index) => {
-    console.log(`Processing ${type} item:`, item);
+  };
+
+  // FIXED function to normalize category/type data with correct API property names
+  const normalizeFilterData = (data, type = 'category') => {
+    console.log(`Normalizing ${type} data:`, data);
     
-    // Handle string values
-    if (typeof item === 'string') {
-      return { id: item, name: item, value: item };
+    if (!Array.isArray(data)) {
+      console.warn(`${type} data is not an array:`, data);
+      return [];
     }
     
-    // Handle object values - THIS IS THE KEY FIX
-    if (item && typeof item === 'object') {
-      let id, name;
+    return data.map((item, index) => {
+      console.log(`Processing ${type} item:`, item);
       
-      if (type === 'category') {
-        // For categories: use id and brandName
-        id = item.id || index.toString();
-        name = item.brandName || item.name || `Category ${index + 1}`;
-      } else if (type === 'type') {
-        // For types: use id and typeName  
-        id = item.id || index.toString();
-        name = item.typeName || item.name || `Type ${index + 1}`;
-      } else {
-        // Generic fallback
-        id = item.id || item.value || item.key || index.toString();
-        name = item.name || item.label || item.title || item.toString();
+      // Handle string values
+      if (typeof item === 'string') {
+        return { id: item, name: item, value: item };
       }
       
-      console.log(`Normalized ${type}:`, { id, name, value: id });
+      // Handle object values - FIXED FOR YOUR API STRUCTURE
+      if (item && typeof item === 'object') {
+        let id, name;
+        
+        if (type === 'category') {
+          // For categories: use id and brandName (YOUR API STRUCTURE)
+          id = item.id || index.toString();
+          name = item.brandName || item.name || `Category ${index + 1}`;
+        } else if (type === 'type') {
+          // For types: use id and typeName (YOUR API STRUCTURE)
+          id = item.id || index.toString();
+          name = item.typeName || item.name || `Type ${index + 1}`;
+        } else {
+          // Generic fallback
+          id = item.id || item.value || item.key || index.toString();
+          name = item.name || item.label || item.title || item.toString();
+        }
+        
+        console.log(`Normalized ${type}:`, { id, name, value: id });
+        
+        return {
+          id: String(id),
+          name: String(name),
+          value: String(id)
+        };
+      }
       
+      // Fallback for other types
       return {
-        id: String(id),
-        name: String(name),
-        value: String(id)
+        id: String(index),
+        name: String(item || 'Unknown'),
+        value: String(index)
       };
-    }
-    
-    // Fallback for other types
-    return {
-      id: String(index),
-      name: String(item || 'Unknown'),
-      value: String(index)
-    };
-  });
-};
-
-  // Fetch products with improved error handling and debugging
-  // Fixed fetchProducts function with correct API parameter names
-const fetchProducts = async () => {
-  setLoading(true);
-  setError('');
-  
-  try {
-    console.log('Fetching products with filters:', {
-      brandId: categoryFilter,  // Changed from categoryId to brandId
-      typeId: typeFilter,
-      search,
-      sort
     });
+  };
 
-    // Build query parameters
-    const params = new URLSearchParams();
+  // FIXED fetchProducts function with correct parameter names
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError('');
     
-    // IMPORTANT FIX: Use correct parameter names based on your API
-    // Since categories are brands in your system, use BrandId instead of CategoryId
-    if (categoryFilter && categoryFilter !== '') {
-      params.append('BrandId', String(categoryFilter));  // Changed from CategoryId to BrandId
-    }
-    if (typeFilter && typeFilter !== '') {
-      params.append('TypeId', String(typeFilter));
-    }
-    if (search && search.trim() !== '') {
-      params.append('Search', search.trim());
-    }
-    if (sort && sort !== '') {
-      params.append('Sort', String(sort));
-    }
-    
-    // Always add pagination
-    params.append('PageIndex', '1');
-    params.append('PageSize', '100'); // Get more products initially
+    try {
+      console.log('Fetching products with filters:', {
+        brandId: categoryFilter,  // Changed from categoryId to brandId
+        typeId: typeFilter,
+        search,
+        sort
+      });
 
-    const url = `products?${params.toString()}`;
-    console.log('Final API URL:', url);
-
-    const response = await axios.get(url);
-    console.log('Products response:', response.data);
-
-    // Handle different response structures
-    let fetchedProducts = [];
-    let totalCountValue = 0;
-
-    if (response.data) {
-      if (response.data.data && Array.isArray(response.data.data)) {
-        fetchedProducts = response.data.data;
-        totalCountValue = response.data.count || response.data.total || fetchedProducts.length;
-      } else if (Array.isArray(response.data)) {
-        fetchedProducts = response.data;
-        totalCountValue = fetchedProducts.length;
-      } else {
-        fetchedProducts = ensureArray(response.data);
-        totalCountValue = fetchedProducts.length;
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      // FIXED: Use correct parameter names based on your API
+      // Since categories are brands in your system, use BrandId instead of CategoryId
+      if (categoryFilter && categoryFilter !== '') {
+        params.append('BrandId', String(categoryFilter));  // CHANGED FROM CategoryId
       }
-    }
-
-    console.log('Processed products:', fetchedProducts);
-    console.log('Total count:', totalCountValue);
-
-    // Apply client-side pagination for display
-    const startIndex = (pageIndex - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedProducts = fetchedProducts.slice(startIndex, endIndex);
-
-    setProducts(paginatedProducts);
-    setTotalCount(totalCountValue);
-    
-    // Store all products for pagination (clear previous cache for different filters)
-    if (!window.allFetchedProducts) {
-      window.allFetchedProducts = {};
-    }
-    const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
-    window.allFetchedProducts[filterKey] = fetchedProducts;
-
-    // Initialize quantities for new products
-    const newQuantities = {};
-    paginatedProducts.forEach(product => {
-      if (product && product.id) {
-        newQuantities[product.id] = quantities[product.id] || 1;
+      if (typeFilter && typeFilter !== '') {
+        params.append('TypeId', String(typeFilter));
       }
-    });
-    setQuantities(prev => ({ ...prev, ...newQuantities }));
+      if (search && search.trim() !== '') {
+        params.append('Search', search.trim());
+      }
+      if (sort && sort !== '') {
+        params.append('Sort', String(sort));
+      }
+      
+      // Always add pagination
+      params.append('PageIndex', '1');
+      params.append('PageSize', '100'); // Get more products initially
 
-  } catch (err) {
-    console.error('Error fetching products:', err);
-    console.error('Error details:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status
-    });
-    
-    setError('Failed to load products. Please try again.');
-    setProducts([]);
-    setTotalCount(0);
-  } finally {
-    setLoading(false);
-  }
-};
+      const url = `products?${params.toString()}`;
+      console.log('Final API URL:', url);
+
+      const response = await axios.get(url);
+      console.log('Products response:', response.data);
+
+      // Handle different response structures
+      let fetchedProducts = [];
+      let totalCountValue = 0;
+
+      if (response.data) {
+        if (response.data.data && Array.isArray(response.data.data)) {
+          fetchedProducts = response.data.data;
+          totalCountValue = response.data.count || response.data.total || fetchedProducts.length;
+        } else if (Array.isArray(response.data)) {
+          fetchedProducts = response.data;
+          totalCountValue = fetchedProducts.length;
+        } else {
+          fetchedProducts = ensureArray(response.data);
+          totalCountValue = fetchedProducts.length;
+        }
+      }
+
+      console.log('Processed products:', fetchedProducts);
+      console.log('Total count:', totalCountValue);
+
+      // Apply client-side pagination for display
+      const startIndex = (pageIndex - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedProducts = fetchedProducts.slice(startIndex, endIndex);
+
+      setProducts(paginatedProducts);
+      setTotalCount(totalCountValue);
+      
+      // Store all products for pagination (clear previous cache for different filters)
+      if (!window.allFetchedProducts) {
+        window.allFetchedProducts = {};
+      }
+      const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+      window.allFetchedProducts[filterKey] = fetchedProducts;
+
+      // Initialize quantities for new products
+      const newQuantities = {};
+      paginatedProducts.forEach(product => {
+        if (product && product.id) {
+          newQuantities[product.id] = quantities[product.id] || 1;
+        }
+      });
+      setQuantities(prev => ({ ...prev, ...newQuantities }));
+
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      
+      setError('Failed to load products. Please try again.');
+      setProducts([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle pagination from cached products
   const handlePageChange = (newPageIndex) => {
     const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
@@ -440,53 +439,53 @@ const fetchProducts = async () => {
   };
 
   // Build filter lists with improved validation and debugging
-const categories = useMemo(() => {
-  console.log('Building categories dropdown from:', allCategories);
-  
-  if (!Array.isArray(allCategories)) {
-    console.warn('allCategories is not an array:', allCategories);
-    return [{ id: '', name: 'All Categories', value: '' }];
-  }
-  
-  const categoryList = [
-    { id: '', name: 'All Categories', value: '' },
-    ...allCategories.map((category) => {
-      // Categories are already normalized, just ensure proper structure
-      return {
-        id: category.id || category.value || '',
-        name: category.name || 'Unknown Category', // This should now be brandName
-        value: category.id || category.value || ''
-      };
-    })
-  ];
-  
-  console.log('Final categories for dropdown:', categoryList);
-  return categoryList;
-}, [allCategories]);
+  const categories = useMemo(() => {
+    console.log('Building categories dropdown from:', allCategories);
+    
+    if (!Array.isArray(allCategories)) {
+      console.warn('allCategories is not an array:', allCategories);
+      return [{ id: '', name: 'All Categories', value: '' }];
+    }
+    
+    const categoryList = [
+      { id: '', name: 'All Categories', value: '' },
+      ...allCategories.map((category, index) => {
+        // Categories are already normalized by normalizeFilterData
+        return {
+          id: category.id || category.value || '',
+          name: category.name || 'Unknown Category',
+          value: category.id || category.value || ''
+        };
+      })
+    ];
+    
+    console.log('Final categories for dropdown:', categoryList);
+    return categoryList;
+  }, [allCategories]);
 
-const types = useMemo(() => {
-  console.log('Building types dropdown from:', allTypes);
-  
-  if (!Array.isArray(allTypes)) {
-    console.warn('allTypes is not an array:', allTypes);
-    return [{ id: '', name: 'All Types', value: '' }];
-  }
-  
-  const typeList = [
-    { id: '', name: 'All Types', value: '' },
-    ...allTypes.map((type) => {
-      // Types are already normalized, just ensure proper structure  
-      return {
-        id: type.id || type.value || '',
-        name: type.name || 'Unknown Type', // This should now be typeName
-        value: type.id || type.value || ''
-      };
-    })
-  ];
-  
-  console.log('Final types for dropdown:', typeList);
-  return typeList;
-}, [allTypes]);
+  const types = useMemo(() => {
+    console.log('Building types dropdown from:', allTypes);
+    
+    if (!Array.isArray(allTypes)) {
+      console.warn('allTypes is not an array:', allTypes);
+      return [{ id: '', name: 'All Types', value: '' }];
+    }
+    
+    const typeList = [
+      { id: '', name: 'All Types', value: '' },
+      ...allTypes.map((type, index) => {
+        // Types are already normalized by normalizeFilterData
+        return {
+          id: type.id || type.value || '',
+          name: type.name || 'Unknown Type',
+          value: type.id || type.value || ''
+        };
+      })
+    ];
+    
+    console.log('Final types for dropdown:', typeList);
+    return typeList;
+  }, [allTypes]);
 
   // Calculate total pages based on actual data
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -634,7 +633,7 @@ const types = useMemo(() => {
     }
   };
 
-  // Enhanced Filter Section with better debugging
+  // UPDATED Filter Section with better styling and wider layout
   const FilterSection = ({ className = "", onClose = null }) => {
     // Local state for mobile filters to prevent immediate updates
     const [localSearch, setLocalSearch] = useState('');
@@ -742,15 +741,15 @@ const types = useMemo(() => {
             </button>
           </div>
         )}
-        {!onClose && <h2 className="text-xl font-semibold mb-4">Filters</h2>}
+        {!onClose && <h2 className="text-xl font-semibold mb-6">Filters</h2>}
         
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium mb-1">Search</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Search</label>
             <input
               type="text"
-              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm"
               placeholder="Search dishes..."
               value={currentSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -759,15 +758,15 @@ const types = useMemo(() => {
           
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Category</label>
             {categoriesLoading ? (
-              <div className="w-full p-2 border rounded-md bg-gray-50 flex items-center justify-center">
+              <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 <span className="text-sm text-gray-500">Loading categories...</span>
               </div>
             ) : (
               <select
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
                 value={currentCategory}
                 onChange={(e) => handleCategoryChange(e.target.value)}
               >
@@ -778,20 +777,20 @@ const types = useMemo(() => {
                 ))}
               </select>
             )}
-           
+          
           </div>
           
           {/* Type */}
           <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Type</label>
             {typesLoading ? (
-              <div className="w-full p-2 border rounded-md bg-gray-50 flex items-center justify-center">
+              <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 <span className="text-sm text-gray-500">Loading types...</span>
               </div>
             ) : (
               <select
-                className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
                 value={currentType}
                 onChange={(e) => handleTypeChange(e.target.value)}
               >
@@ -807,9 +806,9 @@ const types = useMemo(() => {
           
           {/* Sort */}
           <div>
-            <label className="block text-sm font-medium mb-1">Sort By</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Sort By</label>
             <select
-              className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
               value={currentSort}
               onChange={(e) => handleSortChange(e.target.value)}
             >
@@ -821,20 +820,21 @@ const types = useMemo(() => {
             </select>
           </div>
 
-          {/* Desktop Clear Button */}
+          {/* Desktop Clear Button with better styling */}
           {!onClose && (
             <button
               onClick={clearFilters}
-              className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6"
             >
-              Clear All Filters
+              <X className="w-4 h-4" />
+              <span>Clear All Filters</span>
             </button>
           )}
 
           {/* Mobile Action Buttons */}
           {onClose && (
-            <div className="flex flex-col space-y-2 pt-4 border-t">
-              <div className="flex space-x-2">
+            <div className="flex flex-col space-y-3 pt-6 border-t border-gray-200">
+              <div className="flex space-x-3">
                 <button
                   onClick={applyFilters}
                   className="flex-1 bg-gradient-to-r from-orange-400 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all duration-200 flex items-center justify-center"
@@ -843,7 +843,7 @@ const types = useMemo(() => {
                 </button>
                 <button
                   onClick={clearFilters}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
                 >
                   Clear All
                 </button>
@@ -870,7 +870,6 @@ const types = useMemo(() => {
             <p className="text-sm sm:text-base md:text-lg text-orange-200 max-w-xl mx-auto">
               Handcrafted dishes, curated flavors. Refine your search with our filters.
             </p>
-           
           </div>
         </header>
 
@@ -900,17 +899,17 @@ const types = useMemo(() => {
           </div>
         )}
 
-        {/* Content Grid */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12 lg:-mt-20">
-          {/* Desktop Sidebar Filters */}
+        {/* UPDATED Content Grid - Now uses grid-cols-4 for wider filter section */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12 lg:-mt-20">
+          {/* Desktop Sidebar Filters - Now takes 25% width instead of 20% */}
           <aside className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
               <FilterSection />
             </div>
           </aside>
 
-          {/* Products List */}
-          <section className="lg:col-span-4">
+          {/* Products List - Now takes 75% width instead of 80% */}
+          <section className="lg:col-span-3">
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
@@ -975,7 +974,7 @@ const types = useMemo(() => {
                     Clear All Filters
                   </button>
                 )}
-              
+            
               </div>
             ) : (
               <motion.div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">

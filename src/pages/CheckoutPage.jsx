@@ -793,33 +793,32 @@ const parseApiErrors = (error) => {
                 </div>
               </div>
             </div>
-
-            {/* Address Fields */}
+               {/* Phone */}
             <div className="group">
               <label className="block text-sm font-semibold text-black mb-2">
-                Street Address *
+                Phone Number
               </label>
               <div className="relative">
                 <input
-                  type="text"
-                  name="street"
-                  value={locationData.street}
+                  type="tel"
+                  name="phone"
+                  value={locationData.phone}
                   onChange={handleInputChange}
-                  required
                   className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
-                    apiErrors.street 
+                    apiErrors.phone 
                       ? 'border-red-400 focus:border-red-500' 
                       : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
                   }`}
-                  placeholder="Enter your street address"
+                  placeholder="Enter your phone number"
                 />
-                {apiErrors.street && (
+                {apiErrors.phone && (
                   <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
-                    {apiErrors.street}
+                    {apiErrors.phone}
                   </div>
                 )}
               </div>
             </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="group">
@@ -878,31 +877,36 @@ const parseApiErrors = (error) => {
               </div>
             </div>
 
-            {/* Phone */}
+            {/* Address Fields */}
             <div className="group">
               <label className="block text-sm font-semibold text-black mb-2">
-                Phone Number
+                Location *
               </label>
               <div className="relative">
                 <input
-                  type="tel"
-                  name="phone"
-                  value={locationData.phone}
+                  type="text"
+                  name="street"
+                  value={locationData.street}
                   onChange={handleInputChange}
+                  required
                   className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
-                    apiErrors.phone 
+                    apiErrors.street 
                       ? 'border-red-400 focus:border-red-500' 
                       : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
                   }`}
-                  placeholder="Enter your phone number"
+                  placeholder="Enter your street address"
                 />
-                {apiErrors.phone && (
+                {apiErrors.street && (
                   <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
-                    {apiErrors.phone}
+                    {apiErrors.street}
                   </div>
                 )}
               </div>
             </div>
+
+            
+
+         
 
             {/* Delivery Instructions */}
             <div className="group">
