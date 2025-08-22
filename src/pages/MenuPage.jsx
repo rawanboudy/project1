@@ -633,7 +633,7 @@ export default function MenuPage() {
     }
   };
 
-  // UPDATED Filter Section with better styling and wider layout
+  // UPDATED Filter Section with better styling and wider layout - REMOVED SCROLL
   const FilterSection = ({ className = "", onClose = null }) => {
     // Local state for mobile filters to prevent immediate updates
     const [localSearch, setLocalSearch] = useState('');
@@ -862,7 +862,7 @@ export default function MenuPage() {
       {/* Proper spacing from navbar */}
       <div className="pt-16">
         {/* Hero Section */}
-        <header className="relative h-48 sm:h-64 md:h-80 flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600">
+        <header className="relative h-48 sm:h-64 md:h-78 flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600">
           <div className="text-center px-4 max-w-4xl mx-auto">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2">
               Explore Our Culinary Creations
@@ -901,9 +901,9 @@ export default function MenuPage() {
 
         {/* UPDATED Content Grid - Now uses grid-cols-4 for wider filter section */}
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12 lg:-mt-20">
-          {/* Desktop Sidebar Filters - Now takes 25% width instead of 20% */}
+          {/* Desktop Sidebar Filters - REMOVED SCROLL - Now takes 25% width instead of 20% */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
+            <div className="sticky top-24">
               <FilterSection />
             </div>
           </aside>
