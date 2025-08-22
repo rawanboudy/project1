@@ -10,6 +10,7 @@ const CheckoutPage = () => {
   const [step, setStep] = useState(1); // 1: Location, 2: Delivery Method, 3: Order Summary
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [userId, setUserId] = useState(null); // Added for user ID
   
   // Location form state
   const [locationData, setLocationData] = useState({
@@ -83,101 +84,111 @@ const CheckoutPage = () => {
     }
   };
 
-  // Load user data from API
+  // UPDATED: Load user data from API with user ID handling
   const loadUserData = async () => {
-    try {
-      // Get user info
-      const userResponse = await axios.get('/Authentication/user');
-      const userData = userResponse.data;
-      
-      // Get user address
-      try {
-        const addressResponse = await axios.get('/Authentication/address');
-        const addressData = addressResponse.data;
-        
-        setLocationData(prev => ({
-          ...prev,
-          firstname: addressData.firstname || userData.firstname || '',
-          lastname: addressData.lastname || userData.lastname || '',
-          street: addressData.street || '',
-          city: addressData.city || '',
-          country: addressData.country || '',
-          phone: userData.phone || ''
-        }));
-      } catch (addressError) {
-        // If no address found, just use user data
-        setLocationData(prev => ({
-          ...prev,
-          firstname: userData.firstname || '',
-          lastname: userData.lastname || '',
-          phone: userData.phone || ''
-        }));
-      }
-      
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
-
-  // Update basket with delivery method
-const updateBasketWithDelivery = async (deliveryMethodId) => {
   try {
-    if (!basketData) {
-      throw new Error('No basket data available');
-    }
-
-    if (!deliveryMethodId) {
-      throw new Error('No delivery method ID provided');
-    }
-
-    // Ensure deliveryMethodId is a number
-    const numericDeliveryMethodId = parseInt(deliveryMethodId);
-    if (isNaN(numericDeliveryMethodId)) {
-      throw new Error('Invalid delivery method ID format');
-    }
-
-    // Find the selected delivery method to get the cost
-    const deliveryMethod = deliveryMethods.find(method => method.id === numericDeliveryMethodId);
-    if (!deliveryMethod) {
-      throw new Error('Selected delivery method not found');
-    }
-
-    const updatedBasket = {
-      id: basketData.id,
-      items: basketData.items,
-      clientSecret: basketData.clientSecret || null,
-      paymentIntentId: basketData.paymentIntentId || null,
-      deliveryMethodId: numericDeliveryMethodId,
-      shippingPrice: deliveryMethod.cost || 0
-    };
-
-    console.log('Updating basket with delivery method:');
-    console.log('- Basket ID:', basketData.id);
-    console.log('- Delivery Method ID:', numericDeliveryMethodId);
-    console.log('- Shipping Price:', deliveryMethod.cost || 0);
-
-    const response = await axios.post('/basket', updatedBasket, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 15000
-    });
+    // Get user info
+    const userResponse = await axios.get('/Authentication/user');
+    const userData = userResponse.data;
     
-    console.log('Basket updated successfully:', response.data);
-    setBasketData(response.data);
-    return response.data;
+    // Store the user ID for later use - handle different possible field names
+    const userIdValue = userData.userId || userData.id || userData.UserId;
+    setUserId(userIdValue);
+    
+    console.log('User data loaded:', userData);
+    console.log('User ID extracted:', userIdValue);
+    
+    // Get user address using the user ID
+    try {
+      const addressResponse = await axios.get(`/Authentication/address/${userIdValue}`);
+      const addressData = addressResponse.data;
+      
+      console.log('Address data loaded:', addressData);
+      
+      setLocationData(prev => ({
+        ...prev,
+        firstname: addressData.firstname || userData.firstname || '',
+        lastname: addressData.lastname || userData.lastname || '',
+        street: addressData.location || addressData.street || '', // Handle API's 'location' field
+        city: addressData.city || '',
+        country: addressData.country || '',
+        phone: userData.phone || ''
+      }));
+    } catch (addressError) {
+      console.log('No existing address found, using user data only:', addressError);
+      // If no address found, just use user data
+      setLocationData(prev => ({
+        ...prev,
+        firstname: userData.firstname || '',
+        lastname: userData.lastname || '',
+        phone: userData.phone || ''
+      }));
+    }
     
   } catch (error) {
-    console.error('Error updating basket with delivery method:', error);
-    
-    if (error.response) {
-      console.error('Update basket error status:', error.response.status);
-      console.error('Update basket error data:', error.response.data);
-    }
-    
-    throw new Error(`Failed to update basket: ${error.message}`);
+    console.error('Error loading user data:', error);
   }
 };
+
+  // Update basket with delivery method
+  const updateBasketWithDelivery = async (deliveryMethodId) => {
+    try {
+      if (!basketData) {
+        throw new Error('No basket data available');
+      }
+
+      if (!deliveryMethodId) {
+        throw new Error('No delivery method ID provided');
+      }
+
+      // Ensure deliveryMethodId is a number
+      const numericDeliveryMethodId = parseInt(deliveryMethodId);
+      if (isNaN(numericDeliveryMethodId)) {
+        throw new Error('Invalid delivery method ID format');
+      }
+
+      // Find the selected delivery method to get the cost
+      const deliveryMethod = deliveryMethods.find(method => method.id === numericDeliveryMethodId);
+      if (!deliveryMethod) {
+        throw new Error('Selected delivery method not found');
+      }
+
+      const updatedBasket = {
+        id: basketData.id,
+        items: basketData.items,
+        clientSecret: basketData.clientSecret || null,
+        paymentIntentId: basketData.paymentIntentId || null,
+        deliveryMethodId: numericDeliveryMethodId,
+        shippingPrice: deliveryMethod.cost || 0
+      };
+
+      console.log('Updating basket with delivery method:');
+      console.log('- Basket ID:', basketData.id);
+      console.log('- Delivery Method ID:', numericDeliveryMethodId);
+      console.log('- Shipping Price:', deliveryMethod.cost || 0);
+
+      const response = await axios.post('/basket', updatedBasket, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      console.log('Basket updated successfully:', response.data);
+      setBasketData(response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('Error updating basket with delivery method:', error);
+      
+      if (error.response) {
+        console.error('Update basket error status:', error.response.status);
+        console.error('Update basket error data:', error.response.data);
+      }
+      
+      throw new Error(`Failed to update basket: ${error.message}`);
+    }
+  };
 
   // Fetch delivery methods from API
   const fetchDeliveryMethods = async () => {
@@ -208,36 +219,47 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
   };
 
   // Parse API validation errors
-  const parseApiErrors = (error) => {
-    const errors = {};
+const parseApiErrors = (error) => {
+  const errors = {};
+  
+  if (error.response?.data) {
+    const errorData = error.response.data;
     
-    if (error.response?.data) {
-      const errorData = error.response.data;
-      
-      // Handle different API error response formats
-      if (errorData.errors && typeof errorData.errors === 'object') {
-        // ASP.NET Core validation errors format
-        Object.keys(errorData.errors).forEach(field => {
-          const fieldName = field.toLowerCase();
-          if (Array.isArray(errorData.errors[field])) {
-            errors[fieldName] = errorData.errors[field][0];
-          } else {
-            errors[fieldName] = errorData.errors[field];
-          }
-        });
-      } else if (errorData.errorMessage) {
-        // Handle the specific error format from your API
-        errors.general = errorData.errorMessage;
-      } else if (errorData.message) {
-        // Single error message
-        errors.general = errorData.message;
-      } else if (typeof errorData === 'string') {
-        errors.general = errorData;
-      }
+    console.log('Parsing API error data:', errorData);
+    
+    // Handle different API error response formats
+    if (errorData.errors && typeof errorData.errors === 'object') {
+      // ASP.NET Core validation errors format
+      Object.keys(errorData.errors).forEach(field => {
+        const fieldName = field.toLowerCase();
+        if (Array.isArray(errorData.errors[field])) {
+          errors[fieldName] = errorData.errors[field][0];
+        } else {
+          errors[fieldName] = errorData.errors[field];
+        }
+      });
+    } else if (errorData.title || errorData.detail) {
+      // Problem Details format
+      errors.general = errorData.detail || errorData.title;
+    } else if (errorData.errorMessage) {
+      // Custom error format
+      errors.general = errorData.errorMessage;
+    } else if (errorData.message) {
+      // Simple message format
+      errors.general = errorData.message;
+    } else if (typeof errorData === 'string') {
+      errors.general = errorData;
+    } else {
+      // Fallback for unknown error format
+      errors.general = 'An error occurred while saving your address.';
     }
-    
-    return errors;
-  };
+  } else {
+    // Network or other error
+    errors.general = 'Network error. Please check your connection and try again.';
+  }
+  
+  return errors;
+};
 
   // Client-side validation for required fields
   const validateAddressData = () => {
@@ -266,57 +288,70 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
     return errors;
   };
 
-  // Handle address form submission - FIXED VERSION for Mobile
+  // UPDATED: Handle address form submission with user ID in URL
   const handleAddressSubmit = async (e) => {
-    if (e) {
-      e.preventDefault();
-    }
+  if (e) {
+    e.preventDefault();
+  }
+  
+  // Clear previous errors
+  setApiErrors({});
+  
+  // Client-side validation first
+  const validationErrors = validateAddressData();
+  if (Object.keys(validationErrors).length > 0) {
+    setApiErrors(validationErrors);
+    const firstError = Object.values(validationErrors)[0];
+    toast.error(`Please fix: ${firstError}`);
+    return;
+  }
+
+  if (!userId) {
+    toast.error('User information not loaded. Please refresh the page.');
+    return;
+  }
+  
+  setLoading(true);
+  
+  try {
+    console.log('Submitting address data for user:', userId);
     
-    // Clear previous errors
-    setApiErrors({});
+    // FIXED: Use the correct API endpoint from your documentation
+    const addressData = {
+      firstname: locationData.firstname.trim(),
+      lastname: locationData.lastname.trim(),
+      location: locationData.street.trim(), // API expects 'location' field
+      city: locationData.city.trim(),
+      country: locationData.country.trim()
+    };
     
-    // Client-side validation first
-    const validationErrors = validateAddressData();
-    if (Object.keys(validationErrors).length > 0) {
-      setApiErrors(validationErrors);
-      const firstError = Object.values(validationErrors)[0];
-      toast.error(`Please fix: ${firstError}`);
-      return;
-    }
+    console.log('Address data being sent:', addressData);
     
-    setLoading(true);
+    // Use the correct endpoint: PUT /api/Authentication/UpdateAddress/{id}
+    const response = await axios.put(`/Authentication/UpdateAddress/${userId}`, addressData, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000 // 10 seconds timeout
+    });
     
-    try {
-      console.log('Submitting address data:', locationData);
-      
-      // Let the API validate and save the data
-      const response = await axios.put('/Authentication/address', {
-        firstname: locationData.firstname.trim(),
-        lastname: locationData.lastname.trim(),
-        street: locationData.street.trim(),
-        city: locationData.city.trim(),
-        country: locationData.country.trim()
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000 // 10 seconds timeout
-      });
-      
-      console.log('Address saved successfully:', response.data);
-      
-      localStorage.setItem('deliveryAddress', JSON.stringify(locationData));
-      toast.success('Delivery address saved successfully!');
-      setStep(2); // Move to delivery method selection
-      
-    } catch (error) {
-      console.error('Error saving address:', error);
-      
-      // Parse and set API validation errors
-      const parsedErrors = parseApiErrors(error);
-      setApiErrors(parsedErrors);
-      
-      // Show general error or first specific error
+    console.log('Address saved successfully:', response.data);
+    
+    localStorage.setItem('deliveryAddress', JSON.stringify(locationData));
+    toast.success('Delivery address saved successfully!');
+    setStep(2); // Move to delivery method selection
+    
+  } catch (error) {
+    console.error('Error saving address:', error);
+    console.error('Error response:', error.response);
+    
+    // Parse and set API validation errors
+    const parsedErrors = parseApiErrors(error);
+    setApiErrors(parsedErrors);
+    
+    // Handle specific error cases
+    if (error.response?.status === 400) {
+      // Bad Request - validation errors
       if (parsedErrors.general) {
         toast.error(parsedErrors.general);
       } else {
@@ -324,20 +359,29 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         if (firstError) {
           toast.error(`Validation error: ${firstError}`);
         } else {
-          toast.error('Failed to save address. Please check your input and try again.');
+          toast.error('Please check your input and try again.');
         }
       }
-    } finally {
-      setLoading(false);
+    } else if (error.response?.status === 401) {
+      toast.error('Please log in to save your address.');
+    } else if (error.response?.status === 404) {
+      toast.error('User not found. Please log in again.');
+    } else if (error.code === 'ECONNABORTED') {
+      toast.error('Request timeout. Please check your connection and try again.');
+    } else {
+      toast.error('Failed to save address. Please try again.');
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   // FIXED: Mobile button handler for address submission
   const handleMobileAddressSubmit = () => {
     handleAddressSubmit();
   };
 
-  // Handle final order submission - FIXED VERSION
+  // UPDATED: Handle final order submission with user ID in URL
   const handleOrderSubmit = async () => {
     if (!selectedDeliveryMethod) {
       toast.error('Please select a delivery method');
@@ -346,6 +390,11 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
 
     if (!basketData || !basketData.items || basketData.items.length === 0) {
       toast.error('Your cart is empty');
+      return;
+    }
+
+    if (!userId) {
+      toast.error('User information not loaded. Please refresh the page.');
       return;
     }
 
@@ -366,31 +415,30 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
       const updatedBasket = await updateBasketWithDelivery(selectedDeliveryMethod.id);
       console.log('Basket updated successfully:', updatedBasket);
       
-      // Step 2: Create order using the EXACT structure from API docs
-      // FIXED: Using the correct property name as shown in the API documentation
+      // Step 2: Create order using user ID in URL path
       const orderData = {
         basketId: basketData.id,
-        shipToAddress: {  // This matches the API documentation exactly
+        shipToAddress: {
           firstname: locationData.firstname.trim(),
           lastname: locationData.lastname.trim(),
-          street: locationData.street.trim(),
+          location: locationData.street.trim(), // Use 'location' as per API schema
           city: locationData.city.trim(),
           country: locationData.country.trim()
         },
         deliveryMethodId: selectedDeliveryMethod.id
       };
 
-      console.log('Step 2: Creating order with data:', JSON.stringify(orderData, null, 2));
+      console.log('Step 2: Creating order with user ID:', userId);
+      console.log('Order data:', JSON.stringify(orderData, null, 2));
       console.log('Current basket data:', JSON.stringify(basketData, null, 2));
       console.log('Selected delivery method:', JSON.stringify(selectedDeliveryMethod, null, 2));
       console.log('Location data:', JSON.stringify(locationData, null, 2));
 
-      // FIXED: Ensure we're sending the correct data format and handling potential data type issues
-      const response = await axios.post('/orders', orderData, {
+      // UPDATED: Use POST with user ID in URL path: /api/orders/{id}
+      const response = await axios.post(`/orders/${userId}`, orderData, {
         headers: {
           'Content-Type': 'application/json'
         },
-        // Add timeout to prevent hanging requests
         timeout: 30000
       });
 
@@ -450,7 +498,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         toast.error('Please log in to place an order');
         navigate('/login');
       } else if (error.response?.status === 404) {
-        toast.error('Basket not found. Please refresh and try again.');
+        toast.error('User or basket not found. Please refresh and try again.');
         navigate('/cart');
       } else if (error.response?.status === 500) {
         // Handle the specific 500 error you're getting
@@ -459,11 +507,19 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
         
         // Additional debugging for 500 errors
         console.error('500 Error Details:');
+        console.error('User ID being sent:', userId);
         console.error('Basket ID being sent:', basketData.id);
         console.error('Delivery Method ID being sent:', selectedDeliveryMethod.id);
         console.error('Address data being sent:', locationData);
         
-        // Check if basket and delivery method are valid
+        // Check if required data is valid
+        if (!userId) {
+          console.error('ISSUE: User ID is missing or invalid');
+          toast.error('Invalid user session. Please log in again.');
+          navigate('/login');
+          return;
+        }
+        
         if (!basketData.id) {
           console.error('ISSUE: Basket ID is missing or invalid');
           toast.error('Invalid basket. Please refresh and try again.');
@@ -1135,7 +1191,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
 
       {/* Mobile Final Summary with Buttons */}
       <div className="lg:hidden">
-        <OrderSummaryCard title="total Summary" showButtons={true} stepNumber={3} />
+        <OrderSummaryCard title="Final Summary" showButtons={true} stepNumber={3} />
       </div>
     </div>
   );
@@ -1218,7 +1274,7 @@ const updateBasketWithDelivery = async (deliveryMethodId) => {
             <div className="hidden lg:block lg:col-span-1">
               <div className="sticky top-20">
                 <OrderSummaryCard 
-                  title={step === 3 ? "Total Summary" : "Order Summary"} 
+                  title={step === 3 ? "Final Summary" : "Order Summary"} 
                   showButtons={false} 
                   stepNumber={step} 
                 />

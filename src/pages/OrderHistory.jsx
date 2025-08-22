@@ -13,37 +13,45 @@ export default function OrderHistoryPage() {
   const [user, setUser] = useState({});
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchUserAndOrders = async () => {
       try {
-        const res = await axios.get('/orders/UserOrders');
-        // Map the API response to match component expectations
-        const mappedOrders = Array.isArray(res.data) ? res.data.map(order => ({
-          ...order,
-          items: order.orderItems || [], // Map orderItems to items
-          total: order.subtotal || 0,     // Map subtotal to total
-          status: order.status || 'Processing' // Default status if not provided
-        })) : [];
-        setOrders(mappedOrders);
+        // First fetch user info to get the user ID
+        const userRes = await axios.get('/Authentication/user');
+        const userData = userRes.data;
+        setUser(userData);
+
+        // Then fetch orders using the user ID
+        if (userData.userId) {
+          const ordersRes = await axios.get(`/orders/UserOrders/${userData.userId}`);
+          
+          // Map the API response to match component expectations
+          const mappedOrders = Array.isArray(ordersRes.data) ? ordersRes.data.map(order => ({
+            ...order,
+            items: order.orderItems || [], // Map orderItems to items
+            total: order.subtotal || 0,     // Map subtotal to total
+            status: order.status || 'Processing' // Default status if not provided
+          })) : [];
+          
+          setOrders(mappedOrders);
+        } else {
+          console.warn('No user ID found');
+          toast.error('Unable to load orders: User ID not found');
+        }
       } catch (err) {
-        console.error('Failed to fetch orders', err);
-        toast.error('Error loading orders.');
+        console.error('Failed to fetch user info or orders', err);
+        if (err.response?.status === 401) {
+          toast.error('Please log in to view your orders');
+          navigate('/login'); // Redirect to login if unauthorized
+        } else {
+          toast.error('Error loading orders.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchUser = async () => {
-      try {
-        const res = await axios.get('/Authentication/user');
-        setUser(res.data);
-      } catch (err) {
-        console.error('Failed to fetch user info', err);
-      }
-    };
-
-    fetchOrders();
-    fetchUser();
-  }, []);
+    fetchUserAndOrders();
+  }, [navigate]);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -207,10 +215,10 @@ export default function OrderHistoryPage() {
                 </h1>
                 <p className="text-orange-100 mt-2">Track and manage your previous orders</p>
               </div>
-              {user.name && (
+              {user.firstName && (
                 <div className="text-right">
                   <p className="text-orange-100 text-sm">Welcome back,</p>
-                  <p className="font-semibold text-xl">{user.name}</p>
+                  <p className="font-semibold text-xl">{user.firstName} {user.lastName}</p>
                 </div>
               )}
             </div>

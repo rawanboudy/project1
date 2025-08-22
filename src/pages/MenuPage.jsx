@@ -45,147 +45,191 @@ export default function MenuPage() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, []);
 
-  // Helper function to ensure data is an array
-  const ensureArray = (data) => {
-    if (Array.isArray(data)) return data;
-    if (data && typeof data === 'object') {
-      // Check common API response patterns
-      if (Array.isArray(data.data)) return data.data;
-      if (Array.isArray(data.items)) return data.items;
-      if (Array.isArray(data.products)) return data.products;
-      if (Array.isArray(data.results)) return data.results;
-    }
-    return [];
-  };
-
-  // Fetch all products by making multiple API calls
-  const fetchProducts = async () => {
-    setLoading(true);
-    setError('');
+  // Enhanced helper function to ensure data is an array and handle various API response formats
+const ensureArray = (data) => {
+  console.log('Raw data received:', data);
+  
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') {
+    // Check common API response patterns
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.items)) return data.items;
+    if (Array.isArray(data.products)) return data.products;
+    if (Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data.value)) return data.value;
     
-    try {
-      console.log('Fetching all products with filters:', {
-        categoryId: categoryFilter,
-        typeId: typeFilter,
-        search,
-        sort
-      });
-
-      let allProducts = [];
-      let currentPage = 1;
-      let totalFetched = 0;
-      let totalCount = 0;
-      const maxPages = 8; // Maximum pages to fetch
-      const apiPageSize = 12; // API page size
-
-      // Keep fetching until we get all products or reach max pages
-      while (currentPage <= maxPages) {
-        // Build query parameters for current page
-        const params = new URLSearchParams();
-        
-        if (categoryFilter) params.append('CategoryId', categoryFilter);
-        if (typeFilter) params.append('TypeId', typeFilter);
-        if (search) params.append('Search', search);
-        if (sort) params.append('Sort', sort);
-        params.append('PageIndex', currentPage.toString());
-        params.append('PageSize', apiPageSize.toString());
-
-        const url = `products?${params.toString()}`;
-        console.log(`Fetching page ${currentPage}:`, url);
-
-        const response = await axios.get(url);
-        console.log(`Page ${currentPage} response:`, response.data);
-
-        // Handle different response structures
-        let pageProducts = [];
-        let pageTotal = 0;
-
-        if (response.data) {
-          if (response.data.data && Array.isArray(response.data.data)) {
-            pageProducts = response.data.data;
-            pageTotal = response.data.count || response.data.total || 0;
-          } else if (Array.isArray(response.data)) {
-            pageProducts = response.data;
-            pageTotal = pageProducts.length;
-          } else {
-            pageProducts = ensureArray(response.data);
-            pageTotal = pageProducts.length;
-          }
-        }
-
-        // Set total count from first page
-        if (currentPage === 1) {
-          totalCount = pageTotal;
-        }
-
-        // Add products from this page
-        allProducts = [...allProducts, ...pageProducts];
-        totalFetched += pageProducts.length;
-
-        console.log(`Page ${currentPage}: Got ${pageProducts.length} products. Total so far: ${allProducts.length}`);
-
-        // Break if we got fewer products than requested (last page)
-        if (pageProducts.length < apiPageSize) {
-          console.log('Reached last page - fewer products than page size');
-          break;
-        }
-
-        // Break if we've fetched all available products
-        if (totalCount > 0 && allProducts.length >= totalCount) {
-          console.log('Fetched all available products');
-          break;
-        }
-
-        currentPage++;
-      }
-
-      console.log('Final products fetched:', allProducts.length);
-      console.log('Total count:', totalCount || allProducts.length);
-
-      // Now apply client-side pagination for display
-      const displayPageSize = pageSize; // 12 products per display page
-      const startIndex = (pageIndex - 1) * displayPageSize;
-      const endIndex = startIndex + displayPageSize;
-      const paginatedProducts = allProducts.slice(startIndex, endIndex);
-
-      setProducts(paginatedProducts);
-      setTotalCount(allProducts.length); // Use actual count of fetched products
-      
-      // Store all products for pagination
-      if (!window.allFetchedProducts) {
-        window.allFetchedProducts = {};
-      }
-      const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
-      window.allFetchedProducts[filterKey] = allProducts;
-
-      // Initialize quantities for new products
-      const newQuantities = {};
-      paginatedProducts.forEach(product => {
-        if (product && product.id) {
-          newQuantities[product.id] = quantities[product.id] || 1;
-        }
-      });
-      setQuantities(prev => ({ ...prev, ...newQuantities }));
-
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('Failed to load products. Please try again.');
-      setProducts([]);
-      setTotalCount(0);
-    } finally {
-      setLoading(false);
+    // If it's an object with enumerable properties, convert to array
+    const keys = Object.keys(data);
+    if (keys.length > 0 && keys.every(key => !isNaN(key))) {
+      return Object.values(data);
     }
-  };
+  }
+  return [];
+};
 
+
+  // Improved function to normalize category/type data
+  const normalizeFilterData = (data, type = 'category') => {
+  console.log(`Normalizing ${type} data:`, data);
+  
+  if (!Array.isArray(data)) {
+    console.warn(`${type} data is not an array:`, data);
+    return [];
+  }
+  
+  return data.map((item, index) => {
+    console.log(`Processing ${type} item:`, item);
+    
+    // Handle string values
+    if (typeof item === 'string') {
+      return { id: item, name: item, value: item };
+    }
+    
+    // Handle object values - THIS IS THE KEY FIX
+    if (item && typeof item === 'object') {
+      let id, name;
+      
+      if (type === 'category') {
+        // For categories: use id and brandName
+        id = item.id || index.toString();
+        name = item.brandName || item.name || `Category ${index + 1}`;
+      } else if (type === 'type') {
+        // For types: use id and typeName  
+        id = item.id || index.toString();
+        name = item.typeName || item.name || `Type ${index + 1}`;
+      } else {
+        // Generic fallback
+        id = item.id || item.value || item.key || index.toString();
+        name = item.name || item.label || item.title || item.toString();
+      }
+      
+      console.log(`Normalized ${type}:`, { id, name, value: id });
+      
+      return {
+        id: String(id),
+        name: String(name),
+        value: String(id)
+      };
+    }
+    
+    // Fallback for other types
+    return {
+      id: String(index),
+      name: String(item || 'Unknown'),
+      value: String(index)
+    };
+  });
+};
+
+  // Fetch products with improved error handling and debugging
+  // Fixed fetchProducts function with correct API parameter names
+const fetchProducts = async () => {
+  setLoading(true);
+  setError('');
+  
+  try {
+    console.log('Fetching products with filters:', {
+      brandId: categoryFilter,  // Changed from categoryId to brandId
+      typeId: typeFilter,
+      search,
+      sort
+    });
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    
+    // IMPORTANT FIX: Use correct parameter names based on your API
+    // Since categories are brands in your system, use BrandId instead of CategoryId
+    if (categoryFilter && categoryFilter !== '') {
+      params.append('BrandId', String(categoryFilter));  // Changed from CategoryId to BrandId
+    }
+    if (typeFilter && typeFilter !== '') {
+      params.append('TypeId', String(typeFilter));
+    }
+    if (search && search.trim() !== '') {
+      params.append('Search', search.trim());
+    }
+    if (sort && sort !== '') {
+      params.append('Sort', String(sort));
+    }
+    
+    // Always add pagination
+    params.append('PageIndex', '1');
+    params.append('PageSize', '100'); // Get more products initially
+
+    const url = `products?${params.toString()}`;
+    console.log('Final API URL:', url);
+
+    const response = await axios.get(url);
+    console.log('Products response:', response.data);
+
+    // Handle different response structures
+    let fetchedProducts = [];
+    let totalCountValue = 0;
+
+    if (response.data) {
+      if (response.data.data && Array.isArray(response.data.data)) {
+        fetchedProducts = response.data.data;
+        totalCountValue = response.data.count || response.data.total || fetchedProducts.length;
+      } else if (Array.isArray(response.data)) {
+        fetchedProducts = response.data;
+        totalCountValue = fetchedProducts.length;
+      } else {
+        fetchedProducts = ensureArray(response.data);
+        totalCountValue = fetchedProducts.length;
+      }
+    }
+
+    console.log('Processed products:', fetchedProducts);
+    console.log('Total count:', totalCountValue);
+
+    // Apply client-side pagination for display
+    const startIndex = (pageIndex - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedProducts = fetchedProducts.slice(startIndex, endIndex);
+
+    setProducts(paginatedProducts);
+    setTotalCount(totalCountValue);
+    
+    // Store all products for pagination (clear previous cache for different filters)
+    if (!window.allFetchedProducts) {
+      window.allFetchedProducts = {};
+    }
+    const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+    window.allFetchedProducts[filterKey] = fetchedProducts;
+
+    // Initialize quantities for new products
+    const newQuantities = {};
+    paginatedProducts.forEach(product => {
+      if (product && product.id) {
+        newQuantities[product.id] = quantities[product.id] || 1;
+      }
+    });
+    setQuantities(prev => ({ ...prev, ...newQuantities }));
+
+  } catch (err) {
+    console.error('Error fetching products:', err);
+    console.error('Error details:', {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status
+    });
+    
+    setError('Failed to load products. Please try again.');
+    setProducts([]);
+    setTotalCount(0);
+  } finally {
+    setLoading(false);
+  }
+};
   // Handle pagination from cached products
   const handlePageChange = (newPageIndex) => {
     const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
     const cachedProducts = window.allFetchedProducts?.[filterKey];
     
     if (cachedProducts) {
-      const displayPageSize = pageSize; // 12 products per display page
-      const startIndex = (newPageIndex - 1) * displayPageSize;
-      const endIndex = startIndex + displayPageSize;
+      const startIndex = (newPageIndex - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
       const paginatedProducts = cachedProducts.slice(startIndex, endIndex);
       
       setProducts(paginatedProducts);
@@ -205,33 +249,52 @@ export default function MenuPage() {
     } else {
       // Fallback: fetch products again
       setPageIndex(newPageIndex);
+      fetchProducts();
     }
   };
 
-  // Fetch categories and types separately (these don't change based on filters)
+  // Fetch categories and types with improved handling
   useEffect(() => {
     const fetchCategoriesAndTypes = async () => {
       try {
         // Fetch categories
+        console.log('Fetching categories...');
         setCategoriesLoading(true);
         const categoriesPromise = axios.get('products/categories');
         
         // Fetch types
+        console.log('Fetching types...');
         setTypesLoading(true);
         const typesPromise = axios.get('products/types');
 
         const [categoriesResp, typesResp] = await Promise.all([categoriesPromise, typesPromise]);
 
-        console.log('Categories response:', categoriesResp.data);
-        console.log('Types response:', typesResp.data);
+        console.log('Raw Categories response:', categoriesResp.data);
+        console.log('Raw Types response:', typesResp.data);
 
-        setAllCategories(ensureArray(categoriesResp.data));
-        setAllTypes(ensureArray(typesResp.data));
+        // Process categories
+        const categoryData = ensureArray(categoriesResp.data);
+        const processedCategories = normalizeFilterData(categoryData, 'category');
+        console.log('Processed categories:', processedCategories);
+        setAllCategories(processedCategories);
+
+        // Process types
+        const typeData = ensureArray(typesResp.data);
+        const processedTypes = normalizeFilterData(typeData, 'type');
+        console.log('Processed types:', processedTypes);
+        setAllTypes(processedTypes);
 
       } catch (err) {
         console.error('Error fetching categories/types:', err);
+        console.error('Categories/Types error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
+        
         setAllCategories([]);
         setAllTypes([]);
+        toast.error('Failed to load filters. Some features may not work properly.');
       } finally {
         setCategoriesLoading(false);
         setTypesLoading(false);
@@ -244,22 +307,31 @@ export default function MenuPage() {
 
   // Fetch products whenever filters change (not pageIndex)
   useEffect(() => {
+    console.log('Filter changed, fetching products...');
     fetchProducts();
   }, [categoryFilter, typeFilter, search, sort]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     if (pageIndex !== 1) {
+      console.log('Resetting to page 1 due to filter change');
       setPageIndex(1);
     }
   }, [categoryFilter, typeFilter, search, sort]);
 
-  // Handle page changes for client-side pagination
+  // Clear cached products when filters change
   useEffect(() => {
-    if (pageIndex > 1) {
-      handlePageChange(pageIndex);
+    // Clear cache when filters change to force fresh data
+    if (window.allFetchedProducts) {
+      const currentFilterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+      // Keep only current filter cache, clear others to save memory
+      const currentCache = window.allFetchedProducts[currentFilterKey];
+      window.allFetchedProducts = {};
+      if (currentCache) {
+        window.allFetchedProducts[currentFilterKey] = currentCache;
+      }
     }
-  }, [pageIndex]);
+  }, [categoryFilter, typeFilter, search, sort]);
 
   // Fetch user favorites from localStorage
   const fetchUserFavorites = () => {
@@ -367,52 +439,56 @@ export default function MenuPage() {
     }, 300); // Small delay for better UX
   };
 
-  // Build filter lists from API data with proper validation
-  const categories = useMemo(() => {
-    if (!Array.isArray(allCategories)) {
-      console.warn('allCategories is not an array:', allCategories);
-      return [{ id: '', name: 'All Categories' }];
-    }
-    const categoryList = [
-      { id: '', name: 'All Categories' },
-      ...allCategories.map(category => {
-        if (typeof category === 'string') return { id: category, name: category };
-        if (category && typeof category === 'object') {
-          return {
-            id: category.id || category.value || category.name,
-            name: category.name || category.label || category
-          };
-        }
-        return { id: String(category || ''), name: String(category || '') };
-      })
-    ];
-    console.log('Categories for filter:', categoryList);
-    return categoryList;
-  }, [allCategories]);
+  // Build filter lists with improved validation and debugging
+const categories = useMemo(() => {
+  console.log('Building categories dropdown from:', allCategories);
+  
+  if (!Array.isArray(allCategories)) {
+    console.warn('allCategories is not an array:', allCategories);
+    return [{ id: '', name: 'All Categories', value: '' }];
+  }
+  
+  const categoryList = [
+    { id: '', name: 'All Categories', value: '' },
+    ...allCategories.map((category) => {
+      // Categories are already normalized, just ensure proper structure
+      return {
+        id: category.id || category.value || '',
+        name: category.name || 'Unknown Category', // This should now be brandName
+        value: category.id || category.value || ''
+      };
+    })
+  ];
+  
+  console.log('Final categories for dropdown:', categoryList);
+  return categoryList;
+}, [allCategories]);
 
-  const types = useMemo(() => {
-    if (!Array.isArray(allTypes)) {
-      console.warn('allTypes is not an array:', allTypes);
-      return [{ id: '', name: 'All Types' }];
-    }
-    const typeList = [
-      { id: '', name: 'All Types' },
-      ...allTypes.map(type => {
-        if (typeof type === 'string') return { id: type, name: type };
-        if (type && typeof type === 'object') {
-          return {
-            id: type.id || type.value || type.name,
-            name: type.name || type.label || type
-          };
-        }
-        return { id: String(type || ''), name: String(type || '') };
-      })
-    ];
-    console.log('Types for filter:', typeList);
-    return typeList;
-  }, [allTypes]);
+const types = useMemo(() => {
+  console.log('Building types dropdown from:', allTypes);
+  
+  if (!Array.isArray(allTypes)) {
+    console.warn('allTypes is not an array:', allTypes);
+    return [{ id: '', name: 'All Types', value: '' }];
+  }
+  
+  const typeList = [
+    { id: '', name: 'All Types', value: '' },
+    ...allTypes.map((type) => {
+      // Types are already normalized, just ensure proper structure  
+      return {
+        id: type.id || type.value || '',
+        name: type.name || 'Unknown Type', // This should now be typeName
+        value: type.id || type.value || ''
+      };
+    })
+  ];
+  
+  console.log('Final types for dropdown:', typeList);
+  return typeList;
+}, [allTypes]);
 
-  // Calculate total pages based on API response
+  // Calculate total pages based on actual data
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Handle quantity changes
@@ -428,7 +504,7 @@ export default function MenuPage() {
     navigate(`/product/${productId}`);
   };
 
-  // Add to cart function
+  // Add to cart function (unchanged)
   const addToCart = async (product) => {
     const quantity = quantities[product.id] || 1;
     const productId = product.id;
@@ -558,7 +634,7 @@ export default function MenuPage() {
     }
   };
 
-  // Enhanced Filter Section
+  // Enhanced Filter Section with better debugging
   const FilterSection = ({ className = "", onClose = null }) => {
     // Local state for mobile filters to prevent immediate updates
     const [localSearch, setLocalSearch] = useState('');
@@ -578,6 +654,13 @@ export default function MenuPage() {
 
     // Apply filters function for mobile
     const applyFilters = () => {
+      console.log('Applying mobile filters:', {
+        search: localSearch,
+        category: localCategoryFilter,
+        type: localTypeFilter,
+        sort: localSort
+      });
+      
       setSearch(localSearch);
       setCategoryFilter(localCategoryFilter);
       setTypeFilter(localTypeFilter);
@@ -587,6 +670,7 @@ export default function MenuPage() {
 
     // Clear all filters
     const clearFilters = () => {
+      console.log('Clearing all filters');
       const newValues = { search: '', category: '', type: '', sort: '' };
       
       setLocalSearch(newValues.search);
@@ -607,11 +691,13 @@ export default function MenuPage() {
       if (onClose) { // Mobile mode
         setLocalSearch(value);
       } else { // Desktop mode - apply immediately
+        console.log('Desktop search change:', value);
         setSearch(value);
       }
     };
 
     const handleCategoryChange = (value) => {
+      console.log('Category change:', value, typeof value);
       if (onClose) { // Mobile mode
         setLocalCategoryFilter(value);
       } else { // Desktop mode - apply immediately
@@ -620,6 +706,7 @@ export default function MenuPage() {
     };
 
     const handleTypeChange = (value) => {
+      console.log('Type change:', value, typeof value);
       if (onClose) { // Mobile mode
         setLocalTypeFilter(value);
       } else { // Desktop mode - apply immediately
@@ -628,6 +715,7 @@ export default function MenuPage() {
     };
 
     const handleSortChange = (value) => {
+      console.log('Sort change:', value, typeof value);
       if (onClose) { // Mobile mode
         setLocalSort(value);
       } else { // Desktop mode - apply immediately
@@ -684,12 +772,13 @@ export default function MenuPage() {
                 onChange={(e) => handleCategoryChange(e.target.value)}
               >
                 {Array.isArray(categories) && categories.map((category, index) => (
-                  <option key={`category-${index}-${category.id}`} value={category.id}>
+                  <option key={`category-${index}-${category.id || category.value}`} value={category.value}>
                     {category.name}
                   </option>
                 ))}
               </select>
             )}
+           
           </div>
           
           {/* Type */}
@@ -707,12 +796,13 @@ export default function MenuPage() {
                 onChange={(e) => handleTypeChange(e.target.value)}
               >
                 {Array.isArray(types) && types.map((type, index) => (
-                  <option key={`type-${index}-${type.id}`} value={type.id}>
+                  <option key={`type-${index}-${type.id || type.value}`} value={type.value}>
                     {type.name}
                   </option>
                 ))}
               </select>
             )}
+           
           </div>
           
           {/* Sort */}
@@ -730,6 +820,16 @@ export default function MenuPage() {
               ))}
             </select>
           </div>
+
+          {/* Desktop Clear Button */}
+          {!onClose && (
+            <button
+              onClick={clearFilters}
+              className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"
+            >
+              Clear All Filters
+            </button>
+          )}
 
           {/* Mobile Action Buttons */}
           {onClose && (
@@ -770,13 +870,7 @@ export default function MenuPage() {
             <p className="text-sm sm:text-base md:text-lg text-orange-200 max-w-xl mx-auto">
               Handcrafted dishes, curated flavors. Refine your search with our filters.
             </p>
-            {/* Debug info in hero */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-2 text-xs text-orange-100">
-                Products: {products.length} | Total: {totalCount} |
-                Categories: {allCategories.length} | Types: {allTypes.length}
-              </div>
-            )}
+           
           </div>
         </header>
 
@@ -788,6 +882,12 @@ export default function MenuPage() {
           >
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filters</span>
+            {/* Show active filter count */}
+            {(search || categoryFilter || typeFilter || sort) && (
+              <span className="bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ml-1">
+                {[search, categoryFilter, typeFilter, sort].filter(Boolean).length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -818,40 +918,64 @@ export default function MenuPage() {
             )}
 
             {/* Results summary */}
-            <div className="mb-4 text-sm text-gray-600">
-              Showing {products.length} of {totalCount} products
-              {search && ` for "${search}"`}
-              {categoryFilter && categories.find(c => c.id === categoryFilter) && ` in ${categories.find(c => c.id === categoryFilter)?.name}`}
-              {typeFilter && types.find(t => t.id === typeFilter) && ` of type ${types.find(t => t.id === typeFilter)?.name}`}
+            <div className="mb-4 text-sm text-gray-600 bg-white rounded-lg p-3 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Showing {products.length} of {totalCount} products</span>
+                {search && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                    Search: "{search}"
+                  </span>
+                )}
+                {categoryFilter && categories.find(c => c.value === categoryFilter) && (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                    Category: {categories.find(c => c.value === categoryFilter)?.name}
+                  </span>
+                )}
+                {typeFilter && types.find(t => t.value === typeFilter) && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                    Type: {types.find(t => t.value === typeFilter)?.name}
+                  </span>
+                )}
+                {sort && (
+                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">
+                    Sort: {SORT_OPTIONS.find(s => s.value === sort)?.label}
+                  </span>
+                )}
+              </div>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-20">
-                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                <div className="text-center">
+                  <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-600">Loading delicious dishes...</p>
+                </div>
               </div>
             ) : !Array.isArray(products) || products.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-gray-400 text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
-                <p className="text-gray-500">
+                <p className="text-gray-500 mb-4">
                   {search || categoryFilter || typeFilter 
                     ? "Try adjusting your filters to see more results"
                     : "We're preparing our menu. Please check back later!"
                   }
                 </p>
-                {(search || categoryFilter || typeFilter) && (
+                {(search || categoryFilter || typeFilter || sort) && (
                   <button
                     onClick={() => {
+                      console.log('Clearing all filters from no results section');
                       setSearch('');
                       setCategoryFilter('');
                       setTypeFilter('');
                       setSort('');
                     }}
-                    className="mt-4 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                   >
                     Clear All Filters
                   </button>
                 )}
+              
               </div>
             ) : (
               <motion.div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
@@ -913,7 +1037,7 @@ export default function MenuPage() {
                             {item.description || 'No description available'}
                           </p>
                           <div className="flex justify-between items-center mt-2">
-                            <span className="text-xs text-gray-500">Brand: {item.brandName || 'Unknown'}</span>
+                            <span className="text-xs text-gray-500">Category: {item.brandName || 'Unknown'}</span>
                             <span className="text-xs text-gray-500">Type: {item.typeName || 'Unknown'}</span>
                           </div>
                         </div>

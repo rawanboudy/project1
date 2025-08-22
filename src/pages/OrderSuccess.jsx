@@ -23,15 +23,32 @@ const OrderSuccess = () => {
         const userResponse = await axios.get('/Authentication/user');       
         let userData = userResponse.data;        
         
-        try {         
-          const addressResponse = await axios.get('/Authentication/address');         
-          userData.address = addressResponse.data;       
-        } catch {         
-          userData.address = null;       
-        }        
+        // If user has an ID, fetch the detailed address using user ID
+        if (userData.userId || userData.id) {
+          try {         
+            const addressResponse = await axios.get(`/Authentication/address/${userData.userId || userData.id}`);         
+            userData.address = addressResponse.data;       
+          } catch (error) {
+            console.error('Error fetching address:', error);
+            // Fallback to address info from user object if available
+            userData.address = {
+              street: userData.location || null,
+              city: userData.city || null,
+              country: userData.country || null
+            };       
+          }
+        } else {
+          // Fallback to address info from user object if available
+          userData.address = {
+            street: userData.location || null,
+            city: userData.city || null,
+            country: userData.country || null
+          };
+        }
         
         setUserData(userData);     
-      } catch {       
+      } catch (error) {
+        console.error('Error fetching user data:', error);       
         setUserData({});     
       }   
     };    
@@ -65,7 +82,7 @@ const OrderSuccess = () => {
           </p>         
           <p className="text-sm text-gray-700 mb-2">   
             <strong>Address:</strong>{' '}   
-            {userData.address?.street || '—'}, {userData.address?.city || '—'}, {userData.address?.country || '—'} 
+            {userData.address?.street || userData.address?.location || '—'}, {userData.address?.city || '—'}, {userData.address?.country || '—'} 
           </p>             
           <p className="text-sm text-gray-700">             
             <strong>Delivery Method:</strong> {order?.deliveryMethod || 'Standard Shipping'}           
@@ -82,7 +99,7 @@ const OrderSuccess = () => {
           <button             
             onClick={() => {
               if (order?.id) navigate(`/profile/order/${order.id}`);
-              else          navigate('/profile/order');
+              else navigate('/profile/order');
             }}             
             className="py-3 px-6 border-2 border-orange-500 text-orange-600 font-semibold rounded-xl hover:bg-orange-50 transition-all duration-300 flex items-center gap-2"           
           >             
