@@ -21,10 +21,10 @@ export default function MenuPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [allBrands, setAllBrands] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
   const [allTypes, setAllTypes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [brandsLoading, setBrandsLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [typesLoading, setTypesLoading] = useState(false);
   const [error, setError] = useState('');
   const [cartLoading, setCartLoading] = useState({});
@@ -33,7 +33,7 @@ export default function MenuPage() {
   const [userFavorites, setUserFavorites] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const [brandFilter, setBrandFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter,  setTypeFilter]  = useState('');
   const [search,      setSearch]      = useState('');
   const [sort,        setSort]        = useState('');
@@ -58,64 +58,109 @@ export default function MenuPage() {
     return [];
   };
 
-  // Fetch products with API parameters
+  // Fetch all products by making multiple API calls
   const fetchProducts = async () => {
     setLoading(true);
     setError('');
     
     try {
-      console.log('Fetching products with filters:', {
-        brandId: brandFilter,
+      console.log('Fetching all products with filters:', {
+        categoryId: categoryFilter,
         typeId: typeFilter,
         search,
-        sort,
-        pageIndex,
-        pageSize
+        sort
       });
 
-      // Build query parameters
-      const params = new URLSearchParams();
-      
-      if (brandFilter) params.append('BrandId', brandFilter);
-      if (typeFilter) params.append('TypeId', typeFilter);
-      if (search) params.append('Search', search);
-      if (sort) params.append('Sort', sort);
-      params.append('PageIndex', pageIndex.toString());
-      params.append('PageSize', pageSize.toString());
+      let allProducts = [];
+      let currentPage = 1;
+      let totalFetched = 0;
+      let totalCount = 0;
+      const maxPages = 8; // Maximum pages to fetch
+      const apiPageSize = 12; // API page size
 
-      const url = `products?${params.toString()}`;
-      console.log('API URL:', url);
+      // Keep fetching until we get all products or reach max pages
+      while (currentPage <= maxPages) {
+        // Build query parameters for current page
+        const params = new URLSearchParams();
+        
+        if (categoryFilter) params.append('CategoryId', categoryFilter);
+        if (typeFilter) params.append('TypeId', typeFilter);
+        if (search) params.append('Search', search);
+        if (sort) params.append('Sort', sort);
+        params.append('PageIndex', currentPage.toString());
+        params.append('PageSize', apiPageSize.toString());
 
-      const response = await axios.get(url);
-      console.log('Products response:', response.data);
+        const url = `products?${params.toString()}`;
+        console.log(`Fetching page ${currentPage}:`, url);
 
-      // Handle different response structures
-      let productsData = [];
-      let total = 0;
+        const response = await axios.get(url);
+        console.log(`Page ${currentPage} response:`, response.data);
 
-      if (response.data) {
-        // Check if response has pagination info
-        if (response.data.data && Array.isArray(response.data.data)) {
-          productsData = response.data.data;
-          total = response.data.count || response.data.total || productsData.length;
-        } else if (Array.isArray(response.data)) {
-          productsData = response.data;
-          total = productsData.length;
-        } else {
-          productsData = ensureArray(response.data);
-          total = productsData.length;
+        // Handle different response structures
+        let pageProducts = [];
+        let pageTotal = 0;
+
+        if (response.data) {
+          if (response.data.data && Array.isArray(response.data.data)) {
+            pageProducts = response.data.data;
+            pageTotal = response.data.count || response.data.total || 0;
+          } else if (Array.isArray(response.data)) {
+            pageProducts = response.data;
+            pageTotal = pageProducts.length;
+          } else {
+            pageProducts = ensureArray(response.data);
+            pageTotal = pageProducts.length;
+          }
         }
+
+        // Set total count from first page
+        if (currentPage === 1) {
+          totalCount = pageTotal;
+        }
+
+        // Add products from this page
+        allProducts = [...allProducts, ...pageProducts];
+        totalFetched += pageProducts.length;
+
+        console.log(`Page ${currentPage}: Got ${pageProducts.length} products. Total so far: ${allProducts.length}`);
+
+        // Break if we got fewer products than requested (last page)
+        if (pageProducts.length < apiPageSize) {
+          console.log('Reached last page - fewer products than page size');
+          break;
+        }
+
+        // Break if we've fetched all available products
+        if (totalCount > 0 && allProducts.length >= totalCount) {
+          console.log('Fetched all available products');
+          break;
+        }
+
+        currentPage++;
       }
 
-      console.log('Processed products:', productsData);
-      console.log('Total count:', total);
+      console.log('Final products fetched:', allProducts.length);
+      console.log('Total count:', totalCount || allProducts.length);
 
-      setProducts(productsData);
-      setTotalCount(total);
+      // Now apply client-side pagination for display
+      const displayPageSize = pageSize; // 12 products per display page
+      const startIndex = (pageIndex - 1) * displayPageSize;
+      const endIndex = startIndex + displayPageSize;
+      const paginatedProducts = allProducts.slice(startIndex, endIndex);
+
+      setProducts(paginatedProducts);
+      setTotalCount(allProducts.length); // Use actual count of fetched products
       
+      // Store all products for pagination
+      if (!window.allFetchedProducts) {
+        window.allFetchedProducts = {};
+      }
+      const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+      window.allFetchedProducts[filterKey] = allProducts;
+
       // Initialize quantities for new products
       const newQuantities = {};
-      productsData.forEach(product => {
+      paginatedProducts.forEach(product => {
         if (product && product.id) {
           newQuantities[product.id] = quantities[product.id] || 1;
         }
@@ -132,51 +177,89 @@ export default function MenuPage() {
     }
   };
 
-  // Fetch brands and types separately (these don't change based on filters)
+  // Handle pagination from cached products
+  const handlePageChange = (newPageIndex) => {
+    const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+    const cachedProducts = window.allFetchedProducts?.[filterKey];
+    
+    if (cachedProducts) {
+      const displayPageSize = pageSize; // 12 products per display page
+      const startIndex = (newPageIndex - 1) * displayPageSize;
+      const endIndex = startIndex + displayPageSize;
+      const paginatedProducts = cachedProducts.slice(startIndex, endIndex);
+      
+      setProducts(paginatedProducts);
+      setPageIndex(newPageIndex);
+      
+      // Initialize quantities for products on new page
+      const newQuantities = {};
+      paginatedProducts.forEach(product => {
+        if (product && product.id) {
+          newQuantities[product.id] = quantities[product.id] || 1;
+        }
+      });
+      setQuantities(prev => ({ ...prev, ...newQuantities }));
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Fallback: fetch products again
+      setPageIndex(newPageIndex);
+    }
+  };
+
+  // Fetch categories and types separately (these don't change based on filters)
   useEffect(() => {
-    const fetchBrandsAndTypes = async () => {
+    const fetchCategoriesAndTypes = async () => {
       try {
-        // Fetch brands
-        setBrandsLoading(true);
-        const brandsPromise = axios.get('products/brands');
+        // Fetch categories
+        setCategoriesLoading(true);
+        const categoriesPromise = axios.get('products/categories');
         
         // Fetch types
         setTypesLoading(true);
         const typesPromise = axios.get('products/types');
 
-        const [brandsResp, typesResp] = await Promise.all([brandsPromise, typesPromise]);
+        const [categoriesResp, typesResp] = await Promise.all([categoriesPromise, typesPromise]);
 
-        console.log('Brands response:', brandsResp.data);
+        console.log('Categories response:', categoriesResp.data);
         console.log('Types response:', typesResp.data);
 
-        setAllBrands(ensureArray(brandsResp.data));
+        setAllCategories(ensureArray(categoriesResp.data));
         setAllTypes(ensureArray(typesResp.data));
 
       } catch (err) {
-        console.error('Error fetching brands/types:', err);
-        setAllBrands([]);
+        console.error('Error fetching categories/types:', err);
+        setAllCategories([]);
         setAllTypes([]);
       } finally {
-        setBrandsLoading(false);
+        setCategoriesLoading(false);
         setTypesLoading(false);
       }
     };
 
-    fetchBrandsAndTypes();
+    fetchCategoriesAndTypes();
     fetchUserFavorites();
   }, []);
 
-  // Fetch products whenever filters change
+  // Fetch products whenever filters change (not pageIndex)
   useEffect(() => {
     fetchProducts();
-  }, [brandFilter, typeFilter, search, sort, pageIndex]);
+  }, [categoryFilter, typeFilter, search, sort]);
 
-  // Reset to page 1 when filters change (except pageIndex itself)
+  // Reset to page 1 when filters change
   useEffect(() => {
     if (pageIndex !== 1) {
       setPageIndex(1);
     }
-  }, [brandFilter, typeFilter, search, sort]);
+  }, [categoryFilter, typeFilter, search, sort]);
+
+  // Handle page changes for client-side pagination
+  useEffect(() => {
+    if (pageIndex > 1) {
+      handlePageChange(pageIndex);
+    }
+  }, [pageIndex]);
 
   // Fetch user favorites from localStorage
   const fetchUserFavorites = () => {
@@ -285,27 +368,27 @@ export default function MenuPage() {
   };
 
   // Build filter lists from API data with proper validation
-  const brands = useMemo(() => {
-    if (!Array.isArray(allBrands)) {
-      console.warn('allBrands is not an array:', allBrands);
-      return [{ id: '', name: 'All Brands' }];
+  const categories = useMemo(() => {
+    if (!Array.isArray(allCategories)) {
+      console.warn('allCategories is not an array:', allCategories);
+      return [{ id: '', name: 'All Categories' }];
     }
-    const brandList = [
-      { id: '', name: 'All Brands' },
-      ...allBrands.map(brand => {
-        if (typeof brand === 'string') return { id: brand, name: brand };
-        if (brand && typeof brand === 'object') {
+    const categoryList = [
+      { id: '', name: 'All Categories' },
+      ...allCategories.map(category => {
+        if (typeof category === 'string') return { id: category, name: category };
+        if (category && typeof category === 'object') {
           return {
-            id: brand.id || brand.value || brand.name,
-            name: brand.name || brand.label || brand
+            id: category.id || category.value || category.name,
+            name: category.name || category.label || category
           };
         }
-        return { id: String(brand || ''), name: String(brand || '') };
+        return { id: String(category || ''), name: String(category || '') };
       })
     ];
-    console.log('Brands for filter:', brandList);
-    return brandList;
-  }, [allBrands]);
+    console.log('Categories for filter:', categoryList);
+    return categoryList;
+  }, [allCategories]);
 
   const types = useMemo(() => {
     if (!Array.isArray(allTypes)) {
@@ -479,7 +562,7 @@ export default function MenuPage() {
   const FilterSection = ({ className = "", onClose = null }) => {
     // Local state for mobile filters to prevent immediate updates
     const [localSearch, setLocalSearch] = useState('');
-    const [localBrandFilter, setLocalBrandFilter] = useState('');
+    const [localCategoryFilter, setLocalCategoryFilter] = useState('');
     const [localTypeFilter, setLocalTypeFilter] = useState('');
     const [localSort, setLocalSort] = useState('');
 
@@ -487,7 +570,7 @@ export default function MenuPage() {
     useEffect(() => {
       if (onClose) { // Mobile mode - initialize with current values
         setLocalSearch(search);
-        setLocalBrandFilter(brandFilter);
+        setLocalCategoryFilter(categoryFilter);
         setLocalTypeFilter(typeFilter);
         setLocalSort(sort);
       }
@@ -496,7 +579,7 @@ export default function MenuPage() {
     // Apply filters function for mobile
     const applyFilters = () => {
       setSearch(localSearch);
-      setBrandFilter(localBrandFilter);
+      setCategoryFilter(localCategoryFilter);
       setTypeFilter(localTypeFilter);
       setSort(localSort);
       if (onClose) onClose();
@@ -504,16 +587,16 @@ export default function MenuPage() {
 
     // Clear all filters
     const clearFilters = () => {
-      const newValues = { search: '', brand: '', type: '', sort: '' };
+      const newValues = { search: '', category: '', type: '', sort: '' };
       
       setLocalSearch(newValues.search);
-      setLocalBrandFilter(newValues.brand);
+      setLocalCategoryFilter(newValues.category);
       setLocalTypeFilter(newValues.type);
       setLocalSort(newValues.sort);
       
       if (!onClose) { // Desktop mode - apply immediately
         setSearch(newValues.search);
-        setBrandFilter(newValues.brand);
+        setCategoryFilter(newValues.category);
         setTypeFilter(newValues.type);
         setSort(newValues.sort);
       }
@@ -528,11 +611,11 @@ export default function MenuPage() {
       }
     };
 
-    const handleBrandChange = (value) => {
+    const handleCategoryChange = (value) => {
       if (onClose) { // Mobile mode
-        setLocalBrandFilter(value);
+        setLocalCategoryFilter(value);
       } else { // Desktop mode - apply immediately
-        setBrandFilter(value);
+        setCategoryFilter(value);
       }
     };
 
@@ -554,7 +637,7 @@ export default function MenuPage() {
 
     // Use appropriate values based on mode
     const currentSearch = onClose ? localSearch : search;
-    const currentBrand = onClose ? localBrandFilter : brandFilter;
+    const currentCategory = onClose ? localCategoryFilter : categoryFilter;
     const currentType = onClose ? localTypeFilter : typeFilter;
     const currentSort = onClose ? localSort : sort;
 
@@ -586,23 +669,23 @@ export default function MenuPage() {
             />
           </div>
           
-          {/* Brand */}
+          {/* Category */}
           <div>
-            <label className="block text-sm font-medium mb-1">Brand</label>
-            {brandsLoading ? (
+            <label className="block text-sm font-medium mb-1">Category</label>
+            {categoriesLoading ? (
               <div className="w-full p-2 border rounded-md bg-gray-50 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                <span className="text-sm text-gray-500">Loading brands...</span>
+                <span className="text-sm text-gray-500">Loading categories...</span>
               </div>
             ) : (
               <select
                 className="w-full p-2 border rounded-md focus:ring focus:ring-orange-200 text-sm"
-                value={currentBrand}
-                onChange={(e) => handleBrandChange(e.target.value)}
+                value={currentCategory}
+                onChange={(e) => handleCategoryChange(e.target.value)}
               >
-                {Array.isArray(brands) && brands.map((brand, index) => (
-                  <option key={`brand-${index}-${brand.id}`} value={brand.id}>
-                    {brand.name}
+                {Array.isArray(categories) && categories.map((category, index) => (
+                  <option key={`category-${index}-${category.id}`} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -691,7 +774,7 @@ export default function MenuPage() {
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-2 text-xs text-orange-100">
                 Products: {products.length} | Total: {totalCount} |
-                Brands: {allBrands.length} | Types: {allTypes.length}
+                Categories: {allCategories.length} | Types: {allTypes.length}
               </div>
             )}
           </div>
@@ -738,7 +821,7 @@ export default function MenuPage() {
             <div className="mb-4 text-sm text-gray-600">
               Showing {products.length} of {totalCount} products
               {search && ` for "${search}"`}
-              {brandFilter && brands.find(b => b.id === brandFilter) && ` in ${brands.find(b => b.id === brandFilter)?.name}`}
+              {categoryFilter && categories.find(c => c.id === categoryFilter) && ` in ${categories.find(c => c.id === categoryFilter)?.name}`}
               {typeFilter && types.find(t => t.id === typeFilter) && ` of type ${types.find(t => t.id === typeFilter)?.name}`}
             </div>
 
@@ -751,16 +834,16 @@ export default function MenuPage() {
                 <div className="text-gray-400 text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
                 <p className="text-gray-500">
-                  {search || brandFilter || typeFilter 
+                  {search || categoryFilter || typeFilter 
                     ? "Try adjusting your filters to see more results"
                     : "We're preparing our menu. Please check back later!"
                   }
                 </p>
-                {(search || brandFilter || typeFilter) && (
+                {(search || categoryFilter || typeFilter) && (
                   <button
                     onClick={() => {
                       setSearch('');
-                      setBrandFilter('');
+                      setCategoryFilter('');
                       setTypeFilter('');
                       setSort('');
                     }}
@@ -919,7 +1002,7 @@ export default function MenuPage() {
               <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12">
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => setPageIndex(n => Math.max(1, n - 1))}
+                    onClick={() => handlePageChange(Math.max(1, pageIndex - 1))}
                     disabled={pageIndex === 1 || loading}
                     className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
@@ -930,7 +1013,7 @@ export default function MenuPage() {
                     Page {pageIndex} of {totalPages}
                   </span>
                   <button
-                    onClick={() => setPageIndex(n => Math.min(totalPages, n + 1))}
+                    onClick={() => handlePageChange(Math.min(totalPages, pageIndex + 1))}
                     disabled={pageIndex === totalPages || loading}
                     className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   >
