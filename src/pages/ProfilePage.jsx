@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const [addressForm, setAddressForm] = useState({
     firstname: '',
     lastname: '',
-    street: '',
+    location: '', // Changed from 'street' to 'location'
     city: '',
     country: ''
   });
@@ -56,18 +56,32 @@ export default function ProfilePage() {
         const userResponse = await axios.get('/Authentication/user');
         let userData = userResponse.data;
 
-        try {
-          const addressResponse = await axios.get('/Authentication/address');
-          userData.address = addressResponse.data;
-        } catch (addressErr) {
-          console.log('No address found or error fetching address:', addressErr);
+        // Get user ID for address API call - the API returns 'userId'
+        const userId = userData.userId;
+        
+        console.log('User data:', userData); // Debug log
+        console.log('Extracted user ID:', userId); // Debug log
+
+        if (userId) {
+          try {
+            // Updated to use new address endpoint with ID
+            const addressResponse = await axios.get(`/Authentication/address/${userId}`);
+            userData.address = addressResponse.data;
+          } catch (addressErr) {
+            console.log('No address found or error fetching address:', addressErr);
+            // Don't treat address fetch failure as a critical error
+            userData.address = null;
+          }
+        } else {
+          console.warn('No user ID found in user data. Available properties:', Object.keys(userData));
+          // Still set the user data even without address
           userData.address = null;
         }
 
         setUser(userData);
         localStorage.setItem('userInfo', JSON.stringify(userData));
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching user data:', err);
         setError(
           err.response?.data?.message || 'Unable to load profile. Please log in.'
         );
@@ -91,7 +105,7 @@ export default function ProfilePage() {
   };
 
   const handleAddressSubmit = async () => {
-    if (!addressForm.street || !addressForm.city || !addressForm.country) {
+    if (!addressForm.location || !addressForm.city || !addressForm.country) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -99,7 +113,20 @@ export default function ProfilePage() {
     setAddressLoading(true);
 
     try {
-      const response = await axios.put('/Authentication/address', addressForm);
+      // Get user ID for the update API call - try multiple possible property names
+      const userId = user.id || user.userId || user.ID || user.user_id || user.sub;
+      
+      console.log('User object for address update:', user); // Debug log
+      console.log('Extracted user ID for address update:', userId); // Debug log
+      
+      if (!userId) {
+        console.error('Available user properties:', Object.keys(user || {}));
+        toast.error('User ID not found. Please refresh the page and try again.');
+        return;
+      }
+
+      // Updated to use new update address endpoint
+      const response = await axios.put(`/Authentication/UpdateAddress/${userId}`, addressForm);
       const updatedUser = { ...user, address: addressForm };
       setUser(updatedUser);
       localStorage.setItem('userInfo', JSON.stringify(updatedUser));
@@ -109,7 +136,7 @@ export default function ProfilePage() {
       setAddressForm({
         firstname: '',
         lastname: '',
-        street: '',
+        location: '', // Changed from 'street' to 'location'
         city: '',
         country: ''
       });
@@ -134,7 +161,7 @@ export default function ProfilePage() {
       setAddressForm({
         firstname: user.address.firstname || '',
         lastname: user.address.lastname || '',
-        street: user.address.street || '',
+        location: user.address.location || '', // Changed from 'street' to 'location'
         city: user.address.city || '',
         country: user.address.country || ''
       });
@@ -142,7 +169,7 @@ export default function ProfilePage() {
       setAddressForm({
         firstname: user.firstname || '',
         lastname: user.lastname || '',
-        street: '',
+        location: '', // Changed from 'street' to 'location'
         city: '',
         country: ''
       });
@@ -151,7 +178,7 @@ export default function ProfilePage() {
   };
 
   const hasAddress = user?.address && (
-    user.address.street ||
+    user.address.location || // Changed from 'street' to 'location'
     user.address.city ||
     user.address.country
   );
@@ -339,20 +366,20 @@ export default function ProfilePage() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {user.address.street && (
+                        {user.address.location && ( // Changed from 'street' to 'location'
                           <div className="flex items-center justify-between py-3 border-b border-gray-100">
                             <div className="flex items-center gap-3">
                               <Home className="w-4 h-4 text-orange-500" />
                               <div>
-                                <p className="text-sm text-gray-500">Street</p>
-                                <p className="text-gray-900 font-medium">{user.address.street}</p>
+                                <p className="text-sm text-gray-500">Location</p> {/* Changed label */}
+                                <p className="text-gray-900 font-medium">{user.address.location}</p>
                               </div>
                             </div>
                             <button
-                              onClick={() => copyToClipboard(user.address.street, 'Street')}
+                              onClick={() => copyToClipboard(user.address.location, 'Location')} // Updated
                               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             >
-                              {copiedField === 'Street' ? (
+                              {copiedField === 'Location' ? ( // Updated
                                 <Check className="w-4 h-4 text-green-500" />
                               ) : (
                                 <Copy className="w-4 h-4" />
@@ -460,12 +487,12 @@ export default function ProfilePage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Street Address *
+                  Location * {/* Changed from 'Street Address' to 'Location' */}
                 </label>
                 <input
                   type="text"
-                  name="street"
-                  value={addressForm.street}
+                  name="location" // Changed from 'street' to 'location'
+                  value={addressForm.location}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   required
