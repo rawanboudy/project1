@@ -29,12 +29,13 @@ function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/menu" element={<MenuPage />}  />
+         <Route path="/product/:id" element={<ProductDetailsPage />} />
         
         {/* Private Routes */}
         <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />               
         <Route path="/cart" element={<PrivateRoute element={<CartPage />} />} />
         <Route path="/profile/favorites" element={<PrivateRoute element={<ProfileFavorites />} />} />
-        <Route path="/product/:id" element={<PrivateRoute element={<ProductDetailsPage />} />} />
+       
         <Route path="/checkout" element={<PrivateRoute element={<CheckoutPage />} />} />          
         <Route path="/profile/history" element={<PrivateRoute element={<OrderHistoryPage />} />} />          
         <Route path="/order-success" element={<PrivateRoute element={<OrderSuccess />} />} />          

@@ -32,6 +32,7 @@ export default function MenuPage() {
   const [favoriteLoading, setFavoriteLoading] = useState({});
   const [userFavorites, setUserFavorites] = useState([]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter,  setTypeFilter]  = useState('');
@@ -40,6 +41,35 @@ export default function MenuPage() {
   const [pageIndex,   setPageIndex]   = useState(1);
   const [quantities,  setQuantities]  = useState({});
   const pageSize = 12;
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkUserSession = () => {
+      const token = localStorage.getItem('token');
+      const userInfo = localStorage.getItem('userInfo');
+      setIsUserLoggedIn(!!(token && userInfo));
+    };
+
+    checkUserSession();
+    
+    // Listen for storage changes (e.g., logout from another tab)
+    const handleStorageChange = () => {
+      checkUserSession();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Function to handle authentication requirement
+  const requireAuth = (action) => {
+    if (!isUserLoggedIn) {
+      toast.error('Please log in to continue');
+      navigate('/login');
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -120,35 +150,50 @@ export default function MenuPage() {
     });
   };
 
-  // FIXED fetchProducts function with correct parameter names
+  // Client-side sorting function
+  const applySorting = (productList, sortValue) => {
+    if (!sortValue || sortValue === '') return productList;
+    
+    const sorted = [...productList];
+    
+    switch (sortValue) {
+      case '0': // Name: A → Z
+        return sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      case '1': // Price: Low → High
+        return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+      case '2': // Price: High → Low
+        return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      case '3': // Name: Z → A
+        return sorted.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+      default:
+        return sorted;
+    }
+  };
+
+  // FIXED fetchProducts function with correct parameter names and sorting
   const fetchProducts = async () => {
     setLoading(true);
     setError('');
     
     try {
       console.log('Fetching products with filters:', {
-        brandId: categoryFilter,  // Changed from categoryId to brandId
+        brandId: categoryFilter,
         typeId: typeFilter,
         search,
         sort
       });
 
-      // Build query parameters
+      // Build query parameters (excluding sort since we'll handle it client-side)
       const params = new URLSearchParams();
       
-      // FIXED: Use correct parameter names based on your API
-      // Since categories are brands in your system, use BrandId instead of CategoryId
       if (categoryFilter && categoryFilter !== '') {
-        params.append('BrandId', String(categoryFilter));  // CHANGED FROM CategoryId
+        params.append('BrandId', String(categoryFilter));
       }
       if (typeFilter && typeFilter !== '') {
         params.append('TypeId', String(typeFilter));
       }
       if (search && search.trim() !== '') {
         params.append('Search', search.trim());
-      }
-      if (sort && sort !== '') {
-        params.append('Sort', String(sort));
       }
       
       // Always add pagination
@@ -178,13 +223,16 @@ export default function MenuPage() {
         }
       }
 
-      console.log('Processed products:', fetchedProducts);
-      console.log('Total count:', totalCountValue);
+      console.log('Processed products before sorting:', fetchedProducts);
+
+      // Apply client-side sorting
+      const sortedProducts = applySorting(fetchedProducts, sort);
+      console.log('Products after sorting:', sortedProducts);
 
       // Apply client-side pagination for display
       const startIndex = (pageIndex - 1) * pageSize;
       const endIndex = startIndex + pageSize;
-      const paginatedProducts = fetchedProducts.slice(startIndex, endIndex);
+      const paginatedProducts = sortedProducts.slice(startIndex, endIndex);
 
       setProducts(paginatedProducts);
       setTotalCount(totalCountValue);
@@ -194,7 +242,7 @@ export default function MenuPage() {
         window.allFetchedProducts = {};
       }
       const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
-      window.allFetchedProducts[filterKey] = fetchedProducts;
+      window.allFetchedProducts[filterKey] = sortedProducts; // Store sorted products
 
       // Initialize quantities for new products
       const newQuantities = {};
@@ -301,8 +349,10 @@ export default function MenuPage() {
     };
 
     fetchCategoriesAndTypes();
-    fetchUserFavorites();
-  }, []);
+    if (isUserLoggedIn) {
+      fetchUserFavorites();
+    }
+  }, [isUserLoggedIn]);
 
   // Fetch products whenever filters change (not pageIndex)
   useEffect(() => {
@@ -332,12 +382,17 @@ export default function MenuPage() {
     }
   }, [categoryFilter, typeFilter, search, sort]);
 
-  // Fetch user favorites from localStorage
+  // Fetch user favorites from localStorage (only if logged in)
   const fetchUserFavorites = () => {
+    if (!isUserLoggedIn) {
+      setUserFavorites([]);
+      return;
+    }
+
     try {
       const userInfo = localStorage.getItem('userInfo');
       if (!userInfo) {
-        return; // User not logged in
+        return;
       }
 
       const user = JSON.parse(userInfo);
@@ -386,13 +441,9 @@ export default function MenuPage() {
     }
   };
 
-  // Toggle favorite status (localStorage version)
+  // Toggle favorite status (localStorage version) - REQUIRES LOGIN
   const toggleFavorite = (product) => {
-    const userInfo = localStorage.getItem('userInfo');
-    if (!userInfo) {
-      toast.error('Please log in to add favorites');
-      return;
-    }
+    if (!requireAuth('add to favorites')) return;
 
     const productId = product.id;
     const isFavorited = userFavorites.includes(productId);
@@ -419,7 +470,6 @@ export default function MenuPage() {
             price: product.price,
             brandName: product.brandName,
             typeName: product.typeName,
-            description: product.description,
             rating: product.rating,
             dateAdded: new Date().toISOString()
           };
@@ -450,7 +500,6 @@ export default function MenuPage() {
     const categoryList = [
       { id: '', name: 'All Categories', value: '' },
       ...allCategories.map((category, index) => {
-        // Categories are already normalized by normalizeFilterData
         return {
           id: category.id || category.value || '',
           name: category.name || 'Unknown Category',
@@ -474,7 +523,6 @@ export default function MenuPage() {
     const typeList = [
       { id: '', name: 'All Types', value: '' },
       ...allTypes.map((type, index) => {
-        // Types are already normalized by normalizeFilterData
         return {
           id: type.id || type.value || '',
           name: type.name || 'Unknown Type',
@@ -503,8 +551,10 @@ export default function MenuPage() {
     navigate(`/product/${productId}`);
   };
 
-  // Add to cart function (unchanged)
+  // Add to cart function - REQUIRES LOGIN
   const addToCart = async (product) => {
+    if (!requireAuth('add to cart')) return;
+
     const quantity = quantities[product.id] || 1;
     const productId = product.id;
 
@@ -633,7 +683,7 @@ export default function MenuPage() {
     }
   };
 
-  // UPDATED Filter Section with better styling and wider layout - REMOVED SCROLL
+  // UPDATED Filter Section with better styling and wider layout
   const FilterSection = ({ className = "", onClose = null }) => {
     // Local state for mobile filters to prevent immediate updates
     const [localSearch, setLocalSearch] = useState('');
@@ -899,49 +949,22 @@ export default function MenuPage() {
           </div>
         )}
 
-        {/* UPDATED Content Grid - Now uses grid-cols-4 for wider filter section */}
+        {/* Content Grid */}
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12 lg:-mt-20">
-          {/* Desktop Sidebar Filters - REMOVED SCROLL - Now takes 25% width instead of 20% */}
+          {/* Desktop Sidebar Filters */}
           <aside className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               <FilterSection />
             </div>
           </aside>
 
-          {/* Products List - Now takes 75% width instead of 80% */}
+          {/* Products List */}
           <section className="lg:col-span-3">
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                 <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
               </div>
             )}
-
-            {/* Results summary */}
-            <div className="mb-4 text-sm text-gray-600 bg-white rounded-lg p-3 shadow-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span>Showing {products.length} of {totalCount} products</span>
-                {search && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                    Search: "{search}"
-                  </span>
-                )}
-                {categoryFilter && categories.find(c => c.value === categoryFilter) && (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                    Category: {categories.find(c => c.value === categoryFilter)?.name}
-                  </span>
-                )}
-                {typeFilter && types.find(t => t.value === typeFilter) && (
-                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                    Type: {types.find(t => t.value === typeFilter)?.name}
-                  </span>
-                )}
-                {sort && (
-                  <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">
-                    Sort: {SORT_OPTIONS.find(s => s.value === sort)?.label}
-                  </span>
-                )}
-              </div>
-            </div>
 
             {loading ? (
               <div className="flex justify-center py-20">
@@ -993,29 +1016,31 @@ export default function MenuPage() {
                       transition={{ delay: idx * 0.1 }}
                       className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
                     >
-                      {/* Favorite Button */}
-                      <button
-                        onClick={() => toggleFavorite(item)}
-                        disabled={favoriteLoading[item.id]}
-                        className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
-                          userFavorites.includes(item.id)
-                            ? 'bg-red-500 text-white shadow-lg'
-                            : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
-                        } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
-                      >
-                        {favoriteLoading[item.id] ? (
-                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                        ) : (
-                          <Heart 
-                            className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                              userFavorites.includes(item.id) ? 'fill-current' : ''
-                            }`} 
-                          />
-                        )}
-                      </button>
+                      {/* Favorite Button - Only show if logged in */}
+                      {isUserLoggedIn && (
+                        <button
+                          onClick={() => toggleFavorite(item)}
+                          disabled={favoriteLoading[item.id]}
+                          className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
+                            userFavorites.includes(item.id)
+                              ? 'bg-red-500 text-white shadow-lg'
+                              : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
+                          } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+                        >
+                          {favoriteLoading[item.id] ? (
+                            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                          ) : (
+                            <Heart 
+                              className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                                userFavorites.includes(item.id) ? 'fill-current' : ''
+                              }`} 
+                            />
+                          )}
+                        </button>
+                      )}
 
-                      {/* Image */}
-                      <div className="overflow-hidden h-32 sm:h-40 md:h-48 flex-shrink-0">
+                      {/* Image - Reduced height */}
+                      <div className="overflow-hidden h-24 sm:h-32 md:h-36 flex-shrink-0">
                         <img
                           src={item.pictureUrl || '/placeholder-dish.jpg'}
                           alt={item.name || 'Product'}
@@ -1026,23 +1051,20 @@ export default function MenuPage() {
                         />
                       </div>
                       
-                      {/* Content */}
-                      <div className="p-4 sm:p-6 flex flex-col flex-grow">
-                        <div className="mb-3 sm:mb-4 flex-grow">
-                          <h3 className="text-lg sm:text-xl font-semibold mb-2 line-clamp-2 min-h-[3rem] sm:min-h-[3.5rem]" style={{ color: theme.colors.textDark }}>
+                      {/* Content - Removed description */}
+                      <div className="p-3 sm:p-4 flex flex-col flex-grow">
+                        <div className="mb-2 sm:mb-3 flex-grow">
+                          <h3 className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 min-h-[2.5rem]" style={{ color: theme.colors.textDark }}>
                             {item.name || 'Unnamed Product'}
                           </h3>
-                          <p className="text-gray-600 text-xs sm:text-sm line-clamp-3 min-h-[3rem] sm:min-h-[4rem]">
-                            {item.description || 'No description available'}
-                          </p>
-                          <div className="flex justify-between items-center mt-2">
+                          <div className="flex justify-between items-center">
                             <span className="text-xs text-gray-500">Category: {item.brandName || 'Unknown'}</span>
                             <span className="text-xs text-gray-500">Type: {item.typeName || 'Unknown'}</span>
                           </div>
                         </div>
                         
                         {/* Price and Rating */}
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <div className="flex items-center justify-between mb-2 sm:mb-3">
                           <span className="text-lg sm:text-xl font-extrabold" style={{ color: theme.colors.orange }}>
                             ${(item.price || 0).toFixed(2)}
                           </span>
@@ -1054,44 +1076,46 @@ export default function MenuPage() {
                           )}
                         </div>
 
-                        {/* Quantity Controls */}
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                          <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                            >
-                              <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </button>
-                            <span className="w-6 sm:w-8 text-center font-medium text-sm">
-                              {quantities[item.id] || 1}
-                            </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                            >
-                              <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </button>
+                        {/* Quantity Controls - Only show if logged in */}
+                        {isUserLoggedIn && (
+                          <div className="flex items-center justify-between mb-2 sm:mb-3">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                              >
+                                <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </button>
+                              <span className="w-6 sm:w-8 text-center font-medium text-sm">
+                                {quantities[item.id] || 1}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                              >
+                                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Button Container */}
                         <div className="space-y-2 mt-auto">
                           {/* View Product Button */}
                           <button
                             onClick={() => viewProduct(item.id)}
-                            className="w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
+                            className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
                           >
                             <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>View Product</span>
                           </button>
 
-                          {/* Add to Cart Button */}
+                          {/* Add to Cart Button - Show for all, but require login on click */}
                           <button
                             onClick={() => addToCart(item)}
                             disabled={cartLoading[item.id]}
-                            className={`w-full py-2 sm:py-3 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
+                            className={`w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
                               cartSuccess[item.id]
                                 ? 'bg-green-500 text-white'
                                 : cartLoading[item.id]

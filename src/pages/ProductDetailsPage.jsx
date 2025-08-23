@@ -11,10 +11,13 @@ import {
   Minus, 
   ArrowLeft,
   Check,
-  Zap
+  Zap,
+  AlertCircle,
+  LogIn
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
+import toast from 'react-hot-toast';
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
@@ -25,10 +28,22 @@ const ProductDetailsPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [cartLoading, setCartLoading] = useState(false);
   const [cartSuccess, setCartSuccess] = useState(false);
+  const [authNotification, setAuthNotification] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if user is logged in
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('userInfo');
+    return !!(token && userInfo);
+  };
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
+    
+    // Check authentication status
+    setIsLoggedIn(checkAuthStatus());
     
     axios.get(`/products/${id}`)
       .then(res => setProduct(res.data))
@@ -40,70 +55,108 @@ const ProductDetailsPage = () => {
     setQuantity(prev => Math.max(1, prev + change));
   };
 
+  const handleAuthRedirect = () => {
+    // Show toast notification
+    toast.error('Please log in to add items to cart');
+    
+    // Show floating notification
+    setAuthNotification(true);
+    
+    // Navigate to login after a short delay
+    setTimeout(() => {
+      navigate('/login');
+    }, 2000);
+  };
+
   const addToCart = async () => {
-  if (!product) return;
+    if (!product) return;
 
-  setCartLoading(true);
-  setError('');
-
-  try {
-    let basketId = localStorage.getItem('basketId');
-    if (!basketId) {
-      basketId = Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('basketId', basketId);
+    // Check if user is logged in
+    if (!checkAuthStatus()) {
+      handleAuthRedirect();
+      return;
     }
 
-    // Try get existing cart
-    let existingCart = null;
+    setCartLoading(true);
+    setError('');
+
     try {
-      const response = await axios.get(`/basket/${basketId}`);
-      existingCart = response.data;
-    } catch (err) {
-      if (err.response?.status !== 404) throw err;
-    }
-
-    const newItem = {
-      id: product.id,
-      productName: product.name,
-      pictureUrl: product.pictureUrl,
-      price: product.price,
-      quantity: quantity
-    };
-
-    let updatedItems = [];
-    if (existingCart && existingCart.items) {
-      const existingIndex = existingCart.items.findIndex(
-        item => item.id === product.id
-      );
-      if (existingIndex >= 0) {
-        existingCart.items[existingIndex].quantity += quantity;
-        updatedItems = existingCart.items;
-      } else {
-        updatedItems = [...existingCart.items, newItem];
+      let basketId = localStorage.getItem('basketId');
+      if (!basketId) {
+        basketId = Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('basketId', basketId);
       }
-    } else {
-      updatedItems = [newItem];
+
+      // Try get existing cart
+      let existingCart = null;
+      try {
+        const response = await axios.get(`/basket/${basketId}`);
+        existingCart = response.data;
+      } catch (err) {
+        if (err.response?.status !== 404) throw err;
+      }
+
+      const newItem = {
+        id: product.id,
+        productName: product.name,
+        pictureUrl: product.pictureUrl,
+        price: product.price,
+        quantity: quantity
+      };
+
+      let updatedItems = [];
+      if (existingCart && existingCart.items) {
+        const existingIndex = existingCart.items.findIndex(
+          item => item.id === product.id
+        );
+        if (existingIndex >= 0) {
+          existingCart.items[existingIndex].quantity += quantity;
+          updatedItems = existingCart.items;
+        } else {
+          updatedItems = [...existingCart.items, newItem];
+        }
+      } else {
+        updatedItems = [newItem];
+      }
+
+      const updatedCart = {
+        id: basketId,
+        items: updatedItems,
+        paymentIntentId: existingCart?.paymentIntentId || '',
+        deliveryMethodId: existingCart?.deliveryMethodId || 0,
+        clientSecret: existingCart?.clientSecret || '',
+        shippingPrice: existingCart?.shippingPrice || 0,
+      };
+
+      await axios.post('/basket', updatedCart);
+      setCartSuccess(true);
+      setTimeout(() => setCartSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+      
+      // Check if it's an authentication error
+      if (err.response?.status === 401) {
+        // Token might be expired, clear auth data and redirect
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('tokenExpiry');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenType');
+        localStorage.removeItem('userPermissions');
+        localStorage.removeItem('userRoles');
+        localStorage.removeItem('sessionId');
+        delete axios.defaults.headers.common['Authorization'];
+        
+        setIsLoggedIn(false);
+        handleAuthRedirect();
+        return;
+      }
+      
+      setError('Failed to add item to cart. Please try again.');
+    } finally {
+      setCartLoading(false);
     }
-
-    const updatedCart = {
-      id: basketId,
-      items: updatedItems,
-      paymentIntentId: existingCart?.paymentIntentId || '',
-      deliveryMethodId: existingCart?.deliveryMethodId || 0,
-      clientSecret: existingCart?.clientSecret || '',
-      shippingPrice: existingCart?.shippingPrice || 0,
-    };
-
-    await axios.post('/basket', updatedCart);
-    setCartSuccess(true);
-    setTimeout(() => setCartSuccess(false), 3000);
-  } catch (err) {
-    console.error(err);
-    setError('Failed to add item to cart. Please try again.');
-  } finally {
-    setCartLoading(false);
-  }
-};
+  };
 
   const shareProduct = async () => {
     if (navigator.share) {
@@ -169,6 +222,8 @@ const ProductDetailsPage = () => {
   return (
     <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen">
       <Navbar />
+
+ 
 
       {/* Breadcrumb */}
       <div className="max-w-4xl mx-auto px-6 py-4 pt-24">
@@ -256,6 +311,25 @@ const ProductDetailsPage = () => {
               </span>
             </div>
 
+            {/* Authentication Warning for Non-logged Users */}
+            {!isLoggedIn && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-3"
+              >
+                <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-orange-800 font-medium mb-1">
+                    Sign in required
+                  </p>
+                  <p className="text-sm text-orange-700">
+                    Please log in to your account to add items to your cart and enjoy a personalized shopping experience.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Quantity Selector */}
             <div className="flex items-center gap-4">
               <span className="text-sm font-medium text-gray-700">Quantity:</span>
@@ -263,6 +337,7 @@ const ProductDetailsPage = () => {
                 <button
                   onClick={() => updateQuantity(-1)}
                   className="p-2 hover:bg-gray-50 transition-colors duration-200"
+                  disabled={!isLoggedIn}
                 >
                   <Minus className="w-4 h-4" />
                 </button>
@@ -272,6 +347,7 @@ const ProductDetailsPage = () => {
                 <button
                   onClick={() => updateQuantity(1)}
                   className="p-2 hover:bg-gray-50 transition-colors duration-200"
+                  disabled={!isLoggedIn}
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -280,16 +356,18 @@ const ProductDetailsPage = () => {
 
             {/* Add to Cart Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={isLoggedIn ? { scale: 1.02 } : {}}
+              whileTap={isLoggedIn ? { scale: 0.98 } : {}}
               onClick={addToCart}
               disabled={cartLoading}
-              className={`w-full py-3 px-6 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 ${
+              className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl ${
                 cartSuccess
                   ? 'bg-green-500 text-white'
                   : cartLoading
                   ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl'
+                  : !isLoggedIn
+                  ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700'
+                  : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700'
               }`}
             >
               {cartLoading ? (
@@ -298,6 +376,11 @@ const ProductDetailsPage = () => {
                 <>
                   <Check className="w-5 h-5" />
                   Added to Cart!
+                </>
+              ) : !isLoggedIn ? (
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Sign In to Add to Cart
                 </>
               ) : (
                 <>
