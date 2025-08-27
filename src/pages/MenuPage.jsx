@@ -29,6 +29,136 @@ const SORT_OPTIONS = [
   { value: '0', label: 'Name: A → Z' },
   { value: '3', label: 'Name: Z → A' }
 ];
+// Animated “liquid-fill” heading clipped inside the text
+// Polished gradient + shimmer heading (professional look)
+// Polished gradient + shimmer heading (smaller version)
+// Wave + shimmer gradient heading
+const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
+  const start = theme.colors.gradientStart; // e.g. #ff7a18
+  const end   = theme.colors.gradientEnd;   // e.g. #ffb800
+
+  return (
+    <svg
+      className="w-full [height:clamp(48px,6vw,80px)]"
+      viewBox="0 0 1400 160"
+      role="img"
+      aria-label={text}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        {/* brand fill */}
+        <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"  stopColor={start} />
+          <stop offset="100%" stopColor={end} />
+        </linearGradient>
+
+        {/* subtle top highlight / bottom shade */}
+        <linearGradient id="depth-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stopColor="rgba(255,255,255,0.35)" />
+          <stop offset="55%"  stopColor="rgba(255,255,255,0)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
+        </linearGradient>
+
+        {/* shimmer sweep */}
+        <linearGradient id="sheen-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="rgba(255,255,255,0)" />
+          <stop offset="45%"  stopColor="rgba(255,255,255,0.6)" />
+          <stop offset="55%"  stopColor="rgba(255,255,255,0.6)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </linearGradient>
+
+        {/* Text outlines the clip area */}
+        <clipPath id="text-clip">
+          <text
+            id="hero-text"
+            x="50%"
+            y="55%"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontFamily="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial"
+            fontWeight="800"
+            fontSize="90"   /* your smaller size */
+            letterSpacing="0.3"
+          >
+            {text}
+          </text>
+        </clipPath>
+
+        {/* Liquid ripple (GPU-friendly, works in modern browsers incl. Safari 15+) */}
+        <filter id="wave-distort" x="-20%" y="-40%" width="140%" height="200%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.035" numOctaves="2" seed="8" result="noise">
+            <animate attributeName="baseFrequency"
+                     values="0.012 0.035; 0.02 0.05; 0.012 0.035"
+                     dur="10s" repeatCount="indefinite" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G">
+            <animate attributeName="scale" values="5;7;5" dur="6s" repeatCount="indefinite" />
+          </feDisplacementMap>
+        </filter>
+
+        {/* A moving wave mask that creates the “water level” shape */}
+        <mask id="liquid-mask">
+          {/* black = hide; white = show */}
+          <rect x="0" y="0" width="1400" height="160" fill="black" />
+          <g transform="translate(0,95)">
+            {/* two tiled wave paths sliding horizontally */}
+            <g>
+              <path id="wave" d="M0,20
+                 C 35,10 65,30 100,20
+                 S 165,10 200,20
+                 S 265,30 300,20
+                 S 365,10 400,20
+                 S 465,30 500,20
+                 S 565,10 600,20
+                 S 665,30 700,20
+                 S 765,10 800,20
+                 S 865,30 900,20
+                 S 965,10 1000,20
+                 S 1065,30 1100,20
+                 S 1165,10 1200,20
+                 S 1265,30 1300,20
+                 S 1365,10 1400,20
+                 V160 H0 Z"
+                 fill="white" opacity="0.9" />
+              <use href="#wave" x="-1400" fill="white" opacity="0.9" />
+              <animateTransform attributeName="transform" attributeType="XML" type="translate"
+                from="-1400 0" to="0 0" dur="7s" repeatCount="indefinite" />
+            </g>
+            {/* slight vertical bobbing */}
+            <animateTransform attributeName="transform" type="translate"
+              values="0,95; 0,90; 0,95" dur="4.5s" repeatCount="indefinite" />
+          </g>
+        </mask>
+      </defs>
+
+      {/* soft outline so letters stay readable on any bg */}
+      <use href="#hero-text" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
+
+      {/* Everything inside the text */}
+      <g clipPath="url(#text-clip)">
+        {/* base gradient */}
+        <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
+
+        {/* apply liquid mask to create moving “water” body */}
+        <g style={{ filter: 'url(#wave-distort)' }} mask="url(#liquid-mask)">
+          <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
+        </g>
+
+        {/* depth shading on top */}
+        <rect x="0" y="0" width="1400" height="160" fill="url(#depth-grad)" />
+
+        {/* shimmer sweep across the letters */}
+        <rect x="-700" y="0" width="700" height="160" fill="url(#sheen-grad)">
+          <animate attributeName="x" values="-700; 1400; -700" dur="6.5s" repeatCount="indefinite" />
+        </rect>
+      </g>
+    </svg>
+  );
+};
+
+
+
+
 
 export default function MenuPage() {
   const navigate = useNavigate();
@@ -715,12 +845,11 @@ export default function MenuPage() {
 >
 
           <div className="text-center px-4 max-w-4xl mx-auto">
-            <motion.h1
-              style={{ scale: titleScale }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2"
-            >
-              Explore Our Culinary Creations
-            </motion.h1>
+            <motion.div style={{ scale: titleScale }}>
+  <ShimmerHeading text="Explore Our Culinary Creations" />
+</motion.div>
+
+
             <motion.p
               style={{ opacity: subtitleOpacity }}
               className="text-sm sm:text-base md:text-lg text-orange-200 max-w-xl mx-auto"
