@@ -313,7 +313,8 @@ const RestaurantHomepage = () => {
       <Navbar scrollY={scrollY} />
       
       {/* Hero Section */}
-      <section id="home" className="relative h-[85vh] overflow-hidden">
+      <section id="home" className="relative h-screen overflow-hidden">
+
         <div className="absolute inset-0">
           {heroSlides.map((slide, index) => (
             <div
