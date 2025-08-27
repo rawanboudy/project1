@@ -12,8 +12,9 @@ export default function AboutPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <header
-        className="relative flex items-center justify-center h-80"
+         <header
+        className="relative flex items-center justify-center h-80 pt-20" 
+        // 👆 added pt-20 (~5rem) so header content clears the fixed navbar
         style={{ background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})` }}
       >
         <motion.div
