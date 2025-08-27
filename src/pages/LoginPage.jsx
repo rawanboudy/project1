@@ -27,36 +27,11 @@ const LoginPage = () => {
   const MAX_LOGIN_ATTEMPTS = 5;
   const BLOCK_DURATION = 300000; // 5 minutes in milliseconds
 
-  // Cookie helper functions for Safari compatibility
-  const setCookie = (name, value, days = 7) => {
-    const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-  };
-
-  const getCookie = (name) => {
-    return document.cookie.split('; ').reduce((r, v) => {
-      const parts = v.split('=');
-      return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-    }, '');
-  };
-
-  const deleteCookie = (name) => {
-    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-  };
-
   // Check for existing valid session on component mount
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
-        let token = localStorage.getItem('token');
-        
-        // If no token in localStorage, check cookies (Safari fallback)
-        if (!token) {
-          token = getCookie('authToken');
-          if (token) {
-            localStorage.setItem('token', token);
-          }
-        }
+        const token = localStorage.getItem('token');
         
         if (token) {
           // Set axios default header for authentication
@@ -82,7 +57,6 @@ const LoginPage = () => {
         localStorage.removeItem('userPermissions');
         localStorage.removeItem('userRoles');
         localStorage.removeItem('sessionId');
-        deleteCookie('authToken');
         delete axios.defaults.headers.common['Authorization'];
         
         if (error.response?.status === 401) {
@@ -189,7 +163,6 @@ const LoginPage = () => {
     // Store main token
     if (responseData.token) {
       localStorage.setItem('token', responseData.token);
-      setCookie('authToken', responseData.token, 7); // Store in cookie for Safari
       axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
     }
 
