@@ -846,8 +846,7 @@ export default function MenuPage() {
                             <img
                               src={item.pictureUrl || '/placeholder-dish.jpg'}
                               alt={item.name || 'Product'}
-                               loading="lazy"
-  decoding="async"
+                            
                               className="absolute inset-0 w-full h-full object-cover block transition-transform group-hover:scale-105"
                               onError={(e) => {
                                 e.target.src = '/placeholder-dish.jpg';
