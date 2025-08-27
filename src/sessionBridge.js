@@ -1,32 +1,43 @@
 // src/sessionBridge.js
 import axios from './axiosConfig';
 
-// Keys we want to mirror to cookies so Safari keeps them after close
+// Keys to mirror to cookies so Safari keeps them after close
 const MIRRORED_KEYS = ['token', 'refreshToken', 'tokenExpiry', 'userInfo', 'tokenType'];
 
-function setCookie(name, value, maxAgeDays = 30) {
+// Default persistence window (days). Adjust if you want shorter/longer.
+const DEFAULT_DAYS = 30;
+
+// --- utils --------------------------------------------------------
+
+function daysFromNow(days) {
+  const d = new Date();
+  d.setTime(d.getTime() + Math.max(1, days) * 24 * 60 * 60 * 1000);
+  return d;
+}
+
+function setCookie(name, value, maxAgeDays = DEFAULT_DAYS) {
   if (typeof document === 'undefined') return;
   try {
-    const maxAge = maxAgeDays * 24 * 60 * 60; // seconds
     const secure = window?.location?.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(
-      value
-    )}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
+    const maxAgeSec = Math.max(1, Math.floor(maxAgeDays * 24 * 60 * 60)); // seconds
+    const expires = daysFromNow(maxAgeDays).toUTCString();
+    // Use BOTH Max-Age and Expires for old Safari quirks
+    document.cookie =
+      `${encodeURIComponent(name)}=${encodeURIComponent(value)}; ` +
+      `Path=/; SameSite=Lax${secure}; Max-Age=${maxAgeSec}; Expires=${expires}`;
   } catch {}
 }
 
 function getCookie(name) {
   if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(
-    new RegExp('(?:^|; )' + encodeURIComponent(name) + '=([^;]*)')
-  );
+  const m = document.cookie.match(new RegExp('(?:^|; )' + encodeURIComponent(name) + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
 
 function deleteCookie(name) {
   if (typeof document === 'undefined') return;
   try {
-    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Path=/; SameSite=Lax`;
+    document.cookie = `${encodeURIComponent(name)}=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax`;
   } catch {}
 }
 
@@ -42,9 +53,11 @@ function canUseLocalStorage() {
   }
 }
 
+// --- core ---------------------------------------------------------
+
 /**
- * Pull mirrored values from cookies back into localStorage on first load.
- * Also restores axios Authorization header.
+ * Pull mirrored values from cookies back into localStorage on first load
+ * and set axios Authorization header.
  */
 export function hydrateSessionFromCookies() {
   const lsOk = canUseLocalStorage();
@@ -56,9 +69,7 @@ export function hydrateSessionFromCookies() {
     }
   });
 
-  const token =
-    (lsOk ? localStorage.getItem('token') : null) || getCookie('token');
-
+  const token = (lsOk ? localStorage.getItem('token') : null) || getCookie('token');
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
@@ -67,8 +78,39 @@ export function hydrateSessionFromCookies() {
 }
 
 /**
+ * Refresh (slide) cookie expirations so they persist between restarts
+ * while the session is valid.
+ */
+function refreshMirroredCookies() {
+  // Prefer tokenExpiry if present to decide the remaining lifetime
+  let days = DEFAULT_DAYS;
+
+  try {
+    const exp = (canUseLocalStorage() && localStorage.getItem('tokenExpiry')) || getCookie('tokenExpiry');
+    if (exp) {
+      const expMs = isNaN(exp) ? Date.parse(exp) : Number(exp);
+      if (!isNaN(expMs)) {
+        const msLeft = expMs - Date.now();
+        if (msLeft > 0) {
+          days = Math.max(1, msLeft / (24 * 60 * 60 * 1000));
+        } else {
+          // Token already expired -> don't refresh cookies
+          return;
+        }
+      }
+    }
+  } catch {
+    // fall back to DEFAULT_DAYS
+  }
+
+  MIRRORED_KEYS.forEach((k) => {
+    const val = (canUseLocalStorage() && localStorage.getItem(k)) || getCookie(k);
+    if (val != null) setCookie(k, val, days);
+  });
+}
+
+/**
  * Monkey-patch localStorage to mirror writes/deletes to cookies.
- * Safe no-op on environments where localStorage is unavailable.
  */
 function patchStorageMirroring() {
   if (!canUseLocalStorage()) return;
@@ -83,9 +125,7 @@ function patchStorageMirroring() {
     originalSetItem(key, value);
     if (MIRRORED_KEYS.includes(key)) {
       setCookie(key, value);
-      if (key === 'token') {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${value}`;
-      }
+      if (key === 'token') axios.defaults.headers.common['Authorization'] = `Bearer ${value}`;
     }
   };
 
@@ -107,17 +147,39 @@ function patchStorageMirroring() {
 }
 
 /**
- * Call this once on app startup (client-side only).
+ * Keep cookies fresh across tabs and page visibility changes.
  */
-export function ensureSessionPersistence() {
-  if (typeof window === 'undefined') return; // guard for SSR/build
-  hydrateSessionFromCookies();
-  patchStorageMirroring();
+function attachLivenessHandlers() {
+  // Refresh when tab becomes visible
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      refreshMirroredCookies();
+    }
+  });
+
+  // Light periodic refresh (1/min) while a tab is open
+  let timer = setInterval(refreshMirroredCookies, 60 * 1000);
+  window.addEventListener('beforeunload', () => clearInterval(timer));
+
+  // Cross-tab sync: when other tab changes storage, rehydrate and refresh
+  window.addEventListener('storage', (e) => {
+    if (e && MIRRORED_KEYS.includes(e.key)) {
+      hydrateSessionFromCookies();
+      refreshMirroredCookies();
+    }
+  });
 }
 
-/**
- * Helper you can use on logout to wipe everything.
- */
+/** Call this once on app startup (client-side only). */
+export function ensureSessionPersistence() {
+  if (typeof window === 'undefined') return;
+  hydrateSessionFromCookies();    // load token -> axios header
+  patchStorageMirroring();        // mirror LS <-> cookie
+  refreshMirroredCookies();       // set long-lived cookies right away
+  attachLivenessHandlers();       // keep them fresh while user is active
+}
+
+/** Helper to wipe everything on logout. */
 export function wipeSessionEverywhere() {
   try {
     localStorage.clear();
