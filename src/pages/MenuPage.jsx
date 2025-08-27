@@ -3,11 +3,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../axiosConfig';
 import { Star, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Plus, Minus, Eye, Heart, Filter, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 import theme from '../theme';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
 import toast from 'react-hot-toast';
+import { AnimatePresence, motion } from 'framer-motion';
+
 
 const SORT_OPTIONS = [
   { value: '',        label: '–– None ––' },
@@ -72,8 +74,8 @@ export default function MenuPage() {
   };
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+}, [pageIndex]);
 
   // Enhanced helper function to ensure data is an array and handle various API response formats
   const ensureArray = (data) => {
@@ -270,35 +272,31 @@ export default function MenuPage() {
   };
 
   // Handle pagination from cached products
-  const handlePageChange = (newPageIndex) => {
-    const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
-    const cachedProducts = window.allFetchedProducts?.[filterKey];
-    
-    if (cachedProducts) {
-      const startIndex = (newPageIndex - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedProducts = cachedProducts.slice(startIndex, endIndex);
-      
-      setProducts(paginatedProducts);
-      setPageIndex(newPageIndex);
-      
-      // Initialize quantities for products on new page
-      const newQuantities = {};
-      paginatedProducts.forEach(product => {
-        if (product && product.id) {
-          newQuantities[product.id] = quantities[product.id] || 1;
-        }
-      });
-      setQuantities(prev => ({ ...prev, ...newQuantities }));
-      
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      // Fallback: fetch products again
-      setPageIndex(newPageIndex);
-      fetchProducts();
-    }
-  };
+const handlePageChange = (newPageIndex) => {
+  const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
+  const cachedProducts = window.allFetchedProducts?.[filterKey];
+
+  if (cachedProducts) {
+    const startIndex = (newPageIndex - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedProducts = cachedProducts.slice(startIndex, endIndex);
+
+    setProducts(paginatedProducts);
+    setPageIndex(newPageIndex);
+
+    const newQuantities = {};
+    paginatedProducts.forEach(product => {
+      if (product && product.id) {
+        newQuantities[product.id] = quantities[product.id] || 1;
+      }
+    });
+    setQuantities(prev => ({ ...prev, ...newQuantities }));
+  } else {
+    setPageIndex(newPageIndex);
+    fetchProducts();
+  }
+};
+
 
   // Fetch categories and types with improved handling
   useEffect(() => {
@@ -967,182 +965,192 @@ export default function MenuPage() {
             )}
 
             {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="text-center">
-                  <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-600">Loading delicious dishes...</p>
+  <div className="flex justify-center py-20">
+    <div className="text-center">
+      <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
+      <p className="text-gray-600">Loading delicious dishes...</p>
+    </div>
+  </div>
+) : !Array.isArray(products) || products.length === 0 ? (
+  <div className="text-center py-20">
+    <div className="text-gray-400 text-6xl mb-4">🍽️</div>
+    <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
+    <p className="text-gray-500 mb-4">
+      {search || categoryFilter || typeFilter
+        ? "Try adjusting your filters to see more results"
+        : "We're preparing our menu. Please check back later!"}
+    </p>
+    {(search || categoryFilter || typeFilter || sort) && (
+      <button
+        onClick={() => {
+          setSearch('');
+          setCategoryFilter('');
+          setTypeFilter('');
+          setSort('');
+        }}
+        className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+      >
+        Clear All Filters
+      </button>
+    )}
+  </div>
+) : (
+  <AnimatePresence mode="wait">
+    <motion.div
+      key={`menu-page-${pageIndex}`}                  // 👈 re-mounts when page changes
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
+    >
+      {products
+        .map((item, idx) => {
+          if (!item || !item.id) return null;
+
+          return (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.03, duration: 0.2 }}
+              className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
+            >
+              {/* Favorite Button - Only show if logged in */}
+              {isUserLoggedIn && (
+                <button
+                  onClick={() => toggleFavorite(item)}
+                  disabled={favoriteLoading[item.id]}
+                  className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
+                    userFavorites.includes(item.id)
+                      ? 'bg-red-500 text-white shadow-lg'
+                      : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
+                  } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+                >
+                  {favoriteLoading[item.id] ? (
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                  ) : (
+                    <Heart
+                      className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                        userFavorites.includes(item.id) ? 'fill-current' : ''
+                      }`}
+                    />
+                  )}
+                </button>
+              )}
+
+              {/* Image */}
+              <div className="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                <img
+                  src={item.pictureUrl || '/placeholder-dish.jpg'}
+                  alt={item.name || 'Product'}
+                  className="absolute inset-0 w-full h-full object-cover block transition-transform group-hover:scale-105"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-dish.jpg';
+                  }}
+                />
+              </div>
+
+              {/* Card Body */}
+              <div className="p-3 sm:p-4 flex flex-col flex-grow">
+                <div className="mb-2 sm:mb-3 flex-grow">
+                  <h3
+                    className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 min-h-[2.5rem]"
+                    style={{ color: theme.colors.textDark }}
+                  >
+                    {item.name || 'Unnamed Product'}
+                  </h3>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      Category: {item.brandName || 'Unknown'}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Type: {item.typeName || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span
+                    className="text-lg sm:text-xl font-extrabold"
+                    style={{ color: theme.colors.orange }}
+                  >
+                    ${(item.price || 0).toFixed(2)}
+                  </span>
+                  {item.rating && (
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium">{item.rating}</span>
+                    </div>
+                  )}
+                </div>
+
+                {isUserLoggedIn && (
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">
+                      Quantity:
+                    </span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => updateQuantity(item.id, -1)}
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                      >
+                        <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <span className="w-6 sm:w-8 text-center font-medium text-sm">
+                        {quantities[item.id] || 1}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(item.id, 1)}
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                      >
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2 mt-auto">
+                  <button
+                    onClick={() => viewProduct(item.id)}
+                    className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
+                  >
+                    <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>View Product</span>
+                  </button>
+
+                  <button
+                    onClick={() => addToCart(item)}
+                    disabled={cartLoading[item.id]}
+                    className={`w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
+                      cartSuccess[item.id]
+                        ? 'bg-green-500 text-white'
+                        : cartLoading[item.id]
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
+                    }`}
+                  >
+                    {cartLoading[item.id] ? (
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                    ) : cartSuccess[item.id] ? (
+                      <span>Added!</span>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
-            ) : !Array.isArray(products) || products.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-gray-400 text-6xl mb-4">🍽️</div>
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
-                <p className="text-gray-500 mb-4">
-                  {search || categoryFilter || typeFilter 
-                    ? "Try adjusting your filters to see more results"
-                    : "We're preparing our menu. Please check back later!"
-                  }
-                </p>
-                {(search || categoryFilter || typeFilter || sort) && (
-                  <button
-                    onClick={() => {
-                      console.log('Clearing all filters from no results section');
-                      setSearch('');
-                      setCategoryFilter('');
-                      setTypeFilter('');
-                      setSort('');
-                    }}
-                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    Clear All Filters
-                  </button>
-                )}
-            
-              </div>
-            ) : (
-              <motion.div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-                {products.map((item, idx) => {
-                  // Ensure item exists and has required properties
-                  if (!item || !item.id) {
-                    console.warn('Invalid item found:', item);
-                    return null;
-                  }
-                  
-                  return (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
-                    >
-                      {/* Favorite Button - Only show if logged in */}
-                      {isUserLoggedIn && (
-                        <button
-                          onClick={() => toggleFavorite(item)}
-                          disabled={favoriteLoading[item.id]}
-                          className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
-                            userFavorites.includes(item.id)
-                              ? 'bg-red-500 text-white shadow-lg'
-                              : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
-                          } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
-                        >
-                          {favoriteLoading[item.id] ? (
-                            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                          ) : (
-                            <Heart 
-                              className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                                userFavorites.includes(item.id) ? 'fill-current' : ''
-                              }`} 
-                            />
-                          )}
-                        </button>
-                      )}
+            </motion.div>
+          );
+        })
+        .filter(Boolean)}
+    </motion.div>
+  </AnimatePresence>
+)}
 
-                      {/* Image - Reduced height */}
-                      <div className="overflow-hidden h-24 sm:h-32 md:h-36 flex-shrink-0">
-                        <img
-                          src={item.pictureUrl || '/placeholder-dish.jpg'}
-                          alt={item.name || 'Product'}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                          onError={(e) => {
-                            e.target.src = '/placeholder-dish.jpg';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Content - Removed description */}
-                      <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                        <div className="mb-2 sm:mb-3 flex-grow">
-                          <h3 className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 min-h-[2.5rem]" style={{ color: theme.colors.textDark }}>
-                            {item.name || 'Unnamed Product'}
-                          </h3>
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-500">Category: {item.brandName || 'Unknown'}</span>
-                            <span className="text-xs text-gray-500">Type: {item.typeName || 'Unknown'}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Price and Rating */}
-                        <div className="flex items-center justify-between mb-2 sm:mb-3">
-                          <span className="text-lg sm:text-xl font-extrabold" style={{ color: theme.colors.orange }}>
-                            ${(item.price || 0).toFixed(2)}
-                          </span>
-                          {item.rating && (
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium">{item.rating}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Quantity Controls - Only show if logged in */}
-                        {isUserLoggedIn && (
-                          <div className="flex items-center justify-between mb-2 sm:mb-3">
-                            <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => updateQuantity(item.id, -1)}
-                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                              >
-                                <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </button>
-                              <span className="w-6 sm:w-8 text-center font-medium text-sm">
-                                {quantities[item.id] || 1}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(item.id, 1)}
-                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
-                              >
-                                <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Button Container */}
-                        <div className="space-y-2 mt-auto">
-                          {/* View Product Button */}
-                          <button
-                            onClick={() => viewProduct(item.id)}
-                            className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
-                          >
-                            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <span>View Product</span>
-                          </button>
-
-                          {/* Add to Cart Button - Show for all, but require login on click */}
-                          <button
-                            onClick={() => addToCart(item)}
-                            disabled={cartLoading[item.id]}
-                            className={`w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
-                              cartSuccess[item.id]
-                                ? 'bg-green-500 text-white'
-                                : cartLoading[item.id]
-                                ? 'bg-gray-400 text-white cursor-not-allowed'
-                                : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
-                            }`}
-                          >
-                            {cartLoading[item.id] ? (
-                              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                            ) : cartSuccess[item.id] ? (
-                              <>
-                                <span>Added!</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span>Add to Cart</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                }).filter(Boolean)} {/* Filter out null items */}
-              </motion.div>
-            )}
 
             {/* Pagination */}
             {totalPages > 1 && (
