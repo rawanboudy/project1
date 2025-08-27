@@ -20,3 +20,12 @@ code {
   top: 100px !important;
 }
 
+/* Ensures every product image fills its box cleanly, no stretching */
+.product-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* fill and crop if needed */
+  object-position: center; /* keep center focal point */
+  display: block;          /* remove inline gaps */
+  image-rendering: auto;
+}

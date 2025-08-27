@@ -53,31 +53,40 @@ export default function MenuPage() {
   const [sort, setSort] = useState('');
   const [pageIndex, setPageIndex] = useState(1);
   const [quantities, setQuantities] = useState({});
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const pageSize = 12;
 
-  // ===== Scroll-driven hero animation =====
+  // ===== Enhanced Scroll-driven hero animation with fixed overflow =====
   const { scrollY } = useScroll();
-  // Height shrinks from 16rem to 5rem over first 200px scroll
   const heroHeight = useTransform(scrollY, [0, 200], ['16rem', '5rem']);
-  // Title scales slightly
   const titleScale = useTransform(scrollY, [0, 200], [1, 0.85]);
-  // Subtitle fades out
   const subtitleOpacity = useTransform(scrollY, [0, 120], [1, 0]);
 
-  // Check if user is logged in
+  const smoothScrollToTop = async (duration = 800) => {
+    return new Promise((resolve) => {
+      const startPosition = window.pageYOffset;
+      const startTime = performance.now();
+      const easeInOutQuart = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t);
+      const animateScroll = (currentTime) => {
+        const elapsedTime = currentTime - startTime;
+        const progress = Math.min(elapsedTime / duration, 1);
+        const eased = easeInOutQuart(progress);
+        window.scrollTo(0, startPosition * (1 - eased));
+        if (progress < 1) requestAnimationFrame(animateScroll);
+        else resolve();
+      };
+      requestAnimationFrame(animateScroll);
+    });
+  };
+
   useEffect(() => {
     const checkUserSession = () => {
       const token = localStorage.getItem('token');
       const userInfo = localStorage.getItem('userInfo');
       setIsUserLoggedIn(!!(token && userInfo));
     };
-
     checkUserSession();
-
-    const handleStorageChange = () => {
-      checkUserSession();
-    };
-
+    const handleStorageChange = () => checkUserSession();
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
@@ -91,10 +100,6 @@ export default function MenuPage() {
     return true;
   };
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [pageIndex]);
-
   const ensureArray = (data) => {
     if (Array.isArray(data)) return data;
     if (data && typeof data === 'object') {
@@ -103,11 +108,8 @@ export default function MenuPage() {
       if (Array.isArray(data.products)) return data.products;
       if (Array.isArray(data.results)) return data.results;
       if (Array.isArray(data.value)) return data.value;
-
       const keys = Object.keys(data);
-      if (keys.length > 0 && keys.every((key) => !isNaN(key))) {
-        return Object.values(data);
-      }
+      if (keys.length > 0 && keys.every((key) => !isNaN(key))) return Object.values(data);
     }
     return [];
   };
@@ -115,9 +117,7 @@ export default function MenuPage() {
   const normalizeFilterData = (data, type = 'category') => {
     if (!Array.isArray(data)) return [];
     return data.map((item, index) => {
-      if (typeof item === 'string') {
-        return { id: item, name: item, value: item };
-      }
+      if (typeof item === 'string') return { id: item, name: item, value: item };
       if (item && typeof item === 'object') {
         let id, name;
         if (type === 'category') {
@@ -184,7 +184,6 @@ export default function MenuPage() {
       }
 
       const sortedProducts = applySorting(fetchedProducts, sort);
-
       const startIndex = (pageIndex - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       const paginatedProducts = sortedProducts.slice(startIndex, endIndex);
@@ -210,11 +209,17 @@ export default function MenuPage() {
     }
   };
 
-  const handlePageChange = (newPageIndex) => {
+  const handlePageChange = async (newPageIndex) => {
+    if (isPageTransitioning) return;
+    setIsPageTransitioning(true);
+
     const filterKey = `${categoryFilter}-${typeFilter}-${search}-${sort}`;
     const cachedProducts = window.allFetchedProducts?.[filterKey];
 
     if (cachedProducts) {
+      await smoothScrollToTop(600);
+      await new Promise((r) => setTimeout(r, 100));
+
       const startIndex = (newPageIndex - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       const paginatedProducts = cachedProducts.slice(startIndex, endIndex);
@@ -228,9 +233,13 @@ export default function MenuPage() {
       });
       setQuantities((prev) => ({ ...prev, ...newQuantities }));
     } else {
+      await smoothScrollToTop(600);
+      await new Promise((r) => setTimeout(r, 100));
       setPageIndex(newPageIndex);
-      fetchProducts();
+      await fetchProducts();
     }
+
+    setTimeout(() => setIsPageTransitioning(false), 300);
   };
 
   useEffect(() => {
@@ -296,9 +305,7 @@ export default function MenuPage() {
         const favorites = JSON.parse(storedFavorites);
         if (Array.isArray(favorites)) setUserFavorites(favorites.map((f) => f.productId));
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const saveFavoritesToStorage = (favorites) => {
@@ -309,9 +316,7 @@ export default function MenuPage() {
         const favoritesKey = `favorites_${user.username || user.email}`;
         localStorage.setItem(favoritesKey, JSON.stringify(favorites));
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const getUserStoredFavorites = () => {
@@ -703,11 +708,12 @@ export default function MenuPage() {
 
       {/* Spacing from navbar */}
       <div className="pt-16">
-        {/* ===== Sticky, shrinking hero ===== */}
-        <motion.header
-          style={{ height: heroHeight }}
-          className="relative flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600 sticky top-0 z-[5] will-change-[height]"
-        >
+        {/* ===== Fixed sticky, shrinking hero without overflow issues ===== */}
+       <motion.header
+  style={{ height: heroHeight }}
+  className="relative flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600"
+>
+
           <div className="text-center px-4 max-w-4xl mx-auto">
             <motion.h1
               style={{ scale: titleScale }}
@@ -726,7 +732,10 @@ export default function MenuPage() {
 
         {/* Mobile Filter Button */}
         <div className="lg:hidden px-4 sm:px-6 -mt-8 relative z-10">
-          <button
+          <motion.button
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
             onClick={() => setShowMobileFilters(true)}
             className="bg-white rounded-full shadow-lg px-4 py-2 flex items-center space-x-2 text-gray-700 hover:bg-gray-50 transition-colors"
           >
@@ -737,44 +746,79 @@ export default function MenuPage() {
                 {[search, categoryFilter, typeFilter, sort].filter(Boolean).length}
               </span>
             )}
-          </button>
+          </motion.button>
         </div>
 
-        {/* Mobile Filter Overlay */}
-        {showMobileFilters && (
-          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
-            <div className="w-full bg-white rounded-t-xl max-h-[90vh] overflow-y-auto">
-              <FilterSection onClose={() => setShowMobileFilters(false)} />
-            </div>
-          </div>
-        )}
+        {/* Mobile Filter Overlay with Animation */}
+        <AnimatePresence>
+          {showMobileFilters && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+                onClick={() => setShowMobileFilters(false)}
+              />
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-xl max-h-[90vh] overflow-y-auto"
+              >
+                <FilterSection onClose={() => setShowMobileFilters(false)} />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Content Grid */}
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12"
+        >
           {/* Desktop Sidebar Filters */}
           <aside className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="sticky top-24"
+            >
               <FilterSection />
-            </div>
+            </motion.div>
           </aside>
 
           {/* Products List */}
           <section className="lg:col-span-3">
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6"
+              >
                 <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
-              </div>
+              </motion.div>
             )}
 
             {loading ? (
-              <div className="flex justify-center py-20">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-20">
                 <div className="text-center">
                   <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
                   <p className="text-gray-600">Loading delicious dishes...</p>
                 </div>
-              </div>
+              </motion.div>
             ) : !Array.isArray(products) || products.length === 0 ? (
-              <div className="text-center py-20">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="text-center py-20"
+              >
                 <div className="text-gray-400 text-6xl mb-4">🍽️</div>
                 <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
                 <p className="text-gray-500 mb-4">
@@ -783,7 +827,9 @@ export default function MenuPage() {
                     : "We're preparing our menu. Please check back later!"}
                 </p>
                 {(search || categoryFilter || typeFilter || sort) && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       setSearch('');
                       setCategoryFilter('');
@@ -793,41 +839,56 @@ export default function MenuPage() {
                     className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                   >
                     Clear All Filters
-                  </button>
+                  </motion.button>
                 )}
-              </div>
+              </motion.div>
             ) : (
               <AnimatePresence mode="wait">
                 <motion.div
                   key={`menu-page-${pageIndex}`}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{
+                    duration: 0.4,
+                    ease: [0.4, 0.0, 0.2, 1],
+                    staggerChildren: 0.03
+                  }}
                   className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
                 >
                   {products
-                    .map((item, idx) => {
+                    .map((item) => {
                       if (!item || !item.id) return null;
 
                       return (
                         <motion.div
                           key={item.id}
-                          initial={{ opacity: 0, y: 16 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.03, duration: 0.2 }}
-                          className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition flex flex-col h-full"
+                          variants={{
+                            hidden: { opacity: 0, y: 30, scale: 0.95 },
+                            visible: {
+                              opacity: 1,
+                              y: 0,
+                              scale: 1,
+                              transition: { duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
+                            }
+                          }}
+                          initial="hidden"
+                          animate="visible"
+                          whileHover={{ y: -8, transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] } }}
+                          className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col h-full group"
                         >
                           {/* Favorite */}
                           {isUserLoggedIn && (
-                            <button
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               onClick={() => toggleFavorite(item)}
                               disabled={favoriteLoading[item.id]}
                               className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
                                 userFavorites.includes(item.id)
                                   ? 'bg-red-500 text-white shadow-lg'
                                   : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
-                              } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : 'hover:scale-110'}`}
+                              } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : ''}`}
                             >
                               {favoriteLoading[item.id] ? (
                                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
@@ -838,20 +899,25 @@ export default function MenuPage() {
                                   }`}
                                 />
                               )}
-                            </button>
+                            </motion.button>
                           )}
 
                           {/* Image */}
                           <div className="relative overflow-hidden aspect-[4/3] bg-gray-100">
-                            <img
+                            <motion.img
+                              whileHover={{ scale: 1.05 }}
+                              transition={{ duration: 0.25 }}
                               src={item.pictureUrl || '/placeholder-dish.jpg'}
                               alt={item.name || 'Product'}
-                            
-                              className="absolute inset-0 w-full h-full object-cover block transition-transform group-hover:scale-105"
+                              className="product-img absolute inset-0"
+                              decoding="async"
+                              loading="lazy"
+                              draggable={false}
                               onError={(e) => {
-                                e.target.src = '/placeholder-dish.jpg';
+                                e.currentTarget.src = '/placeholder-dish.jpg';
                               }}
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           </div>
 
                           {/* Body */}
@@ -885,35 +951,43 @@ export default function MenuPage() {
                               <div className="flex items-center justify-between mb-2 sm:mb-3">
                                 <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
                                 <div className="flex items-center space-x-2">
-                                  <button
+                                  <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(item.id, -1)}
                                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
                                   >
                                     <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  </button>
+                                  </motion.button>
                                   <span className="w-6 sm:w-8 text-center font-medium text-sm">
                                     {quantities[item.id] || 1}
                                   </span>
-                                  <button
+                                  <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(item.id, 1)}
                                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
                                   >
                                     <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  </button>
+                                  </motion.button>
                                 </div>
                               </div>
                             )}
 
                             <div className="space-y-2 mt-auto">
-                              <button
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => viewProduct(item.id)}
-                                className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 hover:scale-105 transform text-sm"
+                                className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 text-sm"
                               >
                                 <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span>View Product</span>
-                              </button>
+                              </motion.button>
 
-                              <button
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => addToCart(item)}
                                 disabled={cartLoading[item.id]}
                                 className={`w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
@@ -921,7 +995,7 @@ export default function MenuPage() {
                                     ? 'bg-green-500 text-white'
                                     : cartLoading[item.id]
                                     ? 'bg-gray-400 text-white cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700 hover:scale-105 transform'
+                                    : 'bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700'
                                 }`}
                               >
                                 {cartLoading[item.id] ? (
@@ -934,7 +1008,7 @@ export default function MenuPage() {
                                     <span>Add to Cart</span>
                                   </>
                                 )}
-                              </button>
+                              </motion.button>
                             </div>
                           </div>
                         </motion.div>
@@ -945,34 +1019,54 @@ export default function MenuPage() {
               </AnimatePresence>
             )}
 
-            {/* Pagination */}
+            {/* Enhanced Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12"
+              >
                 <div className="flex items-center gap-4">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handlePageChange(Math.max(1, pageIndex - 1))}
-                    disabled={pageIndex === 1 || loading}
-                    className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    disabled={pageIndex === 1 || loading || isPageTransitioning}
+                    className="flex items-center space-x-1 px-4 py-3 bg-white border rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm font-medium"
                   >
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Prev</span>
-                  </button>
-                  <span className="font-medium text-sm sm:text-base whitespace-nowrap">
-                    Page {pageIndex} of {totalPages}
-                  </span>
-                  <button
+                    <span>Previous</span>
+                  </motion.button>
+
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-sm sm:text-base whitespace-nowrap px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg">
+                      Page {pageIndex} of {totalPages}
+                    </span>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handlePageChange(Math.min(totalPages, pageIndex + 1))}
-                    disabled={pageIndex === totalPages || loading}
-                    className="flex items-center space-x-1 px-3 py-2 bg-white border rounded-lg shadow hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    disabled={pageIndex === totalPages || loading || isPageTransitioning}
+                    className="flex items-center space-x-1 px-4 py-3 bg-white border rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm font-medium"
                   >
                     <span>Next</span>
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+
+                {isPageTransitioning && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center space-x-2 text-orange-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Loading...</span>
+                  </motion.div>
+                )}
+              </motion.div>
             )}
           </section>
-        </div>
+        </motion.div>
       </div>
 
       <Footer />
