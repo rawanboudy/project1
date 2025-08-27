@@ -878,31 +878,34 @@ const parseApiErrors = (error) => {
             </div>
 
             {/* Address Fields */}
-            <div className="group">
-              <label className="block text-sm font-semibold text-black mb-2">
-                Location *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="street"
-                  value={locationData.street}
-                  onChange={handleInputChange}
-                  required
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
-                    apiErrors.street 
-                      ? 'border-red-400 focus:border-red-500' 
-                      : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                  }`}
-                  placeholder="Enter your street address"
-                />
-                {apiErrors.street && (
-                  <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
-                    {apiErrors.street}
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="group">
+  <label className="block text-sm font-semibold text-black mb-2">
+    Location *
+  </label>
+  <div className="relative">
+    <textarea
+      name="street"
+      value={locationData.street}
+      onChange={handleInputChange}
+      rows={3}   // 👈 makes it taller
+      required
+      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl 
+                 transition-all duration-300 focus:outline-none focus:bg-white 
+                 focus:shadow-md text-sm resize-y ${
+        apiErrors.street 
+          ? 'border-red-400 focus:border-red-500' 
+          : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
+      }`}
+      placeholder="Enter your full address (street, apartment, etc.)"
+    />
+    {apiErrors.street && (
+      <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+        {apiErrors.street}
+      </div>
+    )}
+  </div>
+</div>
+
 
             
 

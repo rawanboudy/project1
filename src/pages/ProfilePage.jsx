@@ -220,7 +220,8 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 py-6 mt-16">
+      <div className="max-w-7xl mx-auto px-4 py-6 mt-20">
+
         <div className="flex flex-col lg:flex-row gap-6">
          
           
@@ -365,21 +366,22 @@ export default function ProfilePage() {
                         <p className="text-sm">Add your address to complete your profile</p>
                       </div>
                     ) : (
+                      
                       <div className="space-y-4">
-                        {user.address.location && ( // Changed from 'street' to 'location'
+                        {user.address.country && (
                           <div className="flex items-center justify-between py-3 border-b border-gray-100">
                             <div className="flex items-center gap-3">
-                              <Home className="w-4 h-4 text-orange-500" />
+                              <Globe className="w-4 h-4 text-orange-500" />
                               <div>
-                                <p className="text-sm text-gray-500">Location</p> {/* Changed label */}
-                                <p className="text-gray-900 font-medium">{user.address.location}</p>
+                                <p className="text-sm text-gray-500">Country</p>
+                                <p className="text-gray-900 font-medium">{user.address.country}</p>
                               </div>
                             </div>
                             <button
-                              onClick={() => copyToClipboard(user.address.location, 'Location')} // Updated
+                              onClick={() => copyToClipboard(user.address.country, 'Country')}
                               className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                             >
-                              {copiedField === 'Location' ? ( // Updated
+                              {copiedField === 'Country' ? (
                                 <Check className="w-4 h-4 text-green-500" />
                               ) : (
                                 <Copy className="w-4 h-4" />
@@ -387,6 +389,7 @@ export default function ProfilePage() {
                             </button>
                           </div>
                         )}
+
 
                         {user.address.city && (
                           <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -410,27 +413,39 @@ export default function ProfilePage() {
                           </div>
                         )}
 
-                        {user.address.country && (
-                          <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                            <div className="flex items-center gap-3">
-                              <Globe className="w-4 h-4 text-orange-500" />
-                              <div>
-                                <p className="text-sm text-gray-500">Country</p>
-                                <p className="text-gray-900 font-medium">{user.address.country}</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => copyToClipboard(user.address.country, 'Country')}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              {copiedField === 'Country' ? (
-                                <Check className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        )}
+
+                     {user.address.location && (
+  <div className="flex items-start justify-between py-3 border-b border-gray-100">
+    {/* Left side: icon + text */}
+    <div className="flex items-start gap-3 flex-1 min-w-0">
+      <Home className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+      <div className="min-w-0 w-full">
+        <p className="text-sm text-gray-500">Location</p>
+        <p className="text-gray-900 font-medium break-words whitespace-pre-wrap max-w-full">
+          {user.address.location}
+        </p>
+      </div>
+    </div>
+
+    {/* Right side: copy button */}
+    <button
+      onClick={() => copyToClipboard(user.address.location, 'Location')}
+      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors shrink-0 ml-3"
+      aria-label="Copy location"
+    >
+      {copiedField === 'Location' ? (
+        <Check className="w-4 h-4 text-green-500" />
+      ) : (
+        <Copy className="w-4 h-4" />
+      )}
+    </button>
+  </div>
+)}
+
+
+                        
+
+                        
                       </div>
                     )}
                   </div>
@@ -510,19 +525,21 @@ export default function ProfilePage() {
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location * {/* Changed from 'Street Address' to 'Location' */}
-                </label>
-                <input
-                  type="text"
-                  name="location" // Changed from 'street' to 'location'
-                  value={addressForm.location}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  required
-                />
-              </div>
+            <div className="col-span-2">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Location *
+  </label>
+  <textarea
+    name="location"
+    value={addressForm.location}
+    onChange={handleInputChange}
+    rows={3} // 👈 gives it more height
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg 
+               focus:ring-2 focus:ring-orange-500 focus:border-transparent
+               resize-y" // allows manual resize if you want
+    required
+  />
+</div>
               
           
               
