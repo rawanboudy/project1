@@ -55,13 +55,13 @@ export default function AboutPage() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <Navbar />
 
       {/* ===================== HERO ===================== */}
       <header className="relative flex items-center justify-center h-[22rem] sm:h-[24rem] md:h-[26rem] pt-20 overflow-hidden">
         {/* brand gradient like MenuPage */}
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600" />
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700" />
 
         {/* soft animated blobs (parallax-ish) */}
         <motion.div
@@ -113,14 +113,14 @@ export default function AboutPage() {
 
         {/* wavy divider to main content */}
         <svg
-          className="absolute bottom-0 left-0 right-0 w-full"
+          className="absolute bottom-0 left-0 right-0 w-full text-gray-50 dark:text-gray-950"
           viewBox="0 0 1440 74"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
         >
           <path
             d="M0,32 C240,64 480,0 720,16 C960,32 1200,80 1440,48 L1440,74 L0,74 Z"
-            fill="#f9fafb" /* gray-50 */
+            fill="currentColor"
             opacity="1"
           />
         </svg>
@@ -132,8 +132,8 @@ export default function AboutPage() {
         {/* ---------- Our Story ---------- */}
         <section className="grid md:grid-cols-2 gap-10 items-center">
           <motion.div {...fadeUp(0)}>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800">Our Story</h2>
-            <p className="mt-4 text-gray-700 leading-relaxed text-lg">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100">Our Story</h2>
+            <p className="mt-4 text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
               In 2024, a group of culinary enthusiasts and tech innovators joined forces to
               reimagine home dining. Fila was born from our desire to make gourmet meals
               accessible with just a few taps. We blend handcrafted recipes with cutting-edge
@@ -150,7 +150,7 @@ export default function AboutPage() {
             className="relative"
           >
             <motion.div
-              className="rounded-2xl p-6 sm:p-8 bg-white/70 backdrop-blur shadow-xl border border-white/60"
+              className="rounded-2xl p-6 sm:p-8 bg-white/70 dark:bg-white/10 backdrop-blur shadow-xl border border-white/60 dark:border-white/10"
               whileHover={{ y: -6 }}
               transition={{ type: 'spring', stiffness: 300, damping: 22 }}
             >
@@ -159,8 +159,8 @@ export default function AboutPage() {
                   <Compass className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-800">Crafted with Intention</h3>
-                  <p className="text-gray-600">
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Crafted with Intention</h3>
+                  <p className="text-gray-600 dark:text-gray-300">
                     We obsess over ingredients, sourcing, and consistency. Every dish is a small
                     promise kept.
                   </p>
@@ -173,26 +173,26 @@ export default function AboutPage() {
         {/* ---------- Mission & Vision ---------- */}
         <section className="grid gap-8 md:grid-cols-2">
           <motion.div
-            className="rounded-2xl p-6 sm:p-8 bg-white shadow-lg border border-gray-100"
+            className="rounded-2xl p-6 sm:p-8 bg-white dark:bg-gray-900 shadow-lg border border-gray-100 dark:border-gray-800"
             whileHover={{ y: -6 }}
             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
             {...fadeUp(0)}
           >
-            <h3 className="text-2xl font-semibold text-gray-800">Our Mission</h3>
-            <p className="mt-3 text-gray-700">
+            <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Our Mission</h3>
+            <p className="mt-3 text-gray-700 dark:text-gray-300">
               To democratize gourmet dining by connecting you with top local chefs, delivering
               high-quality, artfully crafted meals right to your door.
             </p>
           </motion.div>
 
           <motion.div
-            className="rounded-2xl p-6 sm:p-8 bg-white shadow-lg border border-gray-100"
+            className="rounded-2xl p-6 sm:p-8 bg-white dark:bg-gray-900 shadow-lg border border-gray-100 dark:border-gray-800"
             whileHover={{ y: -6 }}
             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
             {...fadeUp(0.1)}
           >
-            <h3 className="text-2xl font-semibold text-gray-800">Our Vision</h3>
-            <p className="mt-3 text-gray-700">
+            <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Our Vision</h3>
+            <p className="mt-3 text-gray-700 dark:text-gray-300">
               Food that feels personal, delightful, and simple — powered by technology that
               disappears behind the experience.
             </p>
@@ -202,7 +202,7 @@ export default function AboutPage() {
         {/* ---------- Core Values (stagger) ---------- */}
         <section>
           <motion.h2
-            className="text-3xl font-bold text-center text-gray-800 mb-8"
+            className="text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-8"
             {...fadeUp(0)}
           >
             Our Core Values
@@ -212,17 +212,17 @@ export default function AboutPage() {
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
             {...containerStagger}
           >
-            {values.map((v, i) => (
+            {values.map((v) => (
               <motion.div
                 key={v.title}
-                className="flex flex-col items-center text-center p-6 bg-white rounded-2xl shadow-lg border border-gray-100"
+                className="flex flex-col items-center text-center p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800"
                 variants={itemFade}
                 whileHover={{ y: -6, boxShadow: '0 20px 30px -12px rgba(0,0,0,0.15)' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 22 }}
               >
                 {v.icon}
-                <h3 className="mt-4 text-xl font-semibold text-gray-800">{v.title}</h3>
-                <p className="mt-2 text-gray-600">{v.desc}</p>
+                <h3 className="mt-4 text-xl font-semibold text-gray-800 dark:text-gray-100">{v.title}</h3>
+                <p className="mt-2 text-gray-600 dark:text-gray-300">{v.desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -231,7 +231,7 @@ export default function AboutPage() {
         {/* ---------- Stats band ---------- */}
         <section className="relative">
           <div className="relative rounded-2xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700" />
             <motion.div
               className="relative grid sm:grid-cols-3 gap-6 p-6 sm:p-8 text-white"
               initial={{ opacity: 0 }}
@@ -259,7 +259,7 @@ export default function AboutPage() {
         {/* ---------- CTA ---------- */}
         <section className="text-center">
           <motion.button
-            className="px-8 py-3 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all"
+            className="px-8 py-3 bg-gradient-to-r from-orange-400 to-orange-600 dark:from-orange-500 dark:to-orange-700 text-white rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all"
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}

@@ -4,13 +4,24 @@ import { Loader2, Repeat, History, User, Building, LogOut, Heart, Package, Calen
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../theme/ThemeProvider';
 
 export default function OrderHistoryPage() {
+  const { theme } = useTheme();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const navigate = useNavigate();
   const [user, setUser] = useState({});
+
+  // Apply dark class to document root based on theme
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const fetchUserAndOrders = async () => {
@@ -56,15 +67,15 @@ export default function OrderHistoryPage() {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'delivered':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700';
       case 'processing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700';
       case 'shipped':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -116,13 +127,13 @@ export default function OrderHistoryPage() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Order Details</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Order Details</h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl font-bold"
               >
                 ×
               </button>
@@ -133,8 +144,8 @@ export default function OrderHistoryPage() {
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <p className="text-sm text-gray-500">Order ID</p>
-                  <p className="text-xl font-semibold">#{order.id}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Order ID</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">#{order.id}</p>
                 </div>
                 {order.status && (
                   <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
@@ -144,21 +155,21 @@ export default function OrderHistoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500">Order Date</p>
-                  <p className="font-medium">{formatDate(order.orderDate)}</p>
+                  <p className="text-gray-500 dark:text-gray-400">Order Date</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(order.orderDate)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Total Amount</p>
-                  <p className="font-medium text-lg">${order.total?.toFixed(2) ?? '0.00'}</p>
+                  <p className="text-gray-500 dark:text-gray-400">Total Amount</p>
+                  <p className="font-medium text-lg text-gray-900 dark:text-gray-100">${order.total?.toFixed(2) ?? '0.00'}</p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Items Ordered</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Items Ordered</h3>
               {Array.isArray(order.items) && order.items.length > 0 ? (
                 order.items.map((item) => (
-                  <div key={item.productsId} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div key={item.productsId} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     {item.pictureUrl && (
                       <img
                         src={item.pictureUrl}
@@ -170,24 +181,24 @@ export default function OrderHistoryPage() {
                       />
                     )}
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                      <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100">{item.productName}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Quantity: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-gray-900">${item.price?.toFixed(2) ?? '0.00'}</p>
-                      <p className="text-sm text-gray-500">each</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">${item.price?.toFixed(2) ?? '0.00'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">each</p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-400 italic">No items in this order.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 italic">No items in this order.</p>
               )}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">Total</span>
-                <span className="text-2xl font-bold text-gray-900">${order.total?.toFixed(2) ?? '0.00'}</span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">${order.total?.toFixed(2) ?? '0.00'}</span>
               </div>
             </div>
           </div>
@@ -197,12 +208,9 @@ export default function OrderHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8 mt-16 flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        
-
         {/* Main Content */}
         <div className="flex-1">
           {/* Header */}
@@ -225,62 +233,62 @@ export default function OrderHistoryPage() {
           </div>
 
           {loading ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12">
               <div className="text-center">
                 <Loader2 className="w-12 h-12 animate-spin text-orange-500 mx-auto mb-4" />
-                <p className="text-gray-600 text-lg">Loading your orders...</p>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">Loading your orders...</p>
               </div>
             </div>
           ) : orders.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12">
               <div className="text-center">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package className="w-10 h-10 text-gray-400" />
+                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Package className="w-10 h-10 text-gray-400 dark:text-gray-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No orders yet</h3>
-                <p className="text-gray-600">When you place your first order, it will appear here.</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No orders yet</h3>
+                <p className="text-gray-600 dark:text-gray-300">When you place your first order, it will appear here.</p>
               </div>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Total Orders</p>
-                      <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Total Orders</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{orders.length}</p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                      <Package className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+                      <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Total Spent</p>
-                      <p className="text-3xl font-bold text-gray-900">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Total Spent</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                         ${orders.reduce((sum, order) => sum + (order.total || 0), 0).toFixed(2)}
                       </p>
                     </div>
-                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                      <CreditCard className="w-6 h-6 text-green-600" />
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-green-600 dark:text-green-400" />
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Last Order</p>
-                      <p className="text-lg font-bold text-gray-900">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Last Order</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                         {orders.length > 0 ? new Date(orders[0].orderDate).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-purple-600" />
+                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
                   </div>
                 </div>
@@ -290,7 +298,7 @@ export default function OrderHistoryPage() {
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow duration-300"
                 >
                   <div className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
@@ -299,8 +307,8 @@ export default function OrderHistoryPage() {
                           #{order.id.toString().slice(-3)}
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">Order #{order.id}</h3>
-                          <p className="text-sm text-gray-500 flex items-center gap-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Order #{order.id}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {formatDate(order.orderDate)}
                           </p>
@@ -309,8 +317,8 @@ export default function OrderHistoryPage() {
                       
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">${order.total?.toFixed(2) ?? '0.00'}</p>
-                          <p className="text-sm text-gray-500">Total</p>
+                          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${order.total?.toFixed(2) ?? '0.00'}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
                         </div>
                         {order.status && (
                           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
@@ -325,7 +333,7 @@ export default function OrderHistoryPage() {
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-3 mb-4">
                           {order.items.slice(0, 4).map((item) => (
-                            <div key={item.productsId} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 flex-1 min-w-[200px]">
+                            <div key={item.productsId} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex-1 min-w-[200px]">
                               {item.pictureUrl && (
                                 <img
                                   src={item.pictureUrl}
@@ -337,27 +345,27 @@ export default function OrderHistoryPage() {
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-gray-900 truncate">{item.productName}</p>
-                                <p className="text-sm text-gray-500">Qty: {item.quantity} × ${item.price?.toFixed(2) ?? '0.00'}</p>
+                                <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.productName}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {item.quantity} × ${item.price?.toFixed(2) ?? '0.00'}</p>
                               </div>
                             </div>
                           ))}
                           {order.items.length > 4 && (
-                            <div className="flex items-center justify-center bg-gray-100 rounded-lg p-3 min-w-[100px]">
-                              <span className="text-gray-600 font-medium">+{order.items.length - 4} more</span>
+                            <div className="flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg p-3 min-w-[100px]">
+                              <span className="text-gray-600 dark:text-gray-300 font-medium">+{order.items.length - 4} more</span>
                             </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-400 italic mb-4">No items in this order.</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 italic mb-4">No items in this order.</p>
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
                       >
                         <Eye className="w-4 h-4" />
                         View Details

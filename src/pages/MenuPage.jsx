@@ -29,45 +29,30 @@ const SORT_OPTIONS = [
   { value: '0', label: 'Name: A → Z' },
   { value: '3', label: 'Name: Z → A' }
 ];
-// Animated “liquid-fill” heading clipped inside the text
-// Polished gradient + shimmer heading (professional look)
-// Polished gradient + shimmer heading (smaller version)
-// Wave + shimmer gradient heading
+
+// Shimmer SVG stays the same (uses gradient)
 const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
-  const start = theme.colors.gradientStart; // e.g. #ff7a18
-  const end   = theme.colors.gradientEnd;   // e.g. #ffb800
+  const start = theme.colors.gradientStart;
+  const end = theme.colors.gradientEnd;
 
   return (
-    <svg
-      className="w-full [height:clamp(48px,6vw,80px)]"
-      viewBox="0 0 1400 160"
-      role="img"
-      aria-label={text}
-      preserveAspectRatio="xMidYMid meet"
-    >
+    <svg className="w-full [height:clamp(48px,6vw,80px)]" viewBox="0 0 1400 160" role="img" aria-label={text} preserveAspectRatio="xMidYMid meet">
       <defs>
-        {/* brand fill */}
         <linearGradient id="brand-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"  stopColor={start} />
+          <stop offset="0%" stopColor={start} />
           <stop offset="100%" stopColor={end} />
         </linearGradient>
-
-        {/* subtle top highlight / bottom shade */}
         <linearGradient id="depth-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="rgba(255,255,255,0.35)" />
-          <stop offset="55%"  stopColor="rgba(255,255,255,0)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+          <stop offset="55%" stopColor="rgba(255,255,255,0)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0.15)" />
         </linearGradient>
-
-        {/* shimmer sweep */}
         <linearGradient id="sheen-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="rgba(255,255,255,0)" />
-          <stop offset="45%"  stopColor="rgba(255,255,255,0.6)" />
-          <stop offset="55%"  stopColor="rgba(255,255,255,0.6)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+          <stop offset="45%" stopColor="rgba(255,255,255,0.6)" />
+          <stop offset="55%" stopColor="rgba(255,255,255,0.6)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </linearGradient>
-
-        {/* Text outlines the clip area */}
         <clipPath id="text-clip">
           <text
             id="hero-text"
@@ -77,77 +62,44 @@ const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
             dominantBaseline="middle"
             fontFamily="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial"
             fontWeight="800"
-            fontSize="90"   /* your smaller size */
+            fontSize="90"
             letterSpacing="0.3"
           >
             {text}
           </text>
         </clipPath>
-
-        {/* Liquid ripple (GPU-friendly, works in modern browsers incl. Safari 15+) */}
         <filter id="wave-distort" x="-20%" y="-40%" width="140%" height="200%">
           <feTurbulence type="fractalNoise" baseFrequency="0.012 0.035" numOctaves="2" seed="8" result="noise">
-            <animate attributeName="baseFrequency"
-                     values="0.012 0.035; 0.02 0.05; 0.012 0.035"
-                     dur="10s" repeatCount="indefinite" />
+            <animate attributeName="baseFrequency" values="0.012 0.035; 0.02 0.05; 0.012 0.035" dur="10s" repeatCount="indefinite" />
           </feTurbulence>
           <feDisplacementMap in="SourceGraphic" in2="noise" scale="6" xChannelSelector="R" yChannelSelector="G">
             <animate attributeName="scale" values="5;7;5" dur="6s" repeatCount="indefinite" />
           </feDisplacementMap>
         </filter>
-
-        {/* A moving wave mask that creates the “water level” shape */}
         <mask id="liquid-mask">
-          {/* black = hide; white = show */}
           <rect x="0" y="0" width="1400" height="160" fill="black" />
           <g transform="translate(0,95)">
-            {/* two tiled wave paths sliding horizontally */}
             <g>
-              <path id="wave" d="M0,20
-                 C 35,10 65,30 100,20
-                 S 165,10 200,20
-                 S 265,30 300,20
-                 S 365,10 400,20
-                 S 465,30 500,20
-                 S 565,10 600,20
-                 S 665,30 700,20
-                 S 765,10 800,20
-                 S 865,30 900,20
-                 S 965,10 1000,20
-                 S 1065,30 1100,20
-                 S 1165,10 1200,20
-                 S 1265,30 1300,20
-                 S 1365,10 1400,20
-                 V160 H0 Z"
-                 fill="white" opacity="0.9" />
+              <path
+                id="wave"
+                d="M0,20 C 35,10 65,30 100,20 S 165,10 200,20 S 265,30 300,20 S 365,10 400,20 S 465,30 500,20 S 565,10 600,20 S 665,30 700,20 S 765,10 800,20 S 865,30 900,20 S 965,10 1000,20 S 1065,30 1100,20 S 1165,10 1200,20 S 1265,30 1300,20 S 1365,10 1400,20 V160 H0 Z"
+                fill="white"
+                opacity="0.9"
+              />
               <use href="#wave" x="-1400" fill="white" opacity="0.9" />
-              <animateTransform attributeName="transform" attributeType="XML" type="translate"
-                from="-1400 0" to="0 0" dur="7s" repeatCount="indefinite" />
+              <animateTransform attributeName="transform" attributeType="XML" type="translate" from="-1400 0" to="0 0" dur="7s" repeatCount="indefinite" />
             </g>
-            {/* slight vertical bobbing */}
-            <animateTransform attributeName="transform" type="translate"
-              values="0,95; 0,90; 0,95" dur="4.5s" repeatCount="indefinite" />
+            <animateTransform attributeName="transform" type="translate" values="0,95; 0,90; 0,95" dur="4.5s" repeatCount="indefinite" />
           </g>
         </mask>
       </defs>
-
-      {/* soft outline so letters stay readable on any bg */}
       <use href="#hero-text" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
-
-      {/* Everything inside the text */}
       <g clipPath="url(#text-clip)">
-        {/* base gradient */}
         <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
-
-        {/* apply liquid mask to create moving “water” body */}
         <g style={{ filter: 'url(#wave-distort)' }} mask="url(#liquid-mask)">
           <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
         </g>
-
-        {/* depth shading on top */}
         <rect x="0" y="0" width="1400" height="160" fill="url(#depth-grad)" />
-
-        {/* shimmer sweep across the letters */}
         <rect x="-700" y="0" width="700" height="160" fill="url(#sheen-grad)">
           <animate attributeName="x" values="-700; 1400; -700" dur="6.5s" repeatCount="indefinite" />
         </rect>
@@ -155,10 +107,6 @@ const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
     </svg>
   );
 };
-
-
-
-
 
 export default function MenuPage() {
   const navigate = useNavigate();
@@ -186,14 +134,13 @@ export default function MenuPage() {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const pageSize = 12;
 
-  // ===== Enhanced Scroll-driven hero animation with fixed overflow =====
   const { scrollY } = useScroll();
   const heroHeight = useTransform(scrollY, [0, 200], ['16rem', '5rem']);
   const titleScale = useTransform(scrollY, [0, 200], [1, 0.85]);
   const subtitleOpacity = useTransform(scrollY, [0, 120], [1, 0]);
 
-  const smoothScrollToTop = async (duration = 800) => {
-    return new Promise((resolve) => {
+  const smoothScrollToTop = async (duration = 800) =>
+    new Promise((resolve) => {
       const startPosition = window.pageYOffset;
       const startTime = performance.now();
       const easeInOutQuart = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t);
@@ -207,7 +154,6 @@ export default function MenuPage() {
       };
       requestAnimationFrame(animateScroll);
     });
-  };
 
   useEffect(() => {
     const checkUserSession = () => {
@@ -377,10 +323,7 @@ export default function MenuPage() {
       try {
         setCategoriesLoading(true);
         setTypesLoading(true);
-        const [categoriesResp, typesResp] = await Promise.all([
-          axios.get('products/categories'),
-          axios.get('products/types')
-        ]);
+        const [categoriesResp, typesResp] = await Promise.all([axios.get('products/categories'), axios.get('products/types')]);
 
         const categoryData = ensureArray(categoriesResp.data);
         const typeData = ensureArray(typesResp.data);
@@ -404,8 +347,9 @@ export default function MenuPage() {
   }, [isUserLoggedIn]);
 
   useEffect(() => {
+    smoothScrollToTop(600);
     fetchProducts();
-  }, [categoryFilter, typeFilter, search, sort]);
+  }, [categoryFilter, typeFilter, search, sort]); // scroll-to-top on filter change
 
   useEffect(() => {
     if (pageIndex !== 1) setPageIndex(1);
@@ -575,9 +519,7 @@ export default function MenuPage() {
 
       let cartData;
       if (existingCart && existingCart.items && Array.isArray(existingCart.items)) {
-        const existingItemIndex = existingCart.items.findIndex(
-          (item) => item.id === productId || item.productId === productId
-        );
+        const existingItemIndex = existingCart.items.findIndex((item) => item.id === productId || item.productId === productId);
         if (existingItemIndex >= 0) {
           existingCart.items[existingItemIndex].quantity += quantity;
         } else {
@@ -651,6 +593,7 @@ export default function MenuPage() {
     }
   };
 
+  // ===== Filter Section (now with dark mode) =====
   const FilterSection = ({ className = '', onClose = null }) => {
     const [localSearch, setLocalSearch] = useState('');
     const [localCategoryFilter, setLocalCategoryFilter] = useState('');
@@ -671,6 +614,7 @@ export default function MenuPage() {
       setCategoryFilter(localCategoryFilter);
       setTypeFilter(localTypeFilter);
       setSort(localSort);
+      smoothScrollToTop(600);
       if (onClose) onClose();
     };
 
@@ -688,25 +632,10 @@ export default function MenuPage() {
       }
     };
 
-    const handleSearchChange = (value) => {
-      if (onClose) setLocalSearch(value);
-      else setSearch(value);
-    };
-
-    const handleCategoryChange = (value) => {
-      if (onClose) setLocalCategoryFilter(value);
-      else setCategoryFilter(value);
-    };
-
-    const handleTypeChange = (value) => {
-      if (onClose) setLocalTypeFilter(value);
-      else setTypeFilter(value);
-    };
-
-    const handleSortChange = (value) => {
-      if (onClose) setLocalSort(value);
-      else setSort(value);
-    };
+    const handleSearchChange = (value) => (onClose ? setLocalSearch(value) : setSearch(value));
+    const handleCategoryChange = (value) => (onClose ? setLocalCategoryFilter(value) : setCategoryFilter(value));
+    const handleTypeChange = (value) => (onClose ? setLocalTypeFilter(value) : setTypeFilter(value));
+    const handleSortChange = (value) => (onClose ? setLocalSort(value) : setSort(value));
 
     const currentSearch = onClose ? localSearch : search;
     const currentCategory = onClose ? localCategoryFilter : categoryFilter;
@@ -714,24 +643,24 @@ export default function MenuPage() {
     const currentSort = onClose ? localSort : sort;
 
     return (
-      <div className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 ${className}`}>
+      <div className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg p-4 sm:p-6 ${className}`}>
         {onClose ? (
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Filters</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-              <X className="w-5 h-5" />
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Filters</h2>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+              <X className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
           </div>
         ) : (
-          <h2 className="text-xl font-semibold mb-6">Filters</h2>
+          <h2 className="text-xl font-semibold mb-6 text-gray-800 dark:text-gray-100">Filters</h2>
         )}
 
         <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">Search</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Search</label>
             <input
               type="text"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm"
+              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               placeholder="Search dishes..."
               value={currentSearch}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -739,15 +668,15 @@ export default function MenuPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">Category</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Category</label>
             {categoriesLoading ? (
-              <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                <span className="text-sm text-gray-500">Loading categories...</span>
+              <div className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin mr-2 text-gray-600 dark:text-gray-300" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Loading categories...</span>
               </div>
             ) : (
               <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
+                className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 value={currentCategory}
                 onChange={(e) => handleCategoryChange(e.target.value)}
               >
@@ -762,15 +691,15 @@ export default function MenuPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">Type</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Type</label>
             {typesLoading ? (
-              <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                <span className="text-sm text-gray-500">Loading types...</span>
+              <div className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin mr-2 text-gray-600 dark:text-gray-300" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Loading types...</span>
               </div>
             ) : (
               <select
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
+                className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 value={currentType}
                 onChange={(e) => handleTypeChange(e.target.value)}
               >
@@ -785,9 +714,9 @@ export default function MenuPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">Sort By</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Sort By</label>
             <select
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white"
+              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               value={currentSort}
               onChange={(e) => handleSortChange(e.target.value)}
             >
@@ -802,7 +731,7 @@ export default function MenuPage() {
           {!onClose && (
             <button
               onClick={clearFilters}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6"
+              className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6"
             >
               <X className="w-4 h-4" />
               <span>Clear All Filters</span>
@@ -810,7 +739,7 @@ export default function MenuPage() {
           )}
 
           {onClose && (
-            <div className="flex flex-col space-y-3 pt-6 border-t border-gray-200">
+            <div className="flex flex-col space-y-3 pt-6 border-t border-gray-200 dark:border-gray-800">
               <div className="flex space-x-3">
                 <button
                   onClick={applyFilters}
@@ -820,7 +749,7 @@ export default function MenuPage() {
                 </button>
                 <button
                   onClick={clearFilters}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-100 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
                 >
                   Clear All
                 </button>
@@ -833,22 +762,20 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-white to-gray-100 min-h-screen">
+    <div className="bg-gradient-to-b from-white to-gray-100 dark:from-gray-950 dark:to-gray-900 min-h-screen">
       <Navbar />
 
       {/* Spacing from navbar */}
       <div className="pt-16">
-        {/* ===== Fixed sticky, shrinking hero without overflow issues ===== */}
-       <motion.header
-  style={{ height: heroHeight }}
-  className="relative flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600"
->
-
+        {/* Shrinking hero */}
+        <motion.header
+          style={{ height: heroHeight }}
+          className="relative flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600"
+        >
           <div className="text-center px-4 max-w-4xl mx-auto">
             <motion.div style={{ scale: titleScale }}>
-  <ShimmerHeading text="Explore Our Culinary Creations" />
-</motion.div>
-
+              <ShimmerHeading text="Explore Our Culinary Creations" />
+            </motion.div>
 
             <motion.p
               style={{ opacity: subtitleOpacity }}
@@ -866,7 +793,7 @@ export default function MenuPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
             onClick={() => setShowMobileFilters(true)}
-            className="bg-white rounded-full shadow-lg px-4 py-2 flex items-center space-x-2 text-gray-700 hover:bg-gray-50 transition-colors"
+            className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-full shadow-lg px-4 py-2 flex items-center space-x-2 text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filters</span>
@@ -878,7 +805,7 @@ export default function MenuPage() {
           </motion.button>
         </div>
 
-        {/* Mobile Filter Overlay with Animation */}
+        {/* Mobile Filter Overlay */}
         <AnimatePresence>
           {showMobileFilters && (
             <>
@@ -887,7 +814,7 @@ export default function MenuPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+                className="lg:hidden fixed inset-0 bg-black/50 z-50"
                 onClick={() => setShowMobileFilters(false)}
               />
               <motion.div
@@ -895,7 +822,7 @@ export default function MenuPage() {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-xl max-h-[90vh] overflow-y-auto"
+                className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-xl max-h-[90vh] overflow-y-auto border-t border-gray-100 dark:border-gray-800"
               >
                 <FilterSection onClose={() => setShowMobileFilters(false)} />
               </motion.div>
@@ -910,27 +837,18 @@ export default function MenuPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 py-8 sm:py-12"
         >
-          {/* Desktop Sidebar Filters */}
+          {/* Sidebar */}
           <aside className="hidden lg:block lg:col-span-1">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="sticky top-24"
-            >
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="sticky top-24">
               <FilterSection />
             </motion.div>
           </aside>
 
-          {/* Products List */}
+          {/* Products */}
           <section className="lg:col-span-3">
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6"
-              >
-                <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                <p className="text-red-600 dark:text-red-300 text-center text-sm sm:text-base">{error}</p>
               </motion.div>
             )}
 
@@ -938,22 +856,15 @@ export default function MenuPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center py-20">
                 <div className="text-center">
                   <Loader2 className="w-12 h-12 text-orange-500 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-600">Loading delicious dishes...</p>
+                  <p className="text-gray-600 dark:text-gray-300">Loading delicious dishes...</p>
                 </div>
               </motion.div>
             ) : !Array.isArray(products) || products.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
-                className="text-center py-20"
-              >
-                <div className="text-gray-400 text-6xl mb-4">🍽️</div>
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No dishes found</h3>
-                <p className="text-gray-500 mb-4">
-                  {search || categoryFilter || typeFilter
-                    ? 'Try adjusting your filters to see more results'
-                    : "We're preparing our menu. Please check back later!"}
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="text-center py-20">
+                <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🍽️</div>
+                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-200 mb-2">No dishes found</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  {search || categoryFilter || typeFilter ? 'Try adjusting your filters to see more results' : "We're preparing our menu. Please check back later!"}
                 </p>
                 {(search || categoryFilter || typeFilter || sort) && (
                   <motion.button
@@ -978,33 +889,23 @@ export default function MenuPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  transition={{
-                    duration: 0.4,
-                    ease: [0.4, 0.0, 0.2, 1],
-                    staggerChildren: 0.03
-                  }}
+                  transition={{ duration: 0.4, ease: [0.4, 0.0, 0.2, 1], staggerChildren: 0.03 }}
                   className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3"
                 >
                   {products
                     .map((item) => {
                       if (!item || !item.id) return null;
-
                       return (
                         <motion.div
                           key={item.id}
                           variants={{
                             hidden: { opacity: 0, y: 30, scale: 0.95 },
-                            visible: {
-                              opacity: 1,
-                              y: 0,
-                              scale: 1,
-                              transition: { duration: 0.4, ease: [0.4, 0.0, 0.2, 1] }
-                            }
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.4, 0.0, 0.2, 1] } }
                           }}
                           initial="hidden"
                           animate="visible"
                           whileHover={{ y: -8, transition: { duration: 0.3, ease: [0.4, 0.0, 0.2, 1] } }}
-                          className="relative bg-white rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col h-full group"
+                          className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 flex flex-col h-full group"
                         >
                           {/* Favorite */}
                           {isUserLoggedIn && (
@@ -1016,23 +917,19 @@ export default function MenuPage() {
                               className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${
                                 userFavorites.includes(item.id)
                                   ? 'bg-red-500 text-white shadow-lg'
-                                  : 'bg-white bg-opacity-80 text-gray-600 hover:bg-red-500 hover:text-white'
+                                  : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 bg-opacity-80 text-gray-600 dark:text-gray-200 hover:bg-red-500 hover:text-white'
                               } ${favoriteLoading[item.id] ? 'cursor-not-allowed opacity-50' : ''}`}
                             >
                               {favoriteLoading[item.id] ? (
                                 <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                               ) : (
-                                <Heart
-                                  className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                                    userFavorites.includes(item.id) ? 'fill-current' : ''
-                                  }`}
-                                />
+                                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${userFavorites.includes(item.id) ? 'fill-current' : ''}`} />
                               )}
                             </motion.button>
                           )}
 
                           {/* Image */}
-                          <div className="relative overflow-hidden aspect-[4/3] bg-gray-100">
+                          <div className="relative overflow-hidden aspect-[4/3] bg-gray-100 dark:bg-gray-800">
                             <motion.img
                               whileHover={{ scale: 1.05 }}
                               transition={{ duration: 0.25 }}
@@ -1052,52 +949,49 @@ export default function MenuPage() {
                           {/* Body */}
                           <div className="p-3 sm:p-4 flex flex-col flex-grow">
                             <div className="mb-2 sm:mb-3 flex-grow">
-                              <h3
-                                className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 min-h-[2.5rem]"
-                                style={{ color: theme.colors.textDark }}
-                              >
+                              <h3 className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 min-h-[2.5rem] text-gray-900 dark:text-gray-100">
                                 {item.name || 'Unnamed Product'}
                               </h3>
                               <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500">Category: {item.brandName || 'Unknown'}</span>
-                                <span className="text-xs text-gray-500">Type: {item.typeName || 'Unknown'}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Category: {item.brandName || 'Unknown'}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Type: {item.typeName || 'Unknown'}</span>
                               </div>
                             </div>
 
                             <div className="flex items-center justify-between mb-2 sm:mb-3">
-                              <span className="text-lg sm:text-xl font-extrabold" style={{ color: theme.colors.orange }}>
+                              <span className="text-lg sm:text-xl font-extrabold text-orange-600">
                                 ${(item.price || 0).toFixed(2)}
                               </span>
                               {item.rating && (
                                 <div className="flex items-center space-x-1">
                                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                  <span className="text-sm font-medium">{item.rating}</span>
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item.rating}</span>
                                 </div>
                               )}
                             </div>
 
                             {isUserLoggedIn && (
                               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                                <span className="text-xs sm:text-sm font-medium text-gray-700">Quantity:</span>
+                                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Quantity:</span>
                                 <div className="flex items-center space-x-2">
                                   <motion.button
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(item.id, -1)}
-                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                                   >
-                                    <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <Minus className="w-3 h-3 sm:w-4 sm:h-4 text-gray-800 dark:text-gray-200" />
                                   </motion.button>
-                                  <span className="w-6 sm:w-8 text-center font-medium text-sm">
+                                  <span className="w-6 sm:w-8 text-center font-medium text-sm text-gray-900 dark:text-gray-100">
                                     {quantities[item.id] || 1}
                                   </span>
                                   <motion.button
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => updateQuantity(item.id, 1)}
-                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition"
+                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                                   >
-                                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-gray-800 dark:text-gray-200" />
                                   </motion.button>
                                 </div>
                               </div>
@@ -1108,7 +1002,7 @@ export default function MenuPage() {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => viewProduct(item.id)}
-                                className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 text-white hover:bg-gray-700 text-sm"
+                                className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center space-x-2 bg-gray-600 dark:bg-gray-700 text-white hover:bg-gray-700 dark:hover:bg-gray-600 text-sm"
                               >
                                 <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span>View Product</span>
@@ -1148,28 +1042,23 @@ export default function MenuPage() {
               </AnimatePresence>
             )}
 
-            {/* Enhanced Pagination */}
+            {/* Pagination */}
             {totalPages > 1 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12"
-              >
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }} className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 sm:mt-12">
                 <div className="flex items-center gap-4">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handlePageChange(Math.max(1, pageIndex - 1))}
                     disabled={pageIndex === 1 || loading || isPageTransitioning}
-                    className="flex items-center space-x-1 px-4 py-3 bg-white border rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm font-medium"
+                    className="flex items-center space-x-1 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-gray-800 dark:text-gray-100"
                   >
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Previous</span>
                   </motion.button>
 
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium text-sm sm:text-base whitespace-nowrap px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-200 rounded-lg">
+                    <span className="font-medium text-sm sm:text-base whitespace-nowrap px-4 py-2 bg-gradient-to-r from-orange-100 to-orange-200 dark:from-gray-800 dark:to-gray-700 rounded-lg text-gray-900 dark:text-gray-100">
                       Page {pageIndex} of {totalPages}
                     </span>
                   </div>
@@ -1179,7 +1068,7 @@ export default function MenuPage() {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handlePageChange(Math.min(totalPages, pageIndex + 1))}
                     disabled={pageIndex === totalPages || loading || isPageTransitioning}
-                    className="flex items-center space-x-1 px-4 py-3 bg-white border rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm font-medium"
+                    className="flex items-center space-x-1 px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-gray-800 dark:text-gray-100"
                   >
                     <span>Next</span>
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />

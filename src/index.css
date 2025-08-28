@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Base fonts & resets ---------- */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,16 +13,33 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
-/* src/index.css (or whatever your global stylesheet is) */
+
+/* ---------- Dark mode: make it OBVIOUS globally ---------- */
+@layer base {
+  /* Light default */
+  body {
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+  }
+  /* When ThemeProvider adds .dark to <html> */
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
+  }
+}
+
+/* ---------- React Hot Toast position (kept from your file) ---------- */
 /* this selector is the actual container that react-hot-toast uses */
 .react-hot-toast {
   top: 100px !important;
 }
 
-/* Ensures every product image fills its box cleanly, no stretching */
+/* Optional: make toast colors adapt in dark mode */
+.dark .react-hot-toast {
+  color-scheme: dark; /* lets its built-in styles use dark palette */
+}
+
+/* ---------- Product images (kept) ---------- */
 .product-img {
   width: 100%;
   height: 100%;

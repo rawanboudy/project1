@@ -1,52 +1,35 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Star, Clock, Play, Pause, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
+import { Star, Clock, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
 import '../styles/RestaurantHomepage.css';
 import theme from '../theme';
 import Navbar from '../components/Navbar';
 import Footer from '../components/footer';
 import SignatureDishes from '../components/SignatureDishes';
 import { useNavigate, useLocation } from 'react-router-dom';
+import HeroSection from '../components/heroSection';
 
 const RestaurantHomepage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [featuredDishes, setFeaturedDishes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [hoveredDish, setHoveredDish] = useState(null);
-  const [currentDishIndex, setCurrentDishIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(new Set());
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ensure page always loads from top
   useEffect(() => {
-    // Force scroll to top when component mounts
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    
-    // Clear any stored scroll position
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
-    
-    // Additional scroll to top after a slight delay to ensure DOM is ready
-    const scrollToTopTimer = setTimeout(() => {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }, 50);
-
-    return () => {
-      clearTimeout(scrollToTopTimer);
-    };
+    if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
+    const t = setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }), 50);
+    return () => clearTimeout(t);
   }, []);
 
-  // Handle route changes and ensure scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [location.pathname]);
 
-  // Optimized hero slides with smaller, faster-loading images
   const heroSlides = useMemo(() => [
     {
       title: "Culinary Excellence",
@@ -65,7 +48,6 @@ const RestaurantHomepage = () => {
     }
   ], []);
 
-  // Fallback dishes with optimized images
   const fallbackDishes = useMemo(() => [
     {
       id: 1,
@@ -120,7 +102,6 @@ const RestaurantHomepage = () => {
     }
   ], []);
 
-  // Image preloading utility
   const preloadImage = useCallback((src) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -133,28 +114,20 @@ const RestaurantHomepage = () => {
     });
   }, []);
 
-  // Optimized DishCard component with lazy loading
   const DishCard = React.memo(({ dish, index }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
-
-    const handleImageLoad = useCallback(() => {
-      setImageLoaded(true);
-    }, []);
-
     return (
       <div
-        className="relative overflow-hidden rounded-xl bg-white shadow-lg transition-transform transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp group"
+        className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-900 shadow-lg transition-transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp group"
         style={{ animationDelay: `${index * 0.1}s` }}
       >
         <div className="relative">
-          <div className={`w-full h-64 bg-gray-200 ${!imageLoaded ? 'animate-pulse' : ''}`}>
-            <img 
-              src={dish.pictureUrl}  
-              alt={dish.name} 
-              className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoad={handleImageLoad}
+          <div className={`w-full h-64 bg-gray-200 dark:bg-gray-800 ${!imageLoaded ? 'animate-pulse' : ''}`}>
+            <img
+              src={dish.pictureUrl}
+              alt={dish.name}
+              className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setImageLoaded(true)}
               loading="lazy"
             />
           </div>
@@ -162,23 +135,26 @@ const RestaurantHomepage = () => {
           <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
             {dish.category}
           </span>
-          <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
+          <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
             <Star className="w-4 h-4 text-orange-500" />
             <span>{dish.rating}</span>
           </div>
-          <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 text-sm text-gray-800 px-3 py-1 rounded-full">
+          <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
             <Clock className="w-4 h-4 text-orange-500" />
             <span>{dish.preparationTime}</span>
           </div>
         </div>
         <div className="p-6 space-y-3">
-          <h3 className="text-xl font-bold text-gray-900 group-hover:gradient-text transition-all duration-500">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:gradient-text transition-all duration-500">
             {dish.name}
           </h3>
-          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
           <div className="flex justify-between items-center">
             <span className="text-2xl font-bold gradient-text">{dish.price}</span>
-            <button className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold group flex items-center">
+            <button
+              className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold group flex items-center hover:from-orange-600 hover:to-orange-800 transition"
+              onClick={() => navigate('/menu')}
+            >
               Order
               <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
             </button>
@@ -188,18 +164,10 @@ const RestaurantHomepage = () => {
     );
   });
 
-  // Throttled scroll handler for better performance
-  const handleScroll = useCallback(() => {
-    const newScrollY = window.scrollY;
-    setScrollY(newScrollY);
-  }, []);
+  const handleScroll = useCallback(() => setScrollY(window.scrollY), []);
 
-  // Set initial dishes immediately to avoid loading state
-  useEffect(() => {
-    setFeaturedDishes(fallbackDishes);
-  }, [fallbackDishes]);
+  useEffect(() => setFeaturedDishes(fallbackDishes), [fallbackDishes]);
 
-  // Optimized scroll listener with throttling
   useEffect(() => {
     let ticking = false;
     const throttledScroll = () => {
@@ -211,47 +179,33 @@ const RestaurantHomepage = () => {
         ticking = true;
       }
     };
-
     window.addEventListener('scroll', throttledScroll, { passive: true });
     return () => window.removeEventListener('scroll', throttledScroll);
   }, [handleScroll]);
 
-  // Hero slider with reduced interval for better UX
   useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 4000);
-    return () => clearInterval(slideInterval);
+    const i = setInterval(() => setCurrentSlide(prev => (prev + 1) % heroSlides.length), 4000);
+    return () => clearInterval(i);
   }, [heroSlides.length]);
 
-  // Preload hero images for smooth transitions
   useEffect(() => {
-    heroSlides.forEach(slide => {
-      preloadImage(slide.image);
-    });
+    heroSlides.forEach(s => preloadImage(s.image));
   }, [heroSlides, preloadImage]);
 
-  // Fetch dishes asynchronously without blocking render
   useEffect(() => {
     const fetchDishes = async () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
-
         const response = await fetch(
           'https://elkadyyy-drg9ape4djgmebad.italynorth-01.azurewebsites.net/api/products',
           { signal: controller.signal }
         );
-        
         clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
         const result = await response.json();
         const data = result?.data || [];
-        
         if (data.length > 0) {
           const formatted = data.map(item => ({
             id: item.id,
@@ -260,152 +214,70 @@ const RestaurantHomepage = () => {
             price: `$${item.price ? item.price.toFixed(2) : '0.00'}`,
             pictureUrl: item.pictureUrl || fallbackDishes[0].pictureUrl,
             rating: item.rating || 4.5,
-            category: item.category || "Specialty",
-            preparationTime: item.preparationTime || "25 min"
+            category: item.category || 'Specialty',
+            preparationTime: item.preparationTime || '25 min'
           }));
-          
           const dishesToShow = formatted.slice(0, 3);
           setFeaturedDishes(dishesToShow);
-          
-          dishesToShow.forEach(dish => {
-            preloadImage(dish.pictureUrl);
-          });
+          dishesToShow.forEach(d => preloadImage(d.pictureUrl));
         }
         setError(null);
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          console.error('Error fetching dishes:', error);
-          setError(error.message);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Error fetching dishes:', err);
+          setError(err.message);
         }
       } finally {
         setIsLoading(false);
       }
     };
-
-    const timeoutId = setTimeout(fetchDishes, 100);
-    return () => clearTimeout(timeoutId);
+    const t = setTimeout(fetchDishes, 100);
+    return () => clearTimeout(t);
   }, [fallbackDishes, preloadImage]);
 
-  // Optimized intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const newVisible = new Set(visibleSections);
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            newVisible.add(entry.target.id);
-          }
-        });
-        if (newVisible.size !== visibleSections.size) {
-          setVisibleSections(newVisible);
-        }
+        entries.forEach((entry) => { if (entry.isIntersecting) newVisible.add(entry.target.id); });
+        if (newVisible.size !== visibleSections.size) setVisibleSections(newVisible);
       },
       { threshold: 0.1, rootMargin: '50px' }
     );
-
     const elements = document.querySelectorAll('[id]');
     elements.forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, [visibleSections]);
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors">
       <Navbar scrollY={scrollY} />
-      
-      {/* Hero Section */}
-      <section id="home" className="relative h-screen overflow-hidden">
 
-        <div className="absolute inset-0">
-          {heroSlides.map((slide, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            >
-              <div className={`w-full h-full bg-gray-300 ${!imagesLoaded.has(slide.image) ? 'animate-pulse' : ''}`}>
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  className={`w-full h-full object-cover transition-opacity duration-500 ${
-                    imagesLoaded.has(slide.image) ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                />
-              </div>
-              <div className="absolute inset-0 bg-black/40"></div>
-            </div>
-          ))}
-        </div>
+      {/* Hero */}
+      <HeroSection />
 
-        <div className="relative z-10 h-full flex items-center justify-center text-center">
-          <div className="max-w-4xl mx-auto px-6">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 opacity-0 animate-fadeInUp"
-                style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
-              {heroSlides[currentSlide].title}
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-white/90 mb-8 opacity-0 animate-fadeInUp"
-               style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
-              {heroSlides[currentSlide].subtitle}
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center opacity-0 animate-fadeInUp"
-                 style={{ animationDelay: '0.7s', animationFillMode: 'forwards' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/menu');
-                  // Ensure menu page also starts from top
-                  setTimeout(() => {
-                    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  }, 100);
-                }}
-                className="group px-8 py-4 rounded-full font-bold text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                style={{
-                  background: `linear-gradient(135deg, ${theme.colors.gradientStart}, ${theme.colors.gradientEnd})`
-                }}
-              >
-                <span className="flex items-center justify-center gap-2">
-                  Explore Menu
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
-          {heroSlides.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'scale-125' : 'scale-100 opacity-50'
-              }`}
-              style={{ backgroundColor: theme.colors.orange }}
-            />
-          ))}
-        </div>
-      </section>
-
+      {/* Signature Dishes */}
       <SignatureDishes />
 
       {/* Experience Section */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75" 
-               alt="Restaurant Interior" 
-               className="w-full h-full object-cover"
-               loading="lazy" />
-          <div className="absolute inset-0 bg-black/60"></div>
+          <img
+            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75"
+            alt="Restaurant Interior"
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-black/60" />
         </div>
-        
+
         <div className="relative z-10 max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white/90 mb-4"
-                    style={{ backgroundColor: `${theme.colors.orange}40` }}>
+              <span
+                className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white/90 mb-4"
+                style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
+              >
                 The Experience
               </span>
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
@@ -414,16 +286,19 @@ const RestaurantHomepage = () => {
               <p className="text-xl text-white/90 mb-8">
                 Step into our world where culinary artistry meets warm hospitality. Every detail is crafted to create unforgettable moments.
               </p>
-              
+
               <div className="grid grid-cols-2 gap-6 mb-8">
-                {[{ icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
-                   { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
-                   { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
-                   { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
-                ].map((item, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                         style={{ backgroundColor: `${theme.colors.orange}40` }}>
+                {[
+                  { icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
+                  { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
+                  { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
+                  { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
+                    >
                       <item.icon className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -433,44 +308,58 @@ const RestaurantHomepage = () => {
                   </div>
                 ))}
               </div>
+
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20" style={{ backgroundColor: theme.colors.orangeLight }}>
+      {/* Testimonials / Feedback */}
+      <section
+        className="py-20 transition-colors bg-orange-50 dark:bg-gray-900"
+        // keep your theme color as a subtle tint in light mode
+        style={{ backgroundColor: theme.colors?.orangeLight || undefined }}
+      >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <span className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4"
-                  style={{ backgroundColor: 'white', color: theme.colors.orangeDark }}>
+            <span
+              className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 bg-white text-orange-600 dark:bg-gray-800 dark:text-orange-300 border border-orange-200 dark:border-gray-700"
+              style={{ color: theme.colors?.orangeDark || undefined }}
+            >
               What Our Guests Say
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6" style={{ color: theme.colors.textDark }}>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
               Feedbacks
             </h2>
+            <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+              Real stories from our amazing community of guests.
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            {testimonials.map((t, i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-950 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
+              >
                 <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-current" style={{ color: theme.colors.orange }} />
+                  {Array.from({ length: t.rating }).map((_, k) => (
+                    <Star key={k} className="w-5 h-5 fill-current text-orange-500" />
                   ))}
                 </div>
-                
-                <p className="mb-6 text-lg" style={{ color: theme.colors.textGray }}>
-                  "{testimonial.text}"
+
+                <p className="mb-6 text-lg text-gray-600 dark:text-gray-300">
+                  "{t.text}"
                 </p>
-                
+
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-600" />
+                  {/* If you want to show their image, swap this div for an <img> with dark ring/border */}
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                    <User className="w-6 h-6 text-gray-600 dark:text-gray-300" />
                   </div>
                   <div>
-                    <h4 className="font-semibold" style={{ color: theme.colors.textDark }}>{testimonial.name}</h4>
-                    <p className="text-sm" style={{ color: theme.colors.textGray }}>Verified Customer</p>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{t.name}</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Verified Customer</p>
                   </div>
                 </div>
               </div>

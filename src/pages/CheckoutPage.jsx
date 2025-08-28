@@ -558,8 +558,8 @@ const parseApiErrors = (error) => {
 
   // Shared Order Summary Component
   const OrderSummaryCard = ({ title, showButtons = false, stepNumber = null }) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-      <h3 className="text-lg font-bold text-black mb-4">{title}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+      <h3 className="text-lg font-bold text-black dark:text-white mb-4">{title}</h3>
       
       {/* Quick Items Preview - Only show first few items */}
       <div className="space-y-3 mb-4">
@@ -571,56 +571,56 @@ const parseApiErrors = (error) => {
               className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-black truncate">{item.productName}</p>
-              <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+              <p className="font-medium text-sm text-black dark:text-white truncate">{item.productName}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Qty: {item.quantity}</p>
             </div>
-            <p className="font-semibold text-black text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+            <p className="font-semibold text-black dark:text-white text-sm">${(item.price * item.quantity).toFixed(2)}</p>
           </div>
         ))}
         
         {basketData?.items?.length > 2 && (
-          <p className="text-sm text-gray-500 text-center">+{basketData.items.length - 2} more items</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">+{basketData.items.length - 2} more items</p>
         )}
       </div>
 
       {/* Selected Delivery Method */}
       {selectedDeliveryMethod && stepNumber >= 2 && (
-        <div className="p-3 bg-orange-50 rounded-lg border border-orange-200 mb-4">
+        <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800 mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <Truck className="w-4 h-4 text-orange-600 flex-shrink-0" />
-            <span className="font-semibold text-orange-900 text-sm">{selectedDeliveryMethod.shortName}</span>
+            <Truck className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+            <span className="font-semibold text-orange-900 dark:text-orange-100 text-sm">{selectedDeliveryMethod.shortName}</span>
           </div>
-          <p className="text-xs text-orange-700">{selectedDeliveryMethod.deliveryTime}</p>
+          <p className="text-xs text-orange-700 dark:text-orange-300">{selectedDeliveryMethod.deliveryTime}</p>
         </div>
       )}
 
       {/* Price Breakdown */}
-      <div className="border-t pt-4 space-y-2">
+      <div className="border-t border-gray-200 dark:border-gray-600 pt-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Subtotal:</span>
-          <span className="font-semibold">${subtotal.toFixed(2)}</span>
+          <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+          <span className="font-semibold text-black dark:text-white">${subtotal.toFixed(2)}</span>
         </div>
         {(selectedDeliveryMethod || shippingPrice > 0) && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Delivery:</span>
-            <span className="font-semibold">
+            <span className="text-gray-600 dark:text-gray-400">Delivery:</span>
+            <span className="font-semibold text-black dark:text-white">
               {shippingPrice === 0 ? 'Free' : `$${shippingPrice.toFixed(2)}`}
             </span>
           </div>
         )}
-        <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
+        <div className="flex justify-between text-lg font-bold text-black dark:text-white pt-2 border-t border-gray-200 dark:border-gray-600">
           <span>Total:</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Security Badge */}
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <div className="flex items-center gap-2 text-black">
+      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="flex items-center gap-2 text-black dark:text-white">
           <Shield className="w-4 h-4 flex-shrink-0" />
           <span className="text-sm font-medium">Secure Checkout</span>
         </div>
-        <p className="text-xs text-gray-600 mt-1">Your information is protected</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Your information is protected</p>
       </div>
 
       {/* Action Buttons for Mobile */}
@@ -631,7 +631,7 @@ const parseApiErrors = (error) => {
               <button
                 type="button"
                 onClick={() => navigate('/cart')}
-                className="w-full py-3 px-4 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
+                className="w-full py-3 px-4 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Cart
@@ -662,7 +662,7 @@ const parseApiErrors = (error) => {
             <>
               <button
                 onClick={() => setStep(1)}
-                className="w-full py-3 px-4 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm"
+                className="w-full py-3 px-4 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 font-medium text-sm"
               >
                 Back to Address
               </button>
@@ -681,7 +681,7 @@ const parseApiErrors = (error) => {
             <>
               <button
                 onClick={() => setStep(2)}
-                className="w-full py-3 px-4 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm"
+                className="w-full py-3 px-4 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 font-medium text-sm"
               >
                 Back to Delivery
               </button>
@@ -713,7 +713,7 @@ const parseApiErrors = (error) => {
   const renderLocationForm = () => (
     <div className="space-y-4">
       {/* Main Form */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 relative overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-10 translate-x-10 sm:-translate-y-12 sm:translate-x-12"></div>
         
@@ -723,15 +723,15 @@ const parseApiErrors = (error) => {
               <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-black">Delivery Address</h2>
-              <p className="text-sm text-gray-600">Where should we deliver your order?</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-black dark:text-white">Delivery Address</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Where should we deliver your order?</p>
             </div>
           </div>
 
           {/* Show general API error */}
           {apiErrors.general && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-center gap-2 text-red-800">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium text-sm">{apiErrors.general}</span>
               </div>
@@ -742,7 +742,7 @@ const parseApiErrors = (error) => {
             {/* Name Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="group">
-                <label className="block text-sm font-semibold text-black mb-2">
+                <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                   First Name *
                 </label>
                 <div className="relative">
@@ -752,15 +752,15 @@ const parseApiErrors = (error) => {
                     value={locationData.firstname}
                     onChange={handleInputChange}
                     required
-                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:shadow-md text-sm ${
                       apiErrors.firstname 
                         ? 'border-red-400 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                    }`}
+                        : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                    } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
                     placeholder="Enter your first name"
                   />
                   {apiErrors.firstname && (
-                    <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+                    <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
                       {apiErrors.firstname}
                     </div>
                   )}
@@ -768,7 +768,7 @@ const parseApiErrors = (error) => {
               </div>
 
               <div className="group">
-                <label className="block text-sm font-semibold text-black mb-2">
+                <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                   Last Name *
                 </label>
                 <div className="relative">
@@ -778,15 +778,15 @@ const parseApiErrors = (error) => {
                     value={locationData.lastname}
                     onChange={handleInputChange}
                     required
-                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:shadow-md text-sm ${
                       apiErrors.lastname 
                         ? 'border-red-400 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                    }`}
+                        : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                    } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
                     placeholder="Enter your last name"
                   />
                   {apiErrors.lastname && (
-                    <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+                    <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
                       {apiErrors.lastname}
                     </div>
                   )}
@@ -795,7 +795,7 @@ const parseApiErrors = (error) => {
             </div>
                {/* Phone */}
             <div className="group">
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                 Phone Number
               </label>
               <div className="relative">
@@ -804,15 +804,15 @@ const parseApiErrors = (error) => {
                   name="phone"
                   value={locationData.phone}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:shadow-md text-sm ${
                     apiErrors.phone 
                       ? 'border-red-400 focus:border-red-500' 
-                      : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                  }`}
+                      : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                  } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
                   placeholder="Enter your phone number"
                 />
                 {apiErrors.phone && (
-                  <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+                  <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
                     {apiErrors.phone}
                   </div>
                 )}
@@ -822,7 +822,7 @@ const parseApiErrors = (error) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="group">
-                <label className="block text-sm font-semibold text-black mb-2">
+                <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                   City *
                 </label>
                 <div className="relative">
@@ -832,15 +832,15 @@ const parseApiErrors = (error) => {
                     value={locationData.city}
                     onChange={handleInputChange}
                     required
-                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:shadow-md text-sm ${
                       apiErrors.city 
                         ? 'border-red-400 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                    }`}
+                        : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                    } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
                     placeholder="Enter your city"
                   />
                   {apiErrors.city && (
-                    <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+                    <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
                       {apiErrors.city}
                     </div>
                   )}
@@ -848,7 +848,7 @@ const parseApiErrors = (error) => {
               </div>
 
               <div className="group">
-                <label className="block text-sm font-semibold text-black mb-2">
+                <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                   Country *
                 </label>
                 <div className="relative">
@@ -857,19 +857,19 @@ const parseApiErrors = (error) => {
                     value={locationData.country}
                     onChange={handleInputChange}
                     required
-                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:shadow-md text-sm ${
+                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:shadow-md text-sm ${
                       apiErrors.country 
                         ? 'border-red-400 focus:border-red-500' 
-                        : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-                    }`}
+                        : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                    } text-black dark:text-white`}
                   >
-                    <option value="">Select country</option>
+                    <option value="" className="text-gray-400 dark:text-gray-400">Select country</option>
                     {countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
+                      <option key={country} value={country} className="text-black dark:text-white bg-white dark:bg-gray-700">{country}</option>
                     ))}
                   </select>
                   {apiErrors.country && (
-                    <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+                    <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
                       {apiErrors.country}
                     </div>
                   )}
@@ -879,7 +879,7 @@ const parseApiErrors = (error) => {
 
             {/* Address Fields */}
           <div className="group">
-  <label className="block text-sm font-semibold text-black mb-2">
+  <label className="block text-sm font-semibold text-black dark:text-white mb-2">
     Location *
   </label>
   <div className="relative">
@@ -889,17 +889,17 @@ const parseApiErrors = (error) => {
       onChange={handleInputChange}
       rows={3}   // 👈 makes it taller
       required
-      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 rounded-xl 
-                 transition-all duration-300 focus:outline-none focus:bg-white 
+      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl 
+                 transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 
                  focus:shadow-md text-sm resize-y ${
         apiErrors.street 
           ? 'border-red-400 focus:border-red-500' 
-          : 'border-gray-200 focus:border-orange-500 group-hover:border-orange-300'
-      }`}
+          : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+      } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
       placeholder="Enter your full address (street, apartment, etc.)"
     />
     {apiErrors.street && (
-      <div className="absolute -bottom-6 left-0 text-red-500 text-xs font-medium">
+      <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
         {apiErrors.street}
       </div>
     )}
@@ -907,13 +907,9 @@ const parseApiErrors = (error) => {
 </div>
 
 
-            
-
-         
-
             {/* Delivery Instructions */}
             <div className="group">
-              <label className="block text-sm font-semibold text-black mb-2">
+              <label className="block text-sm font-semibold text-black dark:text-white mb-2">
                 Delivery Instructions (Optional)
               </label>
               <textarea
@@ -921,7 +917,7 @@ const parseApiErrors = (error) => {
                 value={locationData.deliveryInstructions}
                 onChange={handleInputChange}
                 rows="3"
-                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 border-2 border-gray-200 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white focus:border-orange-500 focus:shadow-md group-hover:border-orange-300 text-sm"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 focus:border-orange-500 focus:shadow-md group-hover:border-orange-300 dark:group-hover:border-orange-400 text-sm text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
                 placeholder="Any special instructions for delivery..."
               />
             </div>
@@ -931,7 +927,7 @@ const parseApiErrors = (error) => {
               <button
                 type="button"
                 onClick={() => navigate('/cart')}
-                className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
+                className="flex-1 py-3 px-6 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Cart
@@ -969,7 +965,7 @@ const parseApiErrors = (error) => {
   const renderDeliveryMethods = () => (
     <div className="space-y-4">
       {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 relative overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-12 translate-x-12"></div>
         
@@ -979,8 +975,8 @@ const parseApiErrors = (error) => {
               <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-black">Delivery Method</h2>
-              <p className="text-sm text-gray-600">Choose your preferred delivery option</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-black dark:text-white">Delivery Method</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Choose your preferred delivery option</p>
             </div>
           </div>
 
@@ -990,8 +986,8 @@ const parseApiErrors = (error) => {
                 key={method.id}
                 className={`relative p-4 sm:p-5 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:shadow-md ${
                   selectedDeliveryMethod?.id === method.id
-                    ? 'border-orange-500 bg-orange-50 shadow-md'
-                    : 'border-gray-200 hover:border-orange-300 bg-white'
+                    ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-md'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-400 bg-white dark:bg-gray-700'
                 }`}
                 onClick={() => setSelectedDeliveryMethod(method)}
               >
@@ -1004,21 +1000,21 @@ const parseApiErrors = (error) => {
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                   <div className="flex-1 w-full sm:w-auto">
                     <div className="flex items-center gap-2 mb-2">
-                      <Package className="w-4 h-4 text-gray-600 flex-shrink-0" />
-                      <h3 className="font-bold text-black text-sm sm:text-base">{method.shortName}</h3>
+                      <Package className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                      <h3 className="font-bold text-black dark:text-white text-sm sm:text-base">{method.shortName}</h3>
                     </div>
-                    <p className="text-gray-600 mb-2 text-sm">{method.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">{method.description}</p>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                      <p className="text-xs text-gray-500">{method.deliveryTime}</p>
+                      <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{method.deliveryTime}</p>
                     </div>
                   </div>
                   <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">
-                    <p className="text-lg sm:text-xl font-bold text-black">
+                    <p className="text-lg sm:text-xl font-bold text-black dark:text-white">
                       {method.cost === 0 ? 'Free' : `${method.cost.toFixed(2)}`}
                     </p>
                     {method.cost === 0 && (
-                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full mt-0 sm:mt-1">
+                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full mt-0 sm:mt-1">
                         <Star className="w-3 h-3" />
                         Popular
                       </div>
@@ -1031,8 +1027,8 @@ const parseApiErrors = (error) => {
 
           {deliveryMethods.length === 0 && (
             <div className="text-center py-8">
-              <AlertCircle className="w-10 h-10 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-500 text-base">No delivery methods available</p>
+              <AlertCircle className="w-10 h-10 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+              <p className="text-gray-500 dark:text-gray-400 text-base">No delivery methods available</p>
             </div>
           )}
 
@@ -1040,7 +1036,7 @@ const parseApiErrors = (error) => {
           <div className="hidden lg:flex gap-4 pt-6">
             <button
               onClick={() => setStep(1)}
-              className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm"
+              className="flex-1 py-3 px-6 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 font-medium text-sm"
             >
               Back to Address
             </button>
@@ -1066,7 +1062,7 @@ const parseApiErrors = (error) => {
   const renderOrderSummary = () => (
     <div className="space-y-4">
       {/* Order Details */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 relative overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-10 translate-x-10"></div>
         
@@ -1076,15 +1072,15 @@ const parseApiErrors = (error) => {
               <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-black">Order Summary</h2>
-              <p className="text-sm text-gray-600">Review your order before placing it</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-black dark:text-white">Order Summary</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Review your order before placing it</p>
             </div>
           </div>
 
           {/* Show order-level API errors */}
           {apiErrors.general && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-center gap-2 text-red-800">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium text-sm">{apiErrors.general}</span>
               </div>
@@ -1092,18 +1088,18 @@ const parseApiErrors = (error) => {
           )}
 
           {/* Delivery Address */}
-          <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <h3 className="font-bold mb-3 text-black flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-gray-600 flex-shrink-0" />
+          <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+            <h3 className="font-bold mb-3 text-black dark:text-white flex items-center gap-2 text-sm">
+              <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
               Delivery Address
             </h3>
-            <div className="text-gray-700 leading-relaxed text-sm">
+            <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm">
               <p className="font-semibold">{locationData.firstname} {locationData.lastname}</p>
               <p>{locationData.street}</p>
               <p>{locationData.city}, {locationData.country}</p>
               {locationData.phone && (
                 <div className="flex items-center gap-2 mt-2">
-                  <Phone className="w-3 h-3 text-gray-500 flex-shrink-0" />
+                  <Phone className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                   <p>{locationData.phone}</p>
                 </div>
               )}
@@ -1112,26 +1108,26 @@ const parseApiErrors = (error) => {
 
           {/* Delivery Method */}
           {selectedDeliveryMethod && (
-            <div className="mb-4 p-4 bg-orange-50 rounded-xl border border-orange-200">
-              <h3 className="font-bold mb-3 text-black flex items-center gap-2 text-sm">
-                <Truck className="w-4 h-4 text-orange-600 flex-shrink-0" />
+            <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
+              <h3 className="font-bold mb-3 text-black dark:text-white flex items-center gap-2 text-sm">
+                <Truck className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
                 Delivery Method
               </h3>
               <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                 <div className="flex-1">
-                  <p className="font-semibold text-black text-sm">{selectedDeliveryMethod.shortName}</p>
-                  <p className="text-xs text-gray-600">{selectedDeliveryMethod.description}</p>
+                  <p className="font-semibold text-black dark:text-white text-sm">{selectedDeliveryMethod.shortName}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{selectedDeliveryMethod.description}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                    <p className="text-xs text-gray-500">{selectedDeliveryMethod.deliveryTime}</p>
+                    <Clock className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{selectedDeliveryMethod.deliveryTime}</p>
                   </div>
                 </div>
                 <div className="text-right w-full sm:w-auto flex sm:block justify-between items-center">
-                  <p className="text-lg font-bold text-black">
+                  <p className="text-lg font-bold text-black dark:text-white">
                     {selectedDeliveryMethod.cost === 0 ? 'Free' : `${selectedDeliveryMethod.cost.toFixed(2)}`}
                   </p>
                   {selectedDeliveryMethod.cost === 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full mt-0 sm:mt-1">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full mt-0 sm:mt-1">
                       <Star className="w-3 h-3" />
                       Great Deal!
                     </span>
@@ -1143,24 +1139,24 @@ const parseApiErrors = (error) => {
 
           {/* Order Items */}
           <div className="space-y-3">
-            <h3 className="font-bold text-black flex items-center gap-2 text-sm">
-              <Package className="w-4 h-4 text-gray-600 flex-shrink-0" />
+            <h3 className="font-bold text-black dark:text-white flex items-center gap-2 text-sm">
+              <Package className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
               Order Items ({basketData?.items?.length || 0})
             </h3>
             {basketData?.items?.map((item, index) => (
-              <div key={index} className="flex gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow duration-300">
+              <div key={index} className="flex gap-3 p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow duration-300">
                 <img 
                   src={item.pictureUrl} 
                   alt={item.productName}
                   className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-black text-sm truncate">{item.productName}</h4>
-                  <p className="text-xs text-gray-600">Quantity: {item.quantity}</p>
-                  <p className="text-xs text-gray-500">${item.price} each</p>
+                  <h4 className="font-semibold text-black dark:text-white text-sm truncate">{item.productName}</h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Quantity: {item.quantity}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">${item.price} each</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold text-black">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="text-lg font-bold text-black dark:text-white">${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
             ))}
@@ -1170,7 +1166,7 @@ const parseApiErrors = (error) => {
           <div className="hidden lg:flex gap-4 pt-6">
             <button
               onClick={() => setStep(2)}
-              className="flex-1 py-3 px-6 border-2 border-black text-black rounded-xl hover:bg-black hover:text-white transition-all duration-300 font-medium text-sm"
+              className="flex-1 py-3 px-6 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 font-medium text-sm"
             >
               Back to Delivery
             </button>
@@ -1206,12 +1202,12 @@ const parseApiErrors = (error) => {
   // Loading state while basket data is being fetched
   if (!basketData) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="bg-gray-50 rounded-xl p-6 shadow-lg max-w-sm mx-auto">
-            <h3 className="text-lg font-semibold text-black mb-2">Loading checkout...</h3>
-            <p className="text-sm text-gray-600">Preparing your order details</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 shadow-lg max-w-sm mx-auto border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Loading checkout...</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Preparing your order details</p>
           </div>
         </div>
       </div>
@@ -1219,7 +1215,7 @@ const parseApiErrors = (error) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 mt-20 sm:mt-24">
@@ -1233,7 +1229,7 @@ const parseApiErrors = (error) => {
                     className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                       step >= stepNum
                         ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-400 border-2 border-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-600'
                     }`}
                   >
                     {step > stepNum ? <Check className="w-5 h-5" /> : stepNum}
@@ -1241,14 +1237,14 @@ const parseApiErrors = (error) => {
                 </div>
                 <div className="ml-2 mr-4">
                   <div className={`text-xs font-bold ${
-                    step >= stepNum ? 'text-black' : 'text-gray-400'
+                    step >= stepNum ? 'text-black dark:text-white' : 'text-gray-400 dark:text-gray-500'
                   }`}>
                     {stepNum === 1 && 'Address'}
                     {stepNum === 2 && 'Delivery'}
                     {stepNum === 3 && 'Review'}
                   </div>
                   <div className={`text-xs ${
-                    step >= stepNum ? 'text-gray-600' : 'text-gray-400'
+                    step >= stepNum ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
                   }`}>
                     {stepNum === 1 && 'Where to deliver'}
                     {stepNum === 2 && 'How to deliver'}
@@ -1257,7 +1253,7 @@ const parseApiErrors = (error) => {
                 </div>
                 {index < 2 && (
                   <div className={`w-12 h-1 rounded-full transition-all duration-300 ${
-                    step > stepNum ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gray-200'
+                    step > stepNum ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gray-200 dark:bg-gray-700'
                   }`} />
                 )}
               </div>
@@ -1305,6 +1301,10 @@ const parseApiErrors = (error) => {
           
           .group:hover .group-hover\\:border-orange-300 {
             border-color: #fed7aa;
+          }
+          
+          .dark .group:hover .dark\\:group-hover\\:border-orange-400 {
+            border-color: #fb923c;
           }
         `}
       </style>

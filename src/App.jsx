@@ -1,7 +1,7 @@
-// src/App.jsx
 import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './theme/ThemeProvider'; // ← add this line
 
 // Safari session bridge
 import { ensureSessionPersistence } from './sessionBridge';
@@ -24,37 +24,38 @@ import OrderTracking from './pages/orderTracking';
 import ForgotPasswordPage from './pages/forgetPassword';
 import NotFoundPage from './pages/NotFoundPage';
 
-// ✅ Call after all imports (satisfies eslint import/first)
 if (typeof window !== 'undefined') {
   ensureSessionPersistence();
 }
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<RestaurantHomepage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/menu" element={<MenuPage />} />
-        <Route path="/product/:id" element={<ProductDetailsPage />} />
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<RestaurantHomepage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/menu" element={<MenuPage />} />
+          <Route path="/product/:id" element={<ProductDetailsPage />} />
 
-        {/* Private Routes */}
-        <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
-        <Route path="/cart" element={<PrivateRoute element={<CartPage />} />} />
-        <Route path="/profile/favorites" element={<PrivateRoute element={<ProfileFavorites />} />} />
-        <Route path="/checkout" element={<PrivateRoute element={<CheckoutPage />} />} />
-        <Route path="/profile/history" element={<PrivateRoute element={<OrderHistoryPage />} />} />
-        <Route path="/order-success" element={<PrivateRoute element={<OrderSuccess />} />} />
-        <Route path="/profile/order/:id" element={<PrivateRoute element={<OrderTracking />} />} />
+          {/* Private Routes */}
+          <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
+          <Route path="/cart" element={<PrivateRoute element={<CartPage />} />} />
+          <Route path="/profile/favorites" element={<PrivateRoute element={<ProfileFavorites />} />} />
+          <Route path="/checkout" element={<PrivateRoute element={<CheckoutPage />} />} />
+          <Route path="/profile/history" element={<PrivateRoute element={<OrderHistoryPage />} />} />
+          <Route path="/order-success" element={<PrivateRoute element={<OrderSuccess />} />} />
+          <Route path="/profile/order/:id" element={<PrivateRoute element={<OrderTracking />} />} />
 
-        {/* 404 Route - Must be last */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Router>
+          {/* 404 Route - Must be last */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }
 

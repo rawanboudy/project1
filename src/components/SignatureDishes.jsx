@@ -1,452 +1,262 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import salmonImg from '../assets/grilled-salamon.png';
+import pastaImg from '../assets/truffle.png';
+import steakImg from '../assets/wagyu.png';
+import bisqueImg from '../assets/Lobster-Bisque.png';
+import duckImg from '../assets/Duck-Confit.png';
+
 export default function SignatureDishes() {
-  const featuredDishes = [
-    { id: 1, name: "Grilled Salmon", description: "Fresh Atlantic salmon with herbs and lemon", pictureUrl: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop" },
-    { id: 2, name: "Truffle Pasta", description: "Handmade pasta with black truffle & parmesan", pictureUrl: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&h=300&fit=crop" },
-    { id: 3, name: "Wagyu Steak", description: "Premium wagyu beef with garlic butter", pictureUrl: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop" },
-    { id: 4, name: "Lobster Bisque", description: "Creamy lobster soup with cognac", pictureUrl: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop" },
-    { id: 5, name: "Duck Confit", description: "Slow-cooked duck leg with cherry sauce", pictureUrl: "https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop" },
+  const dishes = [
+    { id: 1, name: 'Grilled Salmon', description: 'Fresh Atlantic salmon with herbs and lemon', pictureUrl: salmonImg, size: 210 },
+    { id: 2, name: 'Truffle Pasta',  description: 'Handmade pasta with black truffle & parmesan', pictureUrl: pastaImg,  size: 280 },
+    { id: 3, name: 'Wagyu Steak',    description: 'Premium wagyu beef with garlic butter',        pictureUrl: steakImg,  size: 290 },
+    { id: 4, name: 'Lobster Bisque', description: 'Creamy lobster soup with cognac',              pictureUrl: bisqueImg, size: 310 },
+    { id: 5, name: 'Duck Confit',    description: 'Slow-cooked duck leg with cherry sauce',       pictureUrl: duckImg,   size: 210 },
   ];
 
-  const [currentDishIndex, setCurrentDishIndex] = useState(0);
-  const [animationKey, setAnimationKey] = useState(0);
+  const [index, setIndex] = useState(0);
+  const dish = dishes[index];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimationKey(k => k + 1);
-      setTimeout(() => {
-        setCurrentDishIndex(i => (i + 1) % featuredDishes.length);
-      }, 7000);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
+  const getResponsiveSize = () => (typeof window !== 'undefined' ? Math.min(620, window.innerWidth * 0.9) : 620);
+  const containerSize = getResponsiveSize();
+  const center = containerSize / 2;
+  const orbitRadius = containerSize * (240 / 620);
+  const loopSeconds = 7;
 
-  const currentDish = featuredDishes[currentDishIndex];
+  const handleAnimEnd = () => setIndex((i) => (i + 1) % dishes.length);
 
   return (
-    <div className="signature-dishes-section relative py-6 sm:py-12">
-      <style jsx>{`
+    <div className="signature-dishes-section">
+      <style>{`
+        /* ---------- Base + background shapes ---------- */
         .signature-dishes-section {
-          background: linear-gradient(135deg, #fafafa 0%, #f0f4f8 100%);
-          overflow: hidden;
-          font-family: 'Poppins', sans-serif;
           position: relative;
-        }
-
-        /* Floating circles - Responsive */
-        .shape-circle {
-          position: absolute;
-          border-radius: 50%;
-          background: rgba(251,140,0,0.1);
-          pointer-events: none;
-        }
-
-        .shape-circle.small { 
-          width: 80px;
-          height: 80px;
-          top: 5%; 
-          left: 70%; 
-        }
-        .shape-circle.large { 
-          width: 150px;
-          height: 150px;
-          bottom: 5%; 
-          right: -20px;
-        }
-
-        /* Responsive floating circles */
-        @media (min-width: 640px) {
-          .shape-circle.small { 
-            width: 120px;
-            height: 120px; 
-            left: 75%; 
-          }
-          .shape-circle.large { 
-            width: 250px;
-            height: 250px;
-            right: -40px;
-          }
-        }
-
-        .section-header {
-          text-align: center;
-          margin-bottom: 1.5rem;
-          animation: fadeInUp 0.8s ease-out both;
-          padding: 0 1rem;
-        }
-
-        .section-title {
-          font-size: 1.75rem;
-          font-weight: 900;
-          background: linear-gradient(135deg, #1f2937, #fb8c00);
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-
-        /* Responsive title sizes */
-        @media (min-width: 640px) {
-          .section-title {
-            font-size: 2.5rem;
-          }
-        }
-
-        .section-subtitle {
-          color: #6b7280;
-          margin-top: 0.25rem;
-          font-size: 0.875rem;
-        }
-
-        @media (min-width: 640px) {
-          .section-subtitle {
-            font-size: 1rem;
-          }
-        }
-
-        .dishes-container {
+          min-height: 100vh;
+          padding: 2rem 1rem;
           display: flex;
-          gap: 1rem;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          max-width: 95%;
-          margin: 0 auto;
-          padding: 1rem;
-          background: transparent;
-        }
-
-        /* Responsive container layout */
-        @media (min-width: 768px) {
-          .dishes-container {
-            flex-direction: row;
-            gap: 1.5rem;
-            max-width: 800px;
-            padding-top: 2rem;
-          }
-        }
-
-        .curved-path-container {
-          position: relative;
-          width: 280px;
-          height: 280px;
-          flex-shrink: 0;
-          margin-bottom: 1rem;
-          overflow: visible;/* Keep dish within bounds */
-          background: transparent;
-        }
-
-        /* Responsive curve container */
-        @media (min-width: 640px) {
-          .curved-path-container {
-            width: 320px;
-            height: 320px;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .curved-path-container {
-            width: 350px;
-            height: 350px;
-            margin-left: 10px;
-            margin-bottom: 1rem;
-          }
-        }
-
-       .curved-path-svg {
-  position: absolute;
-  inset: 0;
-  z-index: 1; /* lower than dish image */
-}
-
-
-        .path-glow {
-          fill: none;
-          stroke: #fb8c00;
-          stroke-width: 50;
-          opacity: 0.06;
-          filter: blur(5px);
-        }
-
-        .dish-animator { 
-          position: relative; 
-          z-index: 3; 
-          width: 100%;
-          height: 100%;
-          background: transparent;
-        }
-
-        .animated-dish {
-          z-index: 4;
-          width: 120px;
-          height: 120px;
-          position: absolute;
-          offset-path: circle(120px at 140px 140px);
-          offset-rotate: auto;
-          animation: dishFlowComplete 7s ease-in-out forwards;
-        }
-
-        /* Responsive dish sizes and paths */
-        @media (min-width: 640px) {
-          .animated-dish {
-            width: 140px;
-            height: 140px;
-            offset-path: circle(140px at 160px 160px);
-          }
-        }
-
-        @media (min-width: 768px) {
-          .animated-dish {
-            width: 160px;
-            height: 160px;
-            offset-path: circle(160px at 175px 175px);
-          }
-        }
-
-        .dish-image {
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 4px solid #fb8c00;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-          animation: pulseRing 2s ease-in-out infinite;
-          background: white;
-        }
-
-        .dish-name-display {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          text-align: center;
-          padding: 0 1rem;
-        }
-
-        /* Responsive name display */
-        @media (min-width: 768px) {
-          .dish-name-display {
-            padding-left: 3rem;
-            align-items: flex-start;
-            text-align: left;
-          }
-        }
-
-        .display-name {
-          font-size: 1.5rem;
-          font-weight: 800;
-          margin: 0;
-          background: linear-gradient(135deg, #fb8c00, #f57c00);
-          -webkit-background-clip: text;
-          color: transparent;
-          opacity: 0;
-          transform: translateX(40px) scale(0.9);
-          animation: nameEnter 1s ease-out forwards,
-                     namePulse 1.5s ease-in-out 1s infinite alternate;
-        }
-
-        /* Responsive name size */
-        @media (min-width: 640px) {
-          .display-name {
-            font-size: 1.75rem;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .display-name {
-            font-size: 2rem;
-          }
-        }
-
-        .explore-btn {
-          margin-top: 1.5rem;
-          padding: 0.75rem 1.5rem;
-          background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
-          color: white;
-          border: none;
-          border-radius: 50px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          min-width: fit-content;
-          white-space: nowrap;
-          position: relative;
+          background:
+            radial-gradient(circle at 20% 80%, rgba(251,140,0,.03) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(251,140,0,.05) 0%, transparent 50%),
+            linear-gradient(135deg, #fefffe 0%, #f8fafc 25%, #f1f5f9 100%);
           overflow: hidden;
-          box-shadow: 0 8px 25px rgba(251, 140, 0, 0.3), 
-                      0 4px 10px rgba(0, 0, 0, 0.1);
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          color: #0f172a; /* slate-900 */
+        }
+        /* Dark mode background + text base */
+        .dark .signature-dishes-section {
+          background:
+            radial-gradient(circle at 20% 80%, rgba(251,140,0,.05) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(251,140,0,.06) 0%, transparent 50%),
+            linear-gradient(135deg, #0b0b0d 0%, #0f1115 40%, #111827 100%);
+          color: #e5e7eb; /* slate-200 */
         }
 
-        /* Responsive button size */
-        @media (min-width: 640px) {
-          .explore-btn {
-            padding: 0.875rem 2rem;
-            font-size: 1rem;
-          }
-        }
-
-        .explore-btn::before {
+        .signature-dishes-section::before {
           content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-          transition: left 0.6s;
+          position: absolute; inset: 0;
+          background-image:
+            linear-gradient(rgba(251,140,0,.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(251,140,0,.02) 1px, transparent 1px);
+          background-size: 50px 50px;
+          animation: gridFloat 20s ease-in-out infinite;
+          z-index: 0;
         }
-
-        .explore-btn:hover {
-          background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 12px 35px rgba(251, 140, 0, 0.4), 
-                      0 6px 15px rgba(0, 0, 0, 0.15);
+        .dark .signature-dishes-section::before {
+          background-image:
+            linear-gradient(rgba(251,140,0,.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(251,140,0,.05) 1px, transparent 1px);
         }
-                      .curved-path-wrapper {
-  width: 350px;
-  height: 350px;
-  overflow: visible;
-  flex-shrink: 0;
-  position: relative;
-}
+        @keyframes gridFloat { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-10px) translateX(5px); } }
 
-
-        .explore-btn:hover::before {
-          left: 100%;
+        .shape-floating { position: absolute; pointer-events: none; z-index: 1; }
+        .shape-1 {
+          width: 120px; height: 120px;
+          background: linear-gradient(135deg, rgba(251,140,0,.1), rgba(245,124,0,.05));
+          border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+          top: 10%; right: 15%;
+          animation: morphFloat1 12s ease-in-out infinite;
+          filter: blur(.5px);
         }
-
-        .explore-btn:active {
-          transform: translateY(-1px) scale(1.01);
-          box-shadow: 0 6px 20px rgba(251, 140, 0, 0.3);
-        }
-
-        .dish-indicators {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 1rem;
-          justify-content: center;
-        }
-
-        @media (min-width: 640px) {
-          .dish-indicators {
-            gap: 0.75rem;
-          }
-        }
-
-        @media (min-width: 768px) {
-          .dish-indicators {
-            justify-content: flex-start;
-          }
-        }
-
-        .indicator {
-          width: 8px;
-          height: 8px;
+        .dark .shape-1 { background: linear-gradient(135deg, rgba(251,140,0,.18), rgba(245,124,0,.08)); }
+        .shape-2 {
+          width: 80px; height: 80px;
+          background: linear-gradient(45deg, rgba(251,140,0,.08), transparent);
           border-radius: 50%;
-          background: #d1d5db;
-          border: 2px solid transparent;
-          cursor: pointer;
-          transition: all 0.3s;
+          bottom: 20%; left: 10%;
+          animation: morphFloat2 15s ease-in-out infinite;
         }
-
-        .indicator.active {
-          background: #fb8c00;
-          transform: scale(1.4);
-          border-color: rgba(251,140,0,0.3);
+        .shape-3 {
+          width: 200px; height: 3px;
+          background: linear-gradient(90deg, transparent, rgba(251,140,0,.3), transparent);
+          top: 30%; left: -100px; transform: rotate(45deg);
+          animation: lineFloat 18s ease-in-out infinite;
         }
+        @keyframes morphFloat1 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(180deg); } }
+        @keyframes morphFloat2 { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(15px) scale(1.1); } }
+        @keyframes lineFloat { 0%,100% { transform: translateX(0) rotate(45deg); } 50% { transform: translateX(50px) rotate(45deg); } }
 
-        @keyframes fadeInUp {
-          from { opacity:0; transform: translateY(20px); }
-          to   { opacity:1; transform: translateY(0); }
+        /* ---------- Layout ---------- */
+        .container { max-width: 1200px; width: 100%; margin: 0 auto; position: relative; z-index: 2; }
+        .section-header { text-align: center; margin-bottom: 2rem; }
+        .section-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #fb8c00 70%, #f57c00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;   /* add */
+  color: transparent;                      /* keep */
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+        .dark .section-title {
+  background: linear-gradient(135deg, #e5e7eb 0%, #cbd5e1 30%, #fb8c00 70%, #f57c00 100%);
+  -webkit-background-clip: text;           /* add (safe) */
+  background-clip: text;                   /* add (safe) */
+  -webkit-text-fill-color: transparent;    /* add */
+  color: transparent;                      /* keep */
+}
+        .section-title::after {
+          content: ''; display: block; width: 80px; height: 3px; margin: 10px auto 0;
+          background: linear-gradient(90deg, transparent, #fb8c00, transparent); border-radius: 2px;
         }
+        .section-subtitle { font-size: 1.125rem; color: #64748b; }
+        .dark .section-subtitle { color: #cbd5e1; }
 
-        @keyframes dishFlowComplete {
-          0%   { offset-distance:0%; transform: scale(0.7); opacity:0; }
-          10%  { opacity:1; transform: scale(1); }
-          50%  { offset-distance:50%; }
-          90%  { offset-distance:90%; }
-          100% { offset-distance:100%; transform: scale(0.7); opacity:0; }
+        .dishes-showcase { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; }
+        @media (min-width: 1024px) { .dishes-showcase { grid-template-columns: 1fr 1fr; gap: 3rem; } }
+
+        /* ---------- Orbit ---------- */
+        .animation-container { position: relative; margin: 0 auto; width: min(620px, 90vw); height: min(620px, 90vw); }
+        .curved-path-container { position: relative; width: 100%; height: 100%; overflow: visible; }
+        .curved-path-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .path-shadow { fill: none; stroke: rgba(251,140,0,.1); stroke-width: min(40px, 6vw); filter: blur(8px); }
+        .dark .path-shadow { stroke: rgba(251,140,0,.18); }
+        .path-glow { fill: none; stroke: url(#pathGradient); stroke-width: 2; opacity: .7; stroke-dasharray: 10 5; animation: pathFlow linear infinite; }
+        @keyframes pathFlow { to { stroke-dashoffset: 100; } }
+
+        .dish-animator { position: relative; width: 100%; height: 100%; z-index: 3; }
+        .animated-dish {
+          position: absolute; left: 0; top: 0; width: var(--dish-size); height: var(--dish-size);
+          offset-rotate: auto; animation-name: dishOrbit; animation-timing-function: linear; animation-fill-mode: forwards;
+          will-change: offset-distance; filter: drop-shadow(0 10px 25px rgba(0,0,0,.25)); display: flex; align-items: center; justify-content: center;
         }
+        @keyframes dishOrbit { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+        .dish-image { width: 100%; height: 100%; border-radius: 50%; object-fit: contain; background: transparent; border: none; display: block; }
 
-        @keyframes pulseRing {
-          0%,100% { box-shadow:0 0 0 0 rgba(251,140,0,0.6); }
-          50%     { box-shadow:0 0 0 15px rgba(251,140,0,0); }
+        /* ---------- Right column ---------- */
+        .dish-content { text-align: center; }
+        @media (min-width:1024px) { .dish-content { text-align: left; } }
+       .dish-name {
+  background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;    /* add */
+  color: transparent;                      /* keep */
+}
+        .dish-description { font-size: 1.125rem; color: #64748b; line-height: 1.6; margin: 0 0 2rem; }
+        .dark .dish-description { color: #cbd5e1; }
+
+        .dish-indicators { display: flex; gap: .5rem; justify-content: center; align-items: center; margin-bottom: 2rem; }
+        @media (min-width:1024px) { .dish-indicators { justify-content: flex-start; } }
+        .indicator {
+          width: 12px; height: 12px; border-radius: 50%;
+          background: rgba(148,163,184,.35); border: 2px solid transparent; cursor: pointer;
+          transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
         }
+        .dark .indicator { background: rgba(148,163,184,.55); }
+        .indicator:hover { transform: scale(1.2); background: rgba(251,140,0,.25); }
+        .indicator.active { transform: scale(1.3); background: #fb8c00; box-shadow: 0 0 20px rgba(251,140,0,.45); }
 
-        @keyframes nameEnter {
-          to { opacity:1; transform: translateX(0) scale(1); }
+        .cta-button {
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:1rem 2.5rem; border-radius:16px; border:0; cursor:pointer;
+          color:#fff; background:linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
+          font-weight:600; letter-spacing:.02em;
+          box-shadow:0 4px 15px rgba(251,140,0,.35), 0 2px 8px rgba(0,0,0,.25);
+          transition: transform .25s ease, box-shadow .25s ease;
         }
+        .cta-button:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(251,140,0,.45), 0 4px 12px rgba(0,0,0,.35); }
 
-        @keyframes namePulse {
-          to { transform: translateX(0) scale(1.03); }
-        }
-
-        /* Mobile specific adjustments */
-        @media (max-width: 767px) {
-          .animated-dish {
-            /* Ensure dish stays within mobile container bounds */
-            top: 10px;
-            left: 10px;
-          }
-          
-          .curved-path-container {
-            /* Add padding to prevent dish from going outside */
-            padding: 20px;
-            box-sizing: border-box;
-          }
+        @media (max-width: 640px) {
+          .animation-container { width: min(460px, 90vw) !important; height: min(460px, 90vw) !important; }
         }
       `}</style>
 
-      {/* floating shapes */}
-      <div className="shape-circle small" />
-      <div className="shape-circle large" />
+      {/* Background shapes */}
+      <div className="shape-floating shape-1" />
+      <div className="shape-floating shape-2" />
+      <div className="shape-floating shape-3" />
 
-      {/* header */}
-      <div className="section-header">
-        <h2 className="section-title">Signature Dishes</h2>
-        <p className="section-subtitle">Crafted with passion, served with perfection</p>
-      </div>
+      <div className="container">
+        <div className="section-header">
+          <h2 className="section-title">Signature Dishes</h2>
+          <p className="section-subtitle">Crafted with passion, served with perfection</p>
+        </div>
 
-      <div className="dishes-container">
-        {/* left: track + dish */}
-        <div className="curved-path-wrapper">
-        <div className="curved-path-container">
-          <svg className="curved-path-svg" viewBox="0 0 500 500">
-            <circle className="path-glow" cx="250" cy="250" r="200" />
-          </svg>
-          <div className="dish-animator">
-            <div key={`${currentDish.id}-${animationKey}`} className="animated-dish">
-              <img src={currentDish.pictureUrl} className="dish-image" alt={currentDish.name} />
+        <div className="dishes-showcase">
+          {/* Orbit */}
+          <div
+            className="animation-container"
+            style={{
+              width: `${containerSize}px`,
+              height: `${containerSize}px`,
+              ['--dish-size']: `${dish.size * (containerSize / 620)}px`,
+            }}
+          >
+            <div className="curved-path-container">
+              <svg className="curved-path-svg" viewBox={`0 0 ${containerSize} ${containerSize}`} preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fb8c00" />
+                    <stop offset="50%" stopColor="#f57c00" />
+                    <stop offset="100%" stopColor="#fb8c00" />
+                  </linearGradient>
+                </defs>
+                <circle className="path-shadow" cx={center} cy={center} r={orbitRadius} />
+                <circle className="path-glow" cx={center} cy={center} r={orbitRadius} style={{ animationDuration: `${loopSeconds}s` }} />
+              </svg>
+
+              <div className="dish-animator">
+                <div
+                  key={dish.id}
+                  className="animated-dish"
+                  onAnimationEnd={handleAnimEnd}
+                  style={{
+                    offsetPath: `circle(${orbitRadius}px at ${center}px ${center}px)`,
+                    animationDuration: `${loopSeconds}s`,
+                  }}
+                >
+                  <img className="dish-image" src={dish.pictureUrl} alt={dish.name} />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        </div>
 
-        {/* right: name, dots & CTA */}
-        <div className="dish-name-display">
-          <h3 key={`${currentDish.id}-${animationKey}`} className="display-name">
-            {currentDish.name}
-          </h3>
-          <div className="dish-indicators">
-            {featuredDishes.map((_, idx) => (
-              <button
-                key={idx}
-                className={`indicator ${idx === currentDishIndex ? 'active' : ''}`}
-                onClick={() => {
-                  setCurrentDishIndex(idx);
-                  setAnimationKey(k => k + 1);
-                }}
-              />
-            ))}
+          {/* Copy / controls */}
+          <div className="dish-content">
+            <h3 className="dish-name">{dish.name}</h3>
+            <p className="dish-description">{dish.description}</p>
+
+            <div className="dish-indicators">
+              {dishes.map((_, i) => (
+                <button
+                  key={i}
+                  className={`indicator ${i === index ? 'active' : ''}`}
+                  onClick={() => setIndex(i)}
+                  aria-label={`View ${dishes[i].name}`}
+                  title={dishes[i].name}
+                />
+              ))}
+            </div>
+
+            <button className="cta-button" onClick={() => (window.location.href = '/menu')}>
+              Explore Full Menu
+            </button>
           </div>
-        <Link to="/menu" className="explore-btn">
-  Explore More Items
-</Link>
         </div>
       </div>
     </div>

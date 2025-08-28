@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { Heart, Trash2, Eye, Loader2, Building, User as UserIcon, LogOut } from 'lucide-react';
+import { Heart, Trash2, Eye, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function getFavoritesKey() {
@@ -43,7 +43,8 @@ export default function ProfileFavorites() {
     setLoading(false);
 
     const onStorage = (e) => {
-      if (e.key && getFavoritesKey() && e.key === getFavoritesKey()) {
+      const k = getFavoritesKey();
+      if (e.key && k && e.key === k) {
         setFavorites(readFavorites());
       }
     };
@@ -70,20 +71,19 @@ export default function ProfileFavorites() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 py-6 mt-16">
         <div className="flex flex-col lg:flex-row gap-6">
-          
-          
-
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-16 translate-x-16"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-gray-900/10 to-black/10 rounded-full translate-y-12 -translate-x-12"></div>
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 relative overflow-hidden">
+              {/* soft corner blobs */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-600/10 rounded-full -translate-y-16 translate-x-16" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-gray-900/10 to-black/10 dark:from-gray-50/5 dark:to-white/5 rounded-full translate-y-12 -translate-x-12" />
 
               <div className="relative z-10">
+                {/* Header strip */}
                 <div className="px-6 py-8 bg-gradient-to-r from-orange-500 to-orange-600 rounded-t-lg">
                   <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-white">Your Favorites</h1>
@@ -104,8 +104,8 @@ export default function ProfileFavorites() {
                       <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
                     </div>
                   ) : favorites.length === 0 ? (
-                    <div className="text-center py-16 text-gray-500">
-                      <Heart className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                    <div className="text-center py-16 text-gray-500 dark:text-gray-400">
+                      <Heart className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                       <p>No favorites yet</p>
                       <p className="text-sm">Browse the menu and tap the heart to save items.</p>
                       <button
@@ -120,7 +120,10 @@ export default function ProfileFavorites() {
                       {favorites
                         .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
                         .map(item => (
-                          <div key={item.productId} className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition flex flex-col">
+                          <div
+                            key={item.productId}
+                            className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow hover:shadow-lg transition flex flex-col border border-gray-100 dark:border-gray-800"
+                          >
                             <div className="relative h-44">
                               <img
                                 src={item.pictureUrl}
@@ -129,32 +132,38 @@ export default function ProfileFavorites() {
                               />
                               <button
                                 onClick={() => removeOne(item.productId)}
-                                className="absolute top-3 right-3 p-2 rounded-full bg-white/85 hover:bg-white shadow"
+                                className="absolute top-3 right-3 p-2 rounded-full bg-white/85 dark:bg-gray-900/80 hover:bg-white dark:hover:bg-gray-800 shadow border border-gray-200 dark:border-gray-700"
                                 title="Remove"
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />
                               </button>
                             </div>
+
                             <div className="p-5 flex flex-col flex-1">
-                              <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.0rem]">{item.productName}</h3>
-                              <p className="text-sm text-gray-500 mt-1">
+                              <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.0rem] text-gray-900 dark:text-gray-100">
+                                {item.productName}
+                              </h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 {(item.brandName || '')} {item.typeName ? `• ${item.typeName}` : ''}
                               </p>
+
                               <div className="mt-3 flex items-center justify-between">
-                                <span className="text-xl font-extrabold text-orange-600">
+                                <span className="text-xl font-extrabold text-orange-600 dark:text-orange-400">
                                   ${(item.price || 0).toFixed(2)}
                                 </span>
-                                <span className="text-sm text-gray-600">
-                                  {typeof item.rating === 'number' ? item.rating.toFixed(1) : '–'} ★
-                                </span>
+                               
                               </div>
+
                               <div className="mt-auto pt-4 flex gap-2">
                                 <button
                                   onClick={() => navigate(`/product/${item.productId}`)}
-                                  className="w-full py-2.5 rounded-full bg-gray-700 text-white hover:bg-gray-800 transition flex items-center justify-center gap-2"
+                                  className="w-full py-2.5 rounded-full bg-gray-700 hover:bg-gray-800 text-white transition
+                                             dark:bg-gray-800 dark:hover:bg-gray-700"
                                 >
-                                  <Eye className="w-4 h-4" />
-                                  View Product
+                                  <span className="inline-flex items-center gap-2">
+                                    <Eye className="w-4 h-4" />
+                                    View Product
+                                  </span>
                                 </button>
                               </div>
                             </div>
