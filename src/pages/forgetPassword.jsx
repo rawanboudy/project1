@@ -2,85 +2,77 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from '../axiosConfig';
 import toast from 'react-hot-toast';
-import { 
-  Mail, 
-  ArrowLeft, 
-  Send, 
-  CheckCircle, 
-  AlertCircle, 
+import {
+  Mail,
+  ArrowLeft,
+  Send,
+  CheckCircle,
+  AlertCircle,
   Loader2,
   Shield,
   Eye,
   EyeOff,
   Lock,
   Key,
-  Wifi,
   WifiOff,
   Check,
   X,
-  AlertTriangle
 } from 'lucide-react';
-
-// Theme colors matching your login page
-const theme = {
-  colors: {
-    orange: '#FB923C',
-    orangeDark: '#EA580C',
-    orangeLight: '#FED7AA',
-    textDark: '#1F2937',
-    textGray: '#6B7280',
-    error: '#EF4444',
-    errorDark: '#DC2626',
-    errorLight: '#FEE2E2',
-    success: '#10B981',
-    successDark: '#059669',
-    successLight: '#D1FAE5'
-  }
-};
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
-  // Get email and code from URL parameters if present
+
+  // URL params (if coming from email link)
   const urlEmail = searchParams.get('email');
   const urlCode = searchParams.get('code');
 
-  // States for different steps
+  // Steps: 'request' | 'sent' | 'verify' | 'reset' | 'success'
   const [currentStep, setCurrentStep] = useState(
     urlEmail && urlCode ? 'reset' : 'request'
-  ); // 'request', 'sent', 'verify', 'reset', 'success'
-  
-  // Form data
+  );
+
+  // Form state
   const [email, setEmail] = useState(urlEmail || '');
   const [resetCode, setResetCode] = useState(urlCode || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  // UI states
+
+  // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
-  // Error and validation states
+
+  // Validation & errors
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [fieldTouched, setFieldTouched] = useState({});
   const [realtimeErrors, setRealtimeErrors] = useState({});
-  
-  // Password strength checking
+
+  // Password strength
   const [passwordStrength, setPasswordStrength] = useState({
     length: false,
     uppercase: false,
     lowercase: false,
     number: false,
-    special: false
+    special: false,
   });
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // ---- Utilities ----
+  const validateEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
-  // Network status monitoring
+  const checkPasswordStrength = (password) => {
+    setPasswordStrength({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    });
+  };
+
+  // Network status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
@@ -88,47 +80,31 @@ const ForgotPasswordPage = () => {
         setGeneralError('');
       }
     };
-
     const handleOffline = () => {
       setIsOnline(false);
       setGeneralError('No internet connection. Please check your network.');
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [generalError]);
 
-  // Password strength checker
-  const checkPasswordStrength = (password) => {
-    setPasswordStrength({
-      length: password.length >= 8,
-      uppercase: /[A-Z]/.test(password),
-      lowercase: /[a-z]/.test(password),
-      number: /\d/.test(password),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-    });
-  };
-
-  // Real-time validation
+  // Realtime validation
   const validateFieldRealtime = (field, value) => {
-    if (!fieldTouched[field] || !value.trim()) return null;
+    if (!fieldTouched[field] || !String(value).trim()) return null;
 
     switch (field) {
       case 'email':
         if (!validateEmail(value)) return 'Please enter a valid email address.';
         if (value.length > 254) return 'Email address is too long.';
         return null;
-
       case 'resetCode':
         if (value.length < 6) return 'Reset code must be at least 6 characters.';
         if (value.length > 10) return 'Reset code cannot exceed 10 characters.';
         return null;
-
       case 'newPassword':
         if (value.length < 8) return 'Password must be at least 8 characters long.';
         if (value.length > 128) return 'Password cannot exceed 128 characters.';
@@ -137,86 +113,46 @@ const ForgotPasswordPage = () => {
         if (!passwordStrength.number) return 'Add at least one number (0-9).';
         if (!passwordStrength.special) return 'Add a special character like !@#$%^&*.';
         return null;
-
       case 'confirmPassword':
         if (value !== newPassword) return 'Passwords do not match.';
         return null;
-
       default:
         return null;
     }
   };
 
-  // Update real-time validation
   useEffect(() => {
-    const newRealtimeErrors = {};
-    const fields = ['email', 'resetCode', 'newPassword', 'confirmPassword'];
-    
-    fields.forEach(field => {
-      let value;
-      switch (field) {
-        case 'email': value = email; break;
-        case 'resetCode': value = resetCode; break;
-        case 'newPassword': value = newPassword; break;
-        case 'confirmPassword': value = confirmPassword; break;
-        default: value = '';
-      }
-      
-      const error = validateFieldRealtime(field, value);
-      if (error) {
-        newRealtimeErrors[field] = error;
-      }
+    const next = {};
+    ['email', 'resetCode', 'newPassword', 'confirmPassword'].forEach((f) => {
+      const v =
+        f === 'email'
+          ? email
+          : f === 'resetCode'
+          ? resetCode
+          : f === 'newPassword'
+          ? newPassword
+          : confirmPassword;
+      const err = validateFieldRealtime(f, v);
+      if (err) next[f] = err;
     });
-    
-    setRealtimeErrors(newRealtimeErrors);
+    setRealtimeErrors(next);
   }, [email, resetCode, newPassword, confirmPassword, fieldTouched, passwordStrength]);
 
-  // Handle input changes
-  const handleInputChange = (field, value) => {
-    switch (field) {
-      case 'email':
-        setEmail(value);
-        break;
-      case 'resetCode':
-        setResetCode(value);
-        break;
-      case 'newPassword':
-        setNewPassword(value);
-        checkPasswordStrength(value);
-        break;
-      case 'confirmPassword':
-        setConfirmPassword(value);
-        break;
-    }
-    
-    // Clear errors and mark as touched
-    setErrors(prev => ({ ...prev, [field]: [] }));
-    setGeneralError('');
-    setFieldTouched(prev => ({ ...prev, [field]: true }));
-  };
-
-  // Handle field blur
-  const handleBlur = (field) => {
-    setFieldTouched(prev => ({ ...prev, [field]: true }));
-  };
-
-  // Get field error
   const getFieldError = (field) => {
-    if (errors[field] && errors[field].length > 0) return errors[field][0];
+    if (errors[field]?.length) return errors[field][0];
     if (realtimeErrors[field]) return realtimeErrors[field];
     return null;
   };
 
-  // Get field validation icon
   const getFieldValidationIcon = (field) => {
-    let value;
-    switch (field) {
-      case 'email': value = email; break;
-      case 'resetCode': value = resetCode; break;
-      case 'newPassword': value = newPassword; break;
-      case 'confirmPassword': value = confirmPassword; break;
-      default: value = '';
-    }
+    const value =
+      field === 'email'
+        ? email
+        : field === 'resetCode'
+        ? resetCode
+        : field === 'newPassword'
+        ? newPassword
+        : confirmPassword;
 
     if (fieldTouched[field] && value) {
       if (getFieldError(field)) return <X className="w-5 h-5 text-red-500" />;
@@ -225,71 +161,69 @@ const ForgotPasswordPage = () => {
     return null;
   };
 
-  // Process server errors
   const processServerErrors = (errorData) => {
-    const newErrors = {};
-    console.log('Processing server errors:', errorData);
-
-    if (errorData.errors) {
+    const next = {};
+    if (errorData?.errors) {
       if (Array.isArray(errorData.errors)) {
-        errorData.errors.forEach((errorMsg) => {
-          if (typeof errorMsg === 'string') {
-            const lowerMessage = errorMsg.toLowerCase();
-            if (lowerMessage.includes('email')) {
-              newErrors.email = [errorMsg];
-            } else if (lowerMessage.includes('code') || lowerMessage.includes('token')) {
-              newErrors.resetCode = [errorMsg];
-            } else if (lowerMessage.includes('password')) {
-              newErrors.newPassword = [errorMsg];
-            } else {
-              setGeneralError(errorMsg);
-            }
+        errorData.errors.forEach((msg) => {
+          if (typeof msg === 'string') {
+            const l = msg.toLowerCase();
+            if (l.includes('email')) next.email = [msg];
+            else if (l.includes('code') || l.includes('token')) next.resetCode = [msg];
+            else if (l.includes('password')) next.newPassword = [msg];
+            else setGeneralError(msg);
           }
         });
       } else if (typeof errorData.errors === 'object') {
-        Object.keys(errorData.errors).forEach(field => {
-          const fieldKey = field.toLowerCase();
-          const errorMessages = Array.isArray(errorData.errors[field]) 
-            ? errorData.errors[field] 
+        Object.keys(errorData.errors).forEach((field) => {
+          const msgs = Array.isArray(errorData.errors[field])
+            ? errorData.errors[field]
             : [errorData.errors[field]];
-          
-          if (fieldKey.includes('email')) {
-            newErrors.email = errorMessages;
-          } else if (fieldKey.includes('code') || fieldKey.includes('token')) {
-            newErrors.resetCode = errorMessages;
-          } else if (fieldKey.includes('password')) {
-            newErrors.newPassword = errorMessages;
-          }
+          const key = field.toLowerCase();
+          if (key.includes('email')) next.email = msgs;
+          else if (key.includes('code') || key.includes('token')) next.resetCode = msgs;
+          else if (key.includes('password')) next.newPassword = msgs;
         });
       }
     }
 
-    const errorMessage = errorData.message || errorData.errorMessage || '';
-    if (errorMessage && Object.keys(newErrors).length === 0) {
-      const lowerMessage = errorMessage.toLowerCase();
-      if (lowerMessage.includes('email')) {
-        newErrors.email = [errorMessage];
-      } else if (lowerMessage.includes('code') || lowerMessage.includes('token') || lowerMessage.includes('invalid') || lowerMessage.includes('expired')) {
-        newErrors.resetCode = [errorMessage];
-      } else if (lowerMessage.includes('password')) {
-        newErrors.newPassword = [errorMessage];
-      } else {
-        setGeneralError(errorMessage);
-      }
+    const message = errorData?.message || errorData?.errorMessage || '';
+    if (message && Object.keys(next).length === 0) {
+      const l = message.toLowerCase();
+      if (l.includes('email')) next.email = [message];
+      else if (l.includes('code') || l.includes('token') || l.includes('invalid') || l.includes('expired'))
+        next.resetCode = [message];
+      else if (l.includes('password')) next.newPassword = [message];
+      else setGeneralError(message);
     }
-
-    return newErrors;
+    return next;
   };
 
-  // Step 1: Request password reset
+  // ---- Handlers ----
+  const handleInputChange = (field, value) => {
+    if (field === 'email') setEmail(value);
+    if (field === 'resetCode') setResetCode(value);
+    if (field === 'newPassword') {
+      setNewPassword(value);
+      checkPasswordStrength(value);
+    }
+    if (field === 'confirmPassword') setConfirmPassword(value);
+
+    setErrors((prev) => ({ ...prev, [field]: [] }));
+    setGeneralError('');
+    setFieldTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field) => {
+    setFieldTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   const handleRequestReset = async (e) => {
     e.preventDefault();
-    
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
       return;
     }
-
     setGeneralError('');
     setErrors({});
 
@@ -297,41 +231,27 @@ const ForgotPasswordPage = () => {
       setErrors({ email: ['Email is required'] });
       return;
     }
-    
     if (!validateEmail(email.trim())) {
       setErrors({ email: ['Please enter a valid email address'] });
       return;
     }
 
     setIsLoading(true);
-
     try {
       await axios.post('/Authentication/forgot-password', {
-        email: email.trim().toLowerCase()
+        email: email.trim().toLowerCase(),
       });
-      
       setCurrentStep('sent');
       toast.success('Password reset link sent to your email!');
     } catch (err) {
-      console.error('Forgot password error:', err);
-      
       if (err.response) {
         const { status, data } = err.response;
-        const fieldErrors = processServerErrors(data);
-        
-        if (Object.keys(fieldErrors).length > 0) {
-          setErrors(fieldErrors);
-        } else {
-          switch (status) {
-            case 404:
-              setErrors({ email: ['No account found with this email address.'] });
-              break;
-            case 429:
-              setGeneralError('Too many requests. Please try again later.');
-              break;
-            default:
-              setGeneralError(data.message || 'Failed to send reset email. Please try again.');
-          }
+        const mapped = processServerErrors(data);
+        if (Object.keys(mapped).length) setErrors(mapped);
+        else {
+          if (status === 404) setErrors({ email: ['No account found with this email address.'] });
+          else if (status === 429) setGeneralError('Too many requests. Please try again later.');
+          else setGeneralError(data?.message || 'Failed to send reset email. Please try again.');
         }
       } else {
         setGeneralError('Unable to connect to server. Please try again.');
@@ -341,15 +261,12 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  // Step 2: Verify reset code (if manually entered)
   const handleVerifyCode = async (e) => {
     e.preventDefault();
-    
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
       return;
     }
-
     setGeneralError('');
     setErrors({});
 
@@ -359,35 +276,22 @@ const ForgotPasswordPage = () => {
     }
 
     setIsLoading(true);
-
     try {
       await axios.post('/Authentication/verify-reset-code', {
         email: email.trim().toLowerCase(),
-        code: resetCode.trim()
+        code: resetCode.trim(),
       });
-      
       setCurrentStep('reset');
       toast.success('Code verified! Now set your new password.');
     } catch (err) {
-      console.error('Verify code error:', err);
-      
       if (err.response) {
         const { status, data } = err.response;
-        const fieldErrors = processServerErrors(data);
-        
-        if (Object.keys(fieldErrors).length > 0) {
-          setErrors(fieldErrors);
-        } else {
-          switch (status) {
-            case 400:
-              setErrors({ resetCode: ['Invalid or expired reset code.'] });
-              break;
-            case 404:
-              setGeneralError('Reset request not found. Please request a new reset link.');
-              break;
-            default:
-              setGeneralError(data.message || 'Failed to verify code. Please try again.');
-          }
+        const mapped = processServerErrors(data);
+        if (Object.keys(mapped).length) setErrors(mapped);
+        else {
+          if (status === 400) setErrors({ resetCode: ['Invalid or expired reset code.'] });
+          else if (status === 404) setGeneralError('Reset request not found. Please request a new reset link.');
+          else setGeneralError(data?.message || 'Failed to verify code. Please try again.');
         }
       } else {
         setGeneralError('Unable to connect to server. Please try again.');
@@ -397,69 +301,46 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  // Step 3: Reset password
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
       return;
     }
-
     setGeneralError('');
     setErrors({});
 
-    // Validation
-    const validationErrors = {};
-    
-    if (!newPassword) {
-      validationErrors.newPassword = ['New password is required'];
-    } else if (getFieldError('newPassword')) {
-      validationErrors.newPassword = [getFieldError('newPassword')];
-    }
-    
-    if (!confirmPassword) {
-      validationErrors.confirmPassword = ['Please confirm your password'];
-    } else if (newPassword !== confirmPassword) {
-      validationErrors.confirmPassword = ['Passwords do not match'];
-    }
+    const v = {};
+    if (!newPassword) v.newPassword = ['New password is required'];
+    else if (getFieldError('newPassword')) v.newPassword = [getFieldError('newPassword')];
+    if (!confirmPassword) v.confirmPassword = ['Please confirm your password'];
+    else if (newPassword !== confirmPassword) v.confirmPassword = ['Passwords do not match'];
 
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    if (Object.keys(v).length) {
+      setErrors(v);
       return;
     }
 
     setIsLoading(true);
-
     try {
       await axios.post('/Authentication/reset-password', {
         email: email.trim().toLowerCase(),
         code: resetCode.trim(),
-        newPassword: newPassword
+        newPassword,
       });
-      
       setCurrentStep('success');
       toast.success('Password reset successful! You can now login with your new password.');
     } catch (err) {
-      console.error('Reset password error:', err);
-      
       if (err.response) {
         const { status, data } = err.response;
-        const fieldErrors = processServerErrors(data);
-        
-        if (Object.keys(fieldErrors).length > 0) {
-          setErrors(fieldErrors);
-        } else {
-          switch (status) {
-            case 400:
-              setGeneralError('Invalid or expired reset code. Please request a new reset link.');
-              break;
-            case 404:
-              setGeneralError('Reset request not found. Please request a new reset link.');
-              break;
-            default:
-              setGeneralError(data.message || 'Failed to reset password. Please try again.');
-          }
+        const mapped = processServerErrors(data);
+        if (Object.keys(mapped).length) setErrors(mapped);
+        else {
+          if (status === 400)
+            setGeneralError('Invalid or expired reset code. Please request a new reset link.');
+          else if (status === 404)
+            setGeneralError('Reset request not found. Please request a new reset link.');
+          else setGeneralError(data?.message || 'Failed to reset password. Please try again.');
         }
       } else {
         setGeneralError('Unable to connect to server. Please try again.');
@@ -469,35 +350,31 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  const handleBackToLogin = () => navigate('/login');
+  const FieldHintError = ({ field }) =>
+    getFieldError(field) ? (
+      <p className="text-xs mt-1 flex items-center gap-1 text-red-600 dark:text-red-400">
+        <AlertCircle className="w-4 h-4" />
+        {getFieldError(field)}
+      </p>
+    ) : null;
 
-  // Unified orange gradient background
-  const orangeBg = {
-    background: `linear-gradient(to bottom right, 
-      ${theme.colors.orange}, ${theme.colors.orangeDark})`
-  };
-
-  // Success step
+  // ---- Success screen ----
   if (currentStep === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={orangeBg}>
-        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md text-center">
-          <div
-            className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.successLight }}
-          >
-            <CheckCircle className="w-10 h-10" style={{ color: theme.colors.success }} />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+        <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900/30">
+            <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-2xl font-semibold mb-3" style={{ color: theme.colors.textDark }}>
+          <h2 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-gray-100">
             Password Reset Successful!
           </h2>
-          <p className="text-sm mb-6" style={{ color: theme.colors.textGray }}>
+          <p className="text-sm mb-6 text-gray-600 dark:text-gray-400">
             Your password has been successfully reset. You can now login with your new password.
           </p>
           <button
-            onClick={handleBackToLogin}
-            className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition transform hover:scale-105"
-            style={orangeBg}
+            onClick={() => navigate('/login')}
+            className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition duration-300 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
           >
             <ArrowLeft className="w-5 h-5" /> Back to Login
           </button>
@@ -506,59 +383,46 @@ const ForgotPasswordPage = () => {
     );
   }
 
-  // Email sent step
+  // ---- Email sent screen ----
   if (currentStep === 'sent') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={orangeBg}>
-        <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md text-center">
-          <div
-            className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.successLight }}
-          >
-            <CheckCircle className="w-10 h-10" style={{ color: theme.colors.success }} />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+        <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-green-100 dark:bg-green-900/30">
+            <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-2xl font-semibold mb-3" style={{ color: theme.colors.textDark }}>
+          <h2 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-gray-100">
             Check Your Email
           </h2>
-          <p className="text-sm mb-2" style={{ color: theme.colors.textGray }}>
+          <p className="text-sm mb-2 text-gray-600 dark:text-gray-400">
             We've sent a password reset link to:
           </p>
-          <p className="font-medium mb-6" style={{ color: theme.colors.textDark }}>
-            {email}
-          </p>
+          <p className="font-medium mb-6 text-gray-900 dark:text-gray-100">{email}</p>
           <div className="space-y-4">
             <button
               onClick={handleRequestReset}
               disabled={isLoading}
-              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2"
-              style={{
-                ...orangeBg,
-                opacity: isLoading ? 0.7 : 1
-              }}
+              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition duration-300 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
             >
-              {isLoading 
-                ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</>
-                : <><Send className="w-5 h-5" /> Resend Email</>}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" /> Resend Email
+                </>
+              )}
             </button>
             <button
               onClick={() => setCurrentStep('verify')}
-              className="w-full py-3 font-semibold rounded-xl border-2 flex items-center justify-center gap-2 hover:bg-orange-50 transition"
-              style={{
-                borderColor: theme.colors.orange,
-                color: theme.colors.orange,
-                backgroundColor: 'transparent'
-              }}
+              className="w-full py-3 font-semibold rounded-xl border-2 flex items-center justify-center gap-2 hover:bg-orange-50 dark:hover:bg-gray-800 transition text-orange-600 dark:text-orange-400 border-orange-300/70 dark:border-orange-700/60"
             >
               <Key className="w-5 h-5" /> Enter Code Manually
             </button>
             <button
-              onClick={handleBackToLogin}
-              className="w-full py-3 font-semibold rounded-xl border-2 flex items-center justify-center gap-2 hover:bg-orange-50 transition"
-              style={{
-                borderColor: theme.colors.orange,
-                color: theme.colors.orange,
-                backgroundColor: 'transparent'
-              }}
+              onClick={() => navigate('/login')}
+              className="w-full py-3 font-semibold rounded-xl border-2 flex items-center justify-center gap-2 hover:bg-orange-50 dark:hover:bg-gray-800 transition text-orange-600 dark:text-orange-400 border-orange-300/70 dark:border-orange-700/60"
             >
               <ArrowLeft className="w-5 h-5" /> Back to Login
             </button>
@@ -568,223 +432,197 @@ const ForgotPasswordPage = () => {
     );
   }
 
+  // ---- Main (request / verify / reset) ----
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={orangeBg}>
-      <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md">
-        {/* Header */}
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+      <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800">
+        {/* header */}
         <div className="text-center mb-6">
-          <div
-            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.orangeLight }}
-          >
-            {currentStep === 'request' ? (
-              <Shield className="w-7 h-7" style={{ color: theme.colors.orangeDark }} />
-            ) : currentStep === 'verify' ? (
-              <Key className="w-7 h-7" style={{ color: theme.colors.orangeDark }} />
-            ) : (
-              <Lock className="w-7 h-7" style={{ color: theme.colors.orangeDark }} />
-            )}
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-orange-100 dark:bg-gray-800">
+            {currentStep === 'request' && <Shield className="w-7 h-7 text-orange-600" />}
+            {currentStep === 'verify' && <Key className="w-7 h-7 text-orange-600" />}
+            {currentStep === 'reset' && <Lock className="w-7 h-7 text-orange-600" />}
           </div>
-          <h2 className="text-3xl font-semibold mb-2" style={{ color: theme.colors.textDark }}>
-            {currentStep === 'request' ? 'Forgot Password?' : 
-             currentStep === 'verify' ? 'Enter Reset Code' : 
-             'Set New Password'}
+          <h2 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
+            {currentStep === 'request'
+              ? 'Forgot Password?'
+              : currentStep === 'verify'
+              ? 'Enter Reset Code'
+              : 'Set New Password'}
           </h2>
-          <p className="text-sm" style={{ color: theme.colors.textGray }}>
-            {currentStep === 'request' ? 'No worries! Enter your email and we\'ll send you a reset link.' :
-             currentStep === 'verify' ? 'Enter the reset code sent to your email.' :
-             'Create a strong new password for your account.'}
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            {currentStep === 'request'
+              ? "No worries! Enter your email and we'll send you a reset link."
+              : currentStep === 'verify'
+              ? 'Enter the reset code sent to your email.'
+              : 'Create a strong new password for your account.'}
           </p>
         </div>
 
-        {/* Network Status */}
         {!isOnline && (
-          <div className="mb-4 p-2 border rounded-xl flex items-center justify-center gap-2 bg-gray-50">
-            <WifiOff className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">Offline</span>
+          <div className="mb-4 p-2 rounded-xl flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+            <WifiOff className="w-4 h-4" />
+            <span className="text-sm">Offline</span>
           </div>
         )}
 
-        {/* General Error */}
         {generalError && (
-          <div className="mb-4 p-3 border rounded-xl flex items-center gap-2"
-               style={{ backgroundColor: theme.colors.errorLight, borderColor: theme.colors.error }}>
-            <AlertCircle className="w-4 h-4" style={{ color: theme.colors.errorDark }} />
-            <span className="text-sm" style={{ color: theme.colors.errorDark }}>
-              {generalError}
-            </span>
+          <div className="mb-4 p-3 rounded-xl flex items-center gap-2 border bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm">{generalError}</span>
           </div>
         )}
 
-        {/* Request Reset Form */}
+        {/* Request */}
         {currentStep === 'request' && (
           <form onSubmit={handleRequestReset} className="space-y-5">
             <div>
-              <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+              <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+                <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   onBlur={() => handleBlur('email')}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2 transition"
-                  style={{
-                    borderColor: getFieldError('email') ? theme.colors.error : '#D1D5DB',
-                    '--tw-ring-color': theme.colors.orange
-                  }}
+                  className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:outline-none focus:ring-2
+                    bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    ${getFieldError('email') ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                   placeholder="Enter your email address"
                   disabled={isLoading}
                   autoComplete="email"
                 />
-                <div className="absolute right-3 top-3.5">
-                  {getFieldValidationIcon('email')}
-                </div>
+                <div className="absolute right-3 top-3.5">{getFieldValidationIcon('email')}</div>
               </div>
-              {getFieldError('email') && (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.colors.errorDark }}>
-                  <AlertCircle className="w-4 h-4" />
-                  {getFieldError('email')}
-                </p>
-              )}
+              <FieldHintError field="email" />
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading || !isOnline}
-              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition transform hover:scale-105"
-              style={{
-                ...orangeBg,
-                opacity: (isLoading || !isOnline) ? 0.7 : 1
-              }}
+              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition duration-300 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
             >
               {isLoading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Sending Reset Link...</>
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Sending Reset Link...
+                </>
               ) : !isOnline ? (
-                <><WifiOff className="w-5 h-5" /> No Connection</>
+                <>
+                  <WifiOff className="w-5 h-5" /> No Connection
+                </>
               ) : (
-                <><Send className="w-5 h-5" /> Send Reset Link</>
+                <>
+                  <Send className="w-5 h-5" /> Send Reset Link
+                </>
               )}
             </button>
           </form>
         )}
 
-        {/* Verify Code Form */}
+        {/* Verify */}
         {currentStep === 'verify' && (
           <form onSubmit={handleVerifyCode} className="space-y-5">
             <div>
-              <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+              <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
                 Reset Code
               </label>
               <div className="relative">
-                <Key className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+                <Key className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
                   value={resetCode}
                   onChange={(e) => handleInputChange('resetCode', e.target.value)}
                   onBlur={() => handleBlur('resetCode')}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2 transition"
-                  style={{
-                    borderColor: getFieldError('resetCode') ? theme.colors.error : '#D1D5DB',
-                    '--tw-ring-color': theme.colors.orange
-                  }}
+                  className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:outline-none focus:ring-2
+                    bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    ${getFieldError('resetCode') ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                   placeholder="Enter the reset code from your email"
                   disabled={isLoading}
                 />
-                <div className="absolute right-3 top-3.5">
-                  {getFieldValidationIcon('resetCode')}
-                </div>
+                <div className="absolute right-3 top-3.5">{getFieldValidationIcon('resetCode')}</div>
               </div>
-              {getFieldError('resetCode') && (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.colors.errorDark }}>
-                  <AlertCircle className="w-4 h-4" />
-                  {getFieldError('resetCode')}
-                </p>
-              )}
+              <FieldHintError field="resetCode" />
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading || !isOnline}
-              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition transform hover:scale-105"
-              style={{
-                ...orangeBg,
-                opacity: (isLoading || !isOnline) ? 0.7 : 1
-              }}
+              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition duration-300 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
             >
               {isLoading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Verifying...</>
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Verifying...
+                </>
               ) : (
-                <><CheckCircle className="w-5 h-5" /> Verify Code</>
+                <>
+                  <CheckCircle className="w-5 h-5" /> Verify Code
+                </>
               )}
             </button>
           </form>
         )}
 
-        {/* Reset Password Form */}
+        {/* Reset */}
         {currentStep === 'reset' && (
           <form onSubmit={handleResetPassword} className="space-y-5">
             <div>
-              <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+              <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
                 New Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => handleInputChange('newPassword', e.target.value)}
                   onBlur={() => handleBlur('newPassword')}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2 transition"
-                  style={{
-                    borderColor: getFieldError('newPassword') ? theme.colors.error : '#D1D5DB',
-                    '--tw-ring-color': theme.colors.orange
-                  }}
+                  className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:outline-none focus:ring-2
+                    bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    ${getFieldError('newPassword') ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                   placeholder="Enter your new password"
                   disabled={isLoading}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowNewPassword(v => !v)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                   disabled={isLoading}
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {getFieldError('newPassword') && (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.colors.errorDark }}>
-                  <AlertCircle className="w-4 h-4" />
-                  {getFieldError('newPassword')}
-                </p>
-              )}
+              <FieldHintError field="newPassword" />
 
-              {/* Password strength indicator */}
+              {/* Strength bullets */}
               {newPassword && fieldTouched.newPassword && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${passwordStrength.length ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className={passwordStrength.length ? 'text-green-600' : 'text-gray-500'}>
+                <div className="mt-2 space-y-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${passwordStrength.length ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                    <span className={passwordStrength.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                       At least 8 characters
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${passwordStrength.uppercase && passwordStrength.lowercase ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className={passwordStrength.uppercase && passwordStrength.lowercase ? 'text-green-600' : 'text-gray-500'}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${(passwordStrength.uppercase && passwordStrength.lowercase) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                    <span className={(passwordStrength.uppercase && passwordStrength.lowercase) ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                       Uppercase and lowercase letters
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${passwordStrength.number ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className={passwordStrength.number ? 'text-green-600' : 'text-gray-500'}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${passwordStrength.number ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                    <span className={passwordStrength.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                       At least one number
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${passwordStrength.special ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                    <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-500'}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${passwordStrength.special ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`} />
+                    <span className={passwordStrength.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                       Special character (!@#$%^&*)
                     </span>
                   </div>
@@ -793,67 +631,61 @@ const ForgotPasswordPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+              <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
                 Confirm New Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                   onBlur={() => handleBlur('confirmPassword')}
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2 transition"
-                  style={{
-                    borderColor: getFieldError('confirmPassword') ? theme.colors.error : '#D1D5DB',
-                    '--tw-ring-color': theme.colors.orange
-                  }}
+                  className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:outline-none focus:ring-2
+                    bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    ${getFieldError('confirmPassword') ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                   placeholder="Confirm your new password"
                   disabled={isLoading}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(v => !v)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowConfirmPassword((v) => !v)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                   disabled={isLoading}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {getFieldError('confirmPassword') && (
-                <p className="text-xs mt-1 flex items-center gap-1" style={{ color: theme.colors.errorDark }}>
-                  <AlertCircle className="w-4 h-4" />
-                  {getFieldError('confirmPassword')}
-                </p>
-              )}
+              <FieldHintError field="confirmPassword" />
             </div>
-            
+
             <button
               type="submit"
               disabled={isLoading || !isOnline}
-              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition transform hover:scale-105"
-              style={{
-                ...orangeBg,
-                opacity: (isLoading || !isOnline) ? 0.7 : 1
-              }}
+              className="w-full py-3 font-semibold text-white rounded-xl flex items-center justify-center gap-2 transition duration-300 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
             >
               {isLoading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Resetting Password...</>
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Resetting Password...
+                </>
               ) : (
-                <><CheckCircle className="w-5 h-5" /> Reset Password</>
+                <>
+                  <CheckCircle className="w-5 h-5" /> Reset Password
+                </>
               )}
             </button>
           </form>
         )}
 
-        {/* Navigation */}
+        {/* Bottom nav */}
         <div className="mt-6 text-center">
           {currentStep === 'verify' && (
             <div className="space-y-2">
               <button
                 onClick={() => setCurrentStep('request')}
-                className="inline-flex items-center gap-2 text-sm font-medium hover:underline transition"
-                style={{ color: theme.colors.orange }}
+                className="inline-flex items-center gap-2 text-sm font-medium hover:underline text-orange-600 dark:text-orange-400"
                 disabled={isLoading}
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -862,12 +694,20 @@ const ForgotPasswordPage = () => {
               <br />
             </div>
           )}
-          
           {(currentStep === 'request' || currentStep === 'verify') && (
             <button
-              onClick={handleBackToLogin}
-              className="inline-flex items-center gap-2 text-sm font-medium hover:underline transition"
-              style={{ color: theme.colors.orange }}
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center gap-2 text-sm font-medium hover:underline text-orange-600 dark:text-orange-400"
+              disabled={isLoading}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Login
+            </button>
+          )}
+          {currentStep === 'reset' && (
+            <button
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center gap-2 text-sm font-medium hover:underline text-orange-600 dark:text-orange-400"
               disabled={isLoading}
             >
               <ArrowLeft className="w-4 h-4" />

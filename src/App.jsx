@@ -1,10 +1,7 @@
 import React from 'react';
 import './index.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './theme/ThemeProvider'; // ← add this line
-
-// Safari session bridge
-import { ensureSessionPersistence } from './sessionBridge';
+import { ThemeProvider } from './theme/ThemeProvider';
 
 // Pages & components
 import LoginPage from './pages/LoginPage';
@@ -24,10 +21,6 @@ import OrderTracking from './pages/orderTracking';
 import ForgotPasswordPage from './pages/forgetPassword';
 import NotFoundPage from './pages/NotFoundPage';
 
-if (typeof window !== 'undefined') {
-  ensureSessionPersistence();
-}
-
 function App() {
   return (
     <ThemeProvider>
@@ -41,7 +34,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/product/:id" element={<ProductDetailsPage />} />
-
+          
           {/* Private Routes */}
           <Route path="/profile" element={<PrivateRoute element={<ProfilePage />} />} />
           <Route path="/cart" element={<PrivateRoute element={<CartPage />} />} />
@@ -50,7 +43,7 @@ function App() {
           <Route path="/profile/history" element={<PrivateRoute element={<OrderHistoryPage />} />} />
           <Route path="/order-success" element={<PrivateRoute element={<OrderSuccess />} />} />
           <Route path="/profile/order/:id" element={<PrivateRoute element={<OrderTracking />} />} />
-
+          
           {/* 404 Route - Must be last */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

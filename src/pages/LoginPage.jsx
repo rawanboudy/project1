@@ -23,32 +23,23 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
-  // Maximum login attempts before blocking
   const MAX_LOGIN_ATTEMPTS = 5;
-  const BLOCK_DURATION = 300000; // 5 minutes in milliseconds
+  const BLOCK_DURATION = 300000; // 5m
 
-  // Check for existing valid session on component mount
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
         const token = localStorage.getItem('token');
-        
         if (token) {
-          // Set axios default header for authentication
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          
-          // Verify token is still valid by fetching user info
           const response = await axios.get('/Authentication/user');
-          
           if (response.data) {
-            // Token is valid, store user info and redirect
             localStorage.setItem('userInfo', JSON.stringify(response.data));
             navigate('/');
             return;
           }
         }
       } catch (error) {
-        // Token is invalid or expired, clear stored data
         localStorage.removeItem('token');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('tokenExpiry');
@@ -58,7 +49,6 @@ const LoginPage = () => {
         localStorage.removeItem('userRoles');
         localStorage.removeItem('sessionId');
         delete axios.defaults.headers.common['Authorization'];
-        
         if (error.response?.status === 401) {
           setSessionExpired(true);
           setGeneralError('Your session has expired. Please log in again.');
@@ -67,57 +57,43 @@ const LoginPage = () => {
         setIsCheckingAuth(false);
       }
     };
-
     checkExistingSession();
   }, [navigate]);
 
-  // Check for session expiration and login attempts on component mount
   useEffect(() => {
-    // Check for existing session expiration
     const sessionExpiredFlag = sessionStorage.getItem('sessionExpired');
     if (sessionExpiredFlag === 'true') {
       setSessionExpired(true);
       setGeneralError('Your session has expired. Please log in again.');
       sessionStorage.removeItem('sessionExpired');
     }
-
-    // Check if user is currently blocked
     const blockEndTime = localStorage.getItem('loginBlockEndTime');
     if (blockEndTime && new Date().getTime() < parseInt(blockEndTime)) {
       setIsBlocked(true);
       const remaining = parseInt(blockEndTime) - new Date().getTime();
       setBlockTimeRemaining(Math.ceil(remaining / 1000));
     }
-
-    // Get current login attempts
     const attempts = parseInt(localStorage.getItem('loginAttempts') || '0');
     setLoginAttempts(attempts);
   }, []);
 
-  // Network status monitoring
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      if (generalError === 'No internet connection. Please check your network.') {
-        setGeneralError('');
-      }
+      if (generalError === 'No internet connection. Please check your network.') setGeneralError('');
     };
-
     const handleOffline = () => {
       setIsOnline(false);
       setGeneralError('No internet connection. Please check your network.');
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [generalError]);
 
-  // Block timer countdown
   useEffect(() => {
     let interval;
     if (isBlocked && blockTimeRemaining > 0) {
@@ -135,79 +111,37 @@ const LoginPage = () => {
         });
       }, 1000);
     }
-
     return () => clearInterval(interval);
   }, [isBlocked, blockTimeRemaining]);
 
-  // Input validation
   const validateInputs = () => {
     const errors = {};
-    
-    // Email validation
-    if (!email) {
-      errors.email = ['Email is required'];
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = ['Please enter a valid email address'];
-    }
-
-    // Password validation - only check if password exists
-    if (!password) {
-      errors.password = ['Password is required'];
-    }
-
+    if (!email) errors.email = ['Email is required'];
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = ['Please enter a valid email address'];
+    if (!password) errors.password = ['Password is required'];
     return errors;
   };
 
-  // Store all token information
-  const storeTokenInfo = (responseData) => {
-    // Store main token
-    if (responseData.token) {
-      localStorage.setItem('token', responseData.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${responseData.token}`;
+  const storeTokenInfo = (data) => {
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
     }
-
-    // Store refresh token if available
-    if (responseData.refreshToken) {
-      localStorage.setItem('refreshToken', responseData.refreshToken);
+    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+    if (data.expiresAt || data.expires_at || data.exp) {
+      localStorage.setItem('tokenExpiry', data.expiresAt || data.expires_at || data.exp);
     }
-
-    // Store token expiry if available
-    if (responseData.expiresAt || responseData.expires_at || responseData.exp) {
-      const expiryTime = responseData.expiresAt || responseData.expires_at || responseData.exp;
-      localStorage.setItem('tokenExpiry', expiryTime);
-    }
-
-    // Store user information
-    if (responseData.user) {
-      localStorage.setItem('userInfo', JSON.stringify(responseData.user));
-    }
-
-    // Store any additional token metadata
-    if (responseData.tokenType || responseData.token_type) {
-      localStorage.setItem('tokenType', responseData.tokenType || responseData.token_type);
-    }
-
-    // Store permissions/roles if available
-    if (responseData.permissions) {
-      localStorage.setItem('userPermissions', JSON.stringify(responseData.permissions));
-    }
-
-    if (responseData.roles) {
-      localStorage.setItem('userRoles', JSON.stringify(responseData.roles));
-    }
-
-    // Store session ID if available
-    if (responseData.sessionId) {
-      localStorage.setItem('sessionId', responseData.sessionId);
-    }
+    if (data.user) localStorage.setItem('userInfo', JSON.stringify(data.user));
+    if (data.tokenType || data.token_type) localStorage.setItem('tokenType', data.tokenType || data.token_type);
+    if (data.permissions) localStorage.setItem('userPermissions', JSON.stringify(data.permissions));
+    if (data.roles) localStorage.setItem('userRoles', JSON.stringify(data.roles));
+    if (data.sessionId) localStorage.setItem('sessionId', data.sessionId);
   };
 
-  // Handle login attempts and blocking
   const handleFailedLogin = () => {
     const newAttempts = loginAttempts + 1;
     setLoginAttempts(newAttempts);
     localStorage.setItem('loginAttempts', newAttempts.toString());
-
     if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
       const blockEndTime = new Date().getTime() + BLOCK_DURATION;
       localStorage.setItem('loginBlockEndTime', blockEndTime.toString());
@@ -217,7 +151,6 @@ const LoginPage = () => {
     }
   };
 
-  // Reset login attempts on successful login
   const handleSuccessfulLogin = () => {
     localStorage.removeItem('loginAttempts');
     localStorage.removeItem('loginBlockEndTime');
@@ -226,23 +159,16 @@ const LoginPage = () => {
   };
 
   const handleLogin = async () => {
-    // Check if user is blocked
-    if (isBlocked) {
-      return;
-    }
-
-    // Check network connectivity
+    if (isBlocked) return;
     if (!isOnline) {
       setGeneralError('No internet connection. Please check your network.');
       return;
     }
-
     setIsLoading(true);
     setGeneralError('');
     setFieldErrors({});
     setSessionExpired(false);
 
-    // Client-side validation
     const validationErrors = validateInputs();
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
@@ -256,144 +182,79 @@ const LoginPage = () => {
         password
       });
 
-      // Success handling
-      
-      // Store all token information
       storeTokenInfo(response.data);
-      
-      // Fetch user data using the same pattern as ProfilePage
-      let firstName = 'User'; // Default fallback
+
+      let firstName = 'User';
       try {
         const userResponse = await axios.get('/Authentication/user');
         const userData = userResponse.data;
-        
-        // Use the exact same logic as ProfilePage for getting the name
         firstName = userData.firstname || userData.username || 'User';
-        
-        // Also store the user info in localStorage like ProfilePage does
         localStorage.setItem('userInfo', JSON.stringify(userData));
-      } catch (error) {
-        console.warn('Could not fetch user data for welcome message:', error);
-        
-        // Try to get from stored userInfo as fallback
+      } catch (err) {
         const storedUserInfo = localStorage.getItem('userInfo');
         if (storedUserInfo) {
           try {
-            const parsedUser = JSON.parse(storedUserInfo);
-            firstName = parsedUser.firstname || parsedUser.username || 'User';
-          } catch (parseError) {
-            console.warn('Could not parse stored user info:', parseError);
-          }
-        }
-        
-        // Final fallback - use data from login response if available
-        const fallbackData = response.data.user || response.data;
-        if (fallbackData && firstName === 'User') {
-          firstName = fallbackData.firstname || fallbackData.username || 'User';
+            const parsed = JSON.parse(storedUserInfo);
+            firstName = parsed.firstname || parsed.username || 'User';
+          } catch {}
+        } else {
+          const fallback = response.data.user || response.data;
+          if (fallback && firstName === 'User') firstName = fallback.firstname || fallback.username || 'User';
         }
       }
-      
-      // Reset failed attempts
-      handleSuccessfulLogin();
 
-      // Redirect
+      handleSuccessfulLogin();
       toast.success(`Welcome back, ${firstName}!`);
       navigate('/');
-
     } catch (err) {
-      console.error('Login error:', err);
-      
       if (err.response) {
         const { status, data } = err.response;
-
         switch (status) {
           case 400:
-            // Bad Request - Validation errors
-            if (data.errors) {
-              setFieldErrors(data.errors);
-            } else if (data.message) {
-              setGeneralError(data.message);
-            } else {
-              setGeneralError('Invalid request. Please check your input.');
-            }
+            if (data.errors) setFieldErrors(data.errors);
+            else setGeneralError(data.message || 'Invalid request. Please check your input.');
             break;
-
           case 401:
-            // Unauthorized - Invalid credentials
             setGeneralError(data.message || 'Invalid email or password.');
             handleFailedLogin();
             break;
-
           case 403:
-            // Forbidden - Account locked, suspended, etc.
             setGeneralError(data.message || 'Account access denied. Please contact support.');
             break;
-
           case 404:
-            // Not Found - Account doesn't exist
             setGeneralError('Account not found. Please check your email or create a new account.');
             break;
-
           case 409:
-            // Conflict - Account needs verification, etc.
             setGeneralError(data.message || 'Account verification required. Please check your email.');
             break;
-
           case 422:
-            // Unprocessable Entity - Validation errors
-            if (data.errors) {
-              setFieldErrors(data.errors);
-            } else {
-              setGeneralError(data.message || 'Invalid data provided.');
-            }
+            if (data.errors) setFieldErrors(data.errors);
+            else setGeneralError(data.message || 'Invalid data provided.');
             break;
-
           case 429:
-            // Too Many Requests - Rate limiting
             setGeneralError(data.message || 'Too many requests. Please try again later.');
             break;
-
           case 500:
-            // Internal Server Error
             setGeneralError('Server error. Please try again later.');
             break;
-
           case 502:
-            // Bad Gateway
             setGeneralError('Service temporarily unavailable. Please try again later.');
             break;
-
           case 503:
-            // Service Unavailable
             setGeneralError('Service is under maintenance. Please try again later.');
             break;
-
           case 504:
-            // Gateway Timeout
             setGeneralError('Request timeout. Please try again.');
             break;
-
           default:
-            // Any other HTTP error
-            if (data?.message) {
-              setGeneralError(data.message);
-            } else {
-              setGeneralError(`Unexpected error (${status}). Please try again.`);
-            }
+            setGeneralError(data?.message || `Unexpected error (${status}). Please try again.`);
             break;
         }
-
       } else if (err.request) {
-        // Network error - request was made but no response received
-        if (err.code === 'ECONNABORTED') {
-          setGeneralError('Request timeout. Please try again.');
-        } else if (err.code === 'ERR_NETWORK') {
-          setGeneralError('Network error. Please check your connection.');
-        } else {
-          setGeneralError('Unable to connect to server. Please try again.');
-        }
+        if (err.code === 'ECONNABORTED') setGeneralError('Request timeout. Please try again.');
+        else if (err.code === 'ERR_NETWORK') setGeneralError('Network error. Please check your connection.');
+        else setGeneralError('Unable to connect to server. Please try again.');
       } else {
-        // Something else happened
         setGeneralError('An unexpected error occurred. Please try again.');
       }
     } finally {
@@ -401,14 +262,12 @@ const LoginPage = () => {
     }
   };
 
-  // Format time remaining for display
   const formatTimeRemaining = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Get error icon based on error type
   const getErrorIcon = () => {
     if (!isOnline) return <WifiOff className="w-4 h-4" />;
     if (isBlocked) return <Shield className="w-4 h-4" />;
@@ -416,78 +275,56 @@ const LoginPage = () => {
     return <AlertCircle className="w-4 h-4" />;
   };
 
-  // Show loading screen while checking authentication
   if (isCheckingAuth) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{
-          background: `linear-gradient(to bottom right, ${theme.colors.gradientStart}, ${theme.colors.gradientMiddle}, ${theme.colors.gradientEnd})`
-        }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-gray-900 dark:via-gray-950 dark:to-black">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: theme.colors.orange }} />
-          <p className="text-white">Checking authentication...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-white" />
+          <p className="text-white/90">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{
-        background: `linear-gradient(to bottom right, ${theme.colors.gradientStart}, ${theme.colors.gradientMiddle}, ${theme.colors.gradientEnd})`
-      }}
-    >
-      <div className="bg-white shadow-2xl rounded-3xl p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+      <div className="w-full max-w-md rounded-3xl p-8 shadow-2xl bg-white dark:bg-gray-900 border border-transparent dark:border-gray-800">
         <div className="text-center mb-6">
-          <div
-            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: theme.colors.orangeLight }}
-          >
-            <Lock className="w-7 h-7" style={{ color: theme.colors.orangeDark }} />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-orange-100 dark:bg-gray-800">
+            <Lock className="w-7 h-7 text-orange-600" />
           </div>
-          <h2 className="text-3xl font-semibold" style={{ color: theme.colors.textDark }}>
-            Sign in 
+          <h2 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
+            Sign in
           </h2>
         </div>
 
-        {/* Network Status Indicator */}
         {!isOnline && (
-          <div className="mb-4 p-2 border rounded-xl flex items-center justify-center gap-2 bg-gray-50">
-            <WifiOff className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">Offline</span>
+          <div className="mb-4 p-2 rounded-xl flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+            <WifiOff className="w-4 h-4" />
+            <span className="text-sm">Offline</span>
           </div>
         )}
 
-        {/* General Error Display */}
         {generalError && (
-          <div className="mb-4 p-3 border rounded-xl flex items-center gap-2" style={{ backgroundColor: theme.colors.errorLight, borderColor: theme.colors.error }}>
+          <div className="mb-4 p-3 rounded-xl flex items-center gap-2 border bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
             {getErrorIcon()}
-            <span className="text-sm" style={{ color: theme.colors.errorDark }}>
-              {generalError}
-            </span>
+            <span className="text-sm">{generalError}</span>
           </div>
         )}
 
         <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-5">
           <div>
-            <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+            <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+              <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2`}
-                style={{
-                  borderColor: fieldErrors.email ? theme.colors.error : '#D1D5DB',
-                  outlineColor: theme.colors.orange,
-                  ringColor: theme.colors.orange
-                }}
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border focus:outline-none focus:ring-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 
+                ${fieldErrors.email ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                 placeholder="you@example.com"
                 required
                 disabled={isLoading || isBlocked}
@@ -495,28 +332,24 @@ const LoginPage = () => {
               />
             </div>
             {fieldErrors.email && (
-              <p className="text-xs mt-1" style={{ color: theme.colors.errorDark }}>
+              <p className="text-xs mt-1 text-red-600 dark:text-red-400">
                 {fieldErrors.email[0]}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm mb-1" style={{ color: theme.colors.textDark }}>
+            <label className="block text-sm mb-1 text-gray-800 dark:text-gray-200">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3.5 w-5 h-5" style={{ color: '#9CA3AF' }} />
+              <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-3 rounded-xl bg-gray-100 border focus:outline-none focus:ring-2"
-                style={{
-                  borderColor: fieldErrors.password ? theme.colors.error : '#D1D5DB',
-                  outlineColor: theme.colors.orange,
-                  ringColor: theme.colors.orange
-                }}
+                className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:outline-none focus:ring-2 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 
+                ${fieldErrors.password ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 dark:border-gray-700 focus:ring-orange-400 dark:focus:ring-orange-500'}`}
                 placeholder="••••••••"
                 required
                 disabled={isLoading || isBlocked}
@@ -525,25 +358,23 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3.5"
-                style={{ color: '#9CA3AF' }}
+                className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400"
                 disabled={isLoading || isBlocked}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
             {fieldErrors.password && (
-              <p className="text-xs mt-1" style={{ color: theme.colors.errorDark }}>
+              <p className="text-xs mt-1 text-red-600 dark:text-red-400">
                 {fieldErrors.password[0]}
               </p>
             )}
           </div>
 
           <div className="flex justify-end text-sm">
-            <button 
-              type="button" 
-              className="hover:underline" 
-              style={{ color: theme.colors.orange }}
+            <button
+              type="button"
+              className="hover:underline text-orange-600 dark:text-orange-400"
               disabled={isLoading || isBlocked}
               onClick={() => navigate('/forgot-password')}
             >
@@ -554,11 +385,7 @@ const LoginPage = () => {
           <button
             type="submit"
             disabled={isLoading || isBlocked || !isOnline}
-            className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2"
-            style={{
-              background: `linear-gradient(to right, ${theme.colors.orange}, ${theme.colors.orangeDark})`,
-              opacity: (isLoading || isBlocked || !isOnline) ? 0.5 : 1
-            }}
+            className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -581,12 +408,11 @@ const LoginPage = () => {
           </button>
         </form>
 
-        <p className="text-center text-sm mt-6" style={{ color: theme.colors.textGray }}>
+        <p className="text-center text-sm mt-6 text-gray-600 dark:text-gray-400">
           Don't have an account?
           <button
             onClick={() => navigate('/register')}
-            className="ml-1 font-medium hover:underline"
-            style={{ color: theme.colors.orange }}
+            className="ml-1 font-medium hover:underline text-orange-600 dark:text-orange-400"
             disabled={isLoading}
           >
             Create Account

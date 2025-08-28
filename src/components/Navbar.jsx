@@ -22,6 +22,8 @@ const Navbar = ({ scrollY }) => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isHoveringUser, setIsHoveringUser] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const dropdownRef = useRef(null);
 
   const isSolid = typeof scrollY === 'number' ? scrollY > 50 : true;
@@ -29,7 +31,7 @@ const Navbar = ({ scrollY }) => {
   // Theme (light/dark)
   const { theme: mode, toggleTheme } = useTheme();
 
-  // ----- User session -----
+  // Helper function to get user info
   const getUserInfo = () => {
     try {
       let userStr = localStorage.getItem('userInfo');
@@ -41,19 +43,69 @@ const Navbar = ({ scrollY }) => {
       return null;
     }
   };
-  const user = getUserInfo();
-  const isLoggedIn = Boolean(localStorage.getItem('token'));
 
-  const getDisplayUsername = () => {
-    if (!user) return 'User';
-    if (user.firstname && user.lastname) return `${user.firstname} ${user.lastname}`;
-    if (user.firstname) return user.firstname;
-    if (user.username) return user.username;
-    if (user.email) return user.email.split('@')[0];
-    return 'User';
+  // Helper function to check if user is logged in
+  const checkLoginStatus = () => {
+    const token = localStorage.getItem('token');
+    // Only require token for login status, user info can be fetched later if needed
+    return Boolean(token);
   };
 
-  // ----- Effects -----
+  // Update user state from localStorage
+  const updateUserState = () => {
+    const userInfo = getUserInfo();
+    const loginStatus = checkLoginStatus();
+    
+    setUser(userInfo);
+    setIsLoggedIn(loginStatus);
+    
+    // Only close dropdown if explicitly logged out (no token)
+    if (!loginStatus) {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  // Initialize state on mount
+  useEffect(() => {
+    updateUserState();
+  }, []);
+
+  // Listen for storage changes (when localStorage is updated)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      // Only react to token changes (actual login/logout)
+      if (e.key === 'token') {
+        updateUserState();
+      }
+      // Update user info if it changes, but don't affect login status
+      else if (e.key === 'user' || e.key === 'userInfo') {
+        const userInfo = getUserInfo();
+        setUser(userInfo);
+      }
+    };
+
+    // Listen for storage events from other tabs/windows
+    window.addEventListener('storage', handleStorageChange);
+
+    // Custom event listener for same-tab localStorage changes
+    const handleCustomStorageChange = () => {
+      updateUserState();
+    };
+
+    window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleCustomStorageChange);
+    };
+  }, []);
+
+  // Close dropdown when location changes
+  useEffect(() => {
+    setIsDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -63,13 +115,53 @@ const Navbar = ({ scrollY }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  useEffect(() => setIsDropdownOpen(false), [location.pathname]);
 
-  // ----- Handlers -----
+  // Get display username with fallback for when user info might be temporarily missing
+  const getDisplayUsername = () => {
+    if (!user) {
+      // If we have a token but no user info, try to get it from localStorage again
+      if (isLoggedIn) {
+        const freshUserInfo = getUserInfo();
+        if (freshUserInfo) {
+          if (freshUserInfo.firstname && freshUserInfo.lastname) return `${freshUserInfo.firstname} ${freshUserInfo.lastname}`;
+          if (freshUserInfo.firstname) return freshUserInfo.firstname;
+          if (freshUserInfo.username) return freshUserInfo.username;
+          if (freshUserInfo.email) return freshUserInfo.email.split('@')[0];
+        }
+      }
+      return 'User';
+    }
+    if (user.firstname && user.lastname) return `${user.firstname} ${user.lastname}`;
+    if (user.firstname) return user.firstname;
+    if (user.username) return user.username;
+    if (user.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
+  // Enhanced logout handler
   const handleLogout = () => {
+    // Clear all authentication data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userInfo');
+    localStorage.removeItem('tokenExpiry');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenType');
+    localStorage.removeItem('userPermissions');
+    localStorage.removeItem('userRoles');
+    localStorage.removeItem('sessionId');
+
+    // Clear axios default header
+    delete window.axios?.defaults?.headers?.common['Authorization'];
+
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('localStorageChange'));
+
+    // Update local state immediately
+    setUser(null);
+    setIsLoggedIn(false);
+    setIsDropdownOpen(false);
+
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -78,10 +170,12 @@ const Navbar = ({ scrollY }) => {
     setIsDropdownOpen(false);
     navigate('/profile');
   };
+
   const handleHistory = () => {
     setIsDropdownOpen(false);
     navigate('/profile/history');
   };
+
   const handleFavourites = () => {
     setIsDropdownOpen(false);
     navigate('/profile/favorites');
@@ -152,7 +246,7 @@ const Navbar = ({ scrollY }) => {
               : <Moon className="w-5 h-5 text-indigo-500 transition-transform duration-300 group-active:-rotate-90" />}
           </button>
 
-          {/* User Dropdown */}
+          {/* User Dropdown or Login Button */}
           {isLoggedIn ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -168,20 +262,19 @@ const Navbar = ({ scrollY }) => {
                   }`}>
                   <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-              <div className="flex items-center gap-1 sm:gap-2">
-  {/* Username only on larger screens */}
-  <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors
-     ${isSolid ? 'text-gray-800 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}>
-    {getDisplayUsername()}
-  </p>
-  {/* Always show chevron */}
-  <ChevronDown
-    className={`w-4 h-4 transition-transform duration-300
-      ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}
-      ${isSolid ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}
-  />
-</div>
-
+                <div className="flex items-center gap-1 sm:gap-2">
+                  {/* Username only on larger screens */}
+                  <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors
+                     ${isSolid ? 'text-gray-800 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}>
+                    {getDisplayUsername()}
+                  </p>
+                  {/* Always show chevron */}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-300
+                      ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}
+                      ${isSolid ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}
+                  />
+                </div>
               </button>
 
               {/* Dropdown menu */}
