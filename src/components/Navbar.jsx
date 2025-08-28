@@ -168,17 +168,20 @@ const Navbar = ({ scrollY }) => {
                   }`}>
                   <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="hidden sm:flex items-center gap-2">
-                  <p className={`text-sm font-semibold truncate max-w-24 transition-colors
-                     ${isSolid ? 'text-gray-800 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}>
-                    {getDisplayUsername()}
-                  </p>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-all
-                      ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}
-                      ${isSolid ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}
-                  />
-                </div>
+              <div className="flex items-center gap-1 sm:gap-2">
+  {/* Username only on larger screens */}
+  <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors
+     ${isSolid ? 'text-gray-800 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}>
+    {getDisplayUsername()}
+  </p>
+  {/* Always show chevron */}
+  <ChevronDown
+    className={`w-4 h-4 transition-transform duration-300
+      ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}
+      ${isSolid ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}
+  />
+</div>
+
               </button>
 
               {/* Dropdown menu */}
