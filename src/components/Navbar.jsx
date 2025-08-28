@@ -9,11 +9,11 @@ import toast from 'react-hot-toast';
 import elephantLogo from '../assets/elephant-logo.svg';
 import { useTheme } from '../theme/ThemeProvider';
 
+// Desktop center-nav (Cart is moved to the right cluster on desktop)
 const NAV_ITEMS = [
-  { label: 'Home', to: '/', icon: <Home /> },
-  { label: 'Menu', to: '/menu', icon: <BookOpen /> },
-  { label: 'About', to: '/about', icon: <UserCircle /> },
-  { label: 'Cart', to: '/cart', icon: <ShoppingCart /> },
+  { label: 'Home', to: '/', icon: Home },
+  { label: 'Menu', to: '/menu', icon: BookOpen },
+  { label: 'About', to: '/about', icon: UserCircle },
 ];
 
 const Navbar = ({ scrollY }) => {
@@ -25,11 +25,14 @@ const Navbar = ({ scrollY }) => {
   const [user, setUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const dropdownRef = useRef(null);
 
+  const dropdownRef = useRef(null);
+  const drawerRef = useRef(null); // focus-trap container
+
+  // Solid header after a small scroll
   const isSolid = typeof scrollY === 'number' ? scrollY > 50 : true;
 
-  // Theme (light/dark)
+  // Theme
   const { theme: mode, toggleTheme } = useTheme();
 
   // Helpers
@@ -52,15 +55,14 @@ const Navbar = ({ scrollY }) => {
     const loginStatus = checkLoginStatus();
     setUser(userInfo);
     setIsLoggedIn(loginStatus);
-    if (!loginStatus) {
-      setIsDropdownOpen(false);
-    }
+    if (!loginStatus) setIsDropdownOpen(false);
   };
 
   useEffect(() => {
     updateUserState();
   }, []);
 
+  // React to storage changes (multi-tab + same-tab custom)
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'token') {
@@ -72,9 +74,7 @@ const Navbar = ({ scrollY }) => {
     };
     window.addEventListener('storage', handleStorageChange);
 
-    const handleCustomStorageChange = () => {
-      updateUserState();
-    };
+    const handleCustomStorageChange = () => updateUserState();
     window.addEventListener('localStorageChange', handleCustomStorageChange);
 
     return () => {
@@ -83,11 +83,13 @@ const Navbar = ({ scrollY }) => {
     };
   }, []);
 
+  // Close menus when route changes
   useEffect(() => {
     setIsDropdownOpen(false);
     setMobileOpen(false);
   }, [location.pathname]);
 
+  // Close user dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -97,6 +99,55 @@ const Navbar = ({ scrollY }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Lock body scroll while mobile drawer is open
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [mobileOpen]);
+
+  // Close mobile drawer on Escape, and trap focus inside when open
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+
+    // Focus trap
+    const node = drawerRef.current;
+    if (node) {
+      const focusable = node.querySelectorAll(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      const handleTab = (e) => {
+        if (e.key !== 'Tab') return;
+        if (focusable.length === 0) return;
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      };
+
+      document.addEventListener('keydown', handleTab);
+      first?.focus();
+
+      return () => {
+        document.removeEventListener('keydown', onKey);
+        document.removeEventListener('keydown', handleTab);
+      };
+    }
+
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
 
   const getDisplayUsername = () => {
     const src = user || getUserInfo();
@@ -118,7 +169,7 @@ const Navbar = ({ scrollY }) => {
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('userRoles');
     localStorage.removeItem('sessionId');
-    delete window.axios?.defaults?.headers?.common['Authorization'];
+    delete window.axios?.defaults?.headers?.common?.Authorization;
 
     window.dispatchEvent(new Event('localStorageChange'));
     setUser(null);
@@ -151,7 +202,7 @@ const Navbar = ({ scrollY }) => {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-500 
+      className={`fixed top-0 w-full z-[70] transition-all duration-500 
         ${isSolid
           ? 'bg-white/95 dark:bg-gray-900/90 backdrop-blur-md shadow-lg'
           : 'bg-transparent'
@@ -171,9 +222,9 @@ const Navbar = ({ scrollY }) => {
           </h1>
         </div>
 
-        {/* Center: Desktop Nav */}
+        {/* Center: Desktop Nav (Home / Menu / About) */}
         <div className="hidden md:flex space-x-6 lg:space-x-8">
-          {NAV_ITEMS.map(({ label, to, icon }) => (
+          {NAV_ITEMS.map(({ label, to, icon: Icon }) => (
             <Link
               key={label}
               to={to}
@@ -184,14 +235,27 @@ const Navbar = ({ scrollY }) => {
                     ? 'text-gray-800 dark:text-gray-200 hover:bg-gray-100/30 dark:hover:bg-gray-800/50'
                     : 'text-gray-900 dark:text-white hover:bg-gray-100/40 dark:hover:bg-white/10'}`}
             >
-              <span className={`w-5 h-5 ${iconColor}`}>{icon}</span>
+              <Icon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
               <span className="text-sm lg:text-base">{label}</span>
             </Link>
           ))}
         </div>
 
-        {/* Right: Theme + User / Login + Mobile Toggle */}
+        {/* Right: Cart + Theme + User / Login + Mobile Toggle */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Desktop Cart (promoted) */}
+          <Link
+            to="/cart"
+            className="hidden md:inline-flex items-center justify-center p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            aria-label="Cart"
+            title="Cart"
+          >
+            <ShoppingCart className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+            {/* Example badge:
+            <span className="ml-1 -mr-1 px-1.5 py-0.5 rounded-full text-[10px] bg-orange-600 text-white">3</span>
+            */}
+          </Link>
+
           {/* Theme Toggle */}
           <button
             type="button"
@@ -207,8 +271,8 @@ const Navbar = ({ scrollY }) => {
           >
             <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-orange-400/40 to-pink-500/40 opacity-0 group-hover:opacity-100 blur-md transition" />
             {mode === 'dark'
-              ? <Sun className={`w-5 h-5 ${iconColor}`} />
-              : <Moon className={`w-5 h-5 ${iconColor}`} />}
+              ? <Sun className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+              : <Moon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />}
           </button>
 
           {/* Desktop: User / Login */}
@@ -220,13 +284,15 @@ const Navbar = ({ scrollY }) => {
                   onMouseEnter={() => setIsHoveringUser(true)}
                   onMouseLeave={() => setIsHoveringUser(false)}
                   className="group relative flex items-center gap-2 p-2 rounded-full transition-all duration-300 hover:scale-110"
+                  aria-haspopup="menu"
+                  aria-expanded={isDropdownOpen}
                 >
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center 
                     ${isHoveringUser || isDropdownOpen
                       ? 'bg-gradient-to-br from-orange-600 to-orange-400 shadow-lg'
                       : 'bg-gradient-to-br from-orange-500 to-orange-400'
                     }`}>
-                    <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" aria-hidden="true" />
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2">
                     <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors
@@ -236,12 +302,16 @@ const Navbar = ({ scrollY }) => {
                     <ChevronDown
                       className={`w-4 h-4 transition-transform duration-300 ${iconColor}
                         ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}`}
+                      aria-hidden="true"
                     />
                   </div>
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-50">
+                  <div
+                    className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-[95]"
+                    role="menu"
+                  >
                     {user && (
                       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                         <div className="flex items-center gap-3">
@@ -266,22 +336,25 @@ const Navbar = ({ scrollY }) => {
                       <button
                         onClick={handleViewProfile}
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
+                        role="menuitem"
                       >
-                        <UserCircle className={`w-4 h-4 ${iconColor}`} />
+                        <UserCircle className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
                         Profile
                       </button>
                       <button
                         onClick={handleHistory}
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
+                        role="menuitem"
                       >
-                        <History className={`w-4 h-4 ${iconColor}`} />
+                        <History className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
                         History
                       </button>
                       <button
                         onClick={handleFavourites}
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
+                        role="menuitem"
                       >
-                        <Heart className={`w-4 h-4 ${iconColor}`} />
+                        <Heart className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
                         Favourites
                       </button>
                       <div className="mx-4 my-2 border-t border-gray-200 dark:border-gray-700"></div>
@@ -290,8 +363,9 @@ const Navbar = ({ scrollY }) => {
                         className="w-[90%] mx-auto mb-2 px-2.5 py-1.5 flex items-center justify-center gap-1.5 
                           bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-800/60 
                           border border-red-200 dark:border-red-700 text-red-600 rounded-md"
+                        role="menuitem"
                       >
-                        <LogOut className="w-3.5 h-3.5" /> Logout
+                        <LogOut className="w-3.5 h-3.5" aria-hidden="true" /> Logout
                       </button>
                     </div>
                   </div>
@@ -312,25 +386,32 @@ const Navbar = ({ scrollY }) => {
             className="md:hidden inline-flex items-center justify-center p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-drawer"
           >
-            {mobileOpen ? <X className={`w-6 h-6 ${iconColor}`} /> : <Menu className={`w-6 h-6 ${iconColor}`} />}
+            {mobileOpen ? <X className={`w-6 h-6 ${iconColor}`} aria-hidden="true" /> : <Menu className={`w-6 h-6 ${iconColor}`} aria-hidden="true" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer */}
       <div
-        className={`md:hidden fixed inset-0 z-40 transition ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
-        aria-hidden={!mobileOpen}
+        id="mobile-drawer"
+        role="dialog"
+        aria-modal="true"
+        className={`md:hidden fixed inset-0 z-[90] transition ${mobileOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
       >
         {/* Backdrop */}
         <div
           className={`absolute inset-0 bg-black/40 transition-opacity ${mobileOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setMobileOpen(false)}
+          onTouchMove={(e) => e.preventDefault()} /* prevent iOS background scroll */
         />
+
         {/* Panel */}
-        <div
-          className={`absolute right-0 top-0 h-full w-80 max-w-[85%] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-100 dark:border-gray-800 transform transition-transform duration-300
+        <aside
+          ref={drawerRef}
+          className={`absolute right-0 top-0 h-[100svh] w-80 max-w-[85%] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-100 dark:border-gray-800 transform transition-transform duration-300 will-change-transform
           ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           {/* Drawer Header */}
@@ -341,8 +422,8 @@ const Navbar = ({ scrollY }) => {
               </div>
               <span className="font-semibold text-gray-900 dark:text-gray-100">FILA</span>
             </div>
-            <button onClick={() => setMobileOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-              <X className={`w-5 h-5 ${iconColor}`} />
+            <button onClick={() => setMobileOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close menu">
+              <X className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
             </button>
           </div>
 
@@ -371,21 +452,21 @@ const Navbar = ({ scrollY }) => {
                       onClick={handleViewProfile}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <UserCircle className={`w-5 h-5 ${iconColor}`} />
+                      <UserCircle className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
                       Profile
                     </button>
                     <button
                       onClick={handleHistory}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <History className={`w-5 h-5 ${iconColor}`} />
+                      <History className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
                       History
                     </button>
                     <button
                       onClick={handleFavourites}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <Heart className={`w-5 h-5 ${iconColor}`} />
+                      <Heart className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
                       Favourites
                     </button>
                   </div>
@@ -394,8 +475,8 @@ const Navbar = ({ scrollY }) => {
                 </>
               )}
 
-              {/* Then the main nav links */}
-              {NAV_ITEMS.map(({ label, to, icon }) => (
+              {/* Main nav links + Cart for mobile */}
+              {[...NAV_ITEMS, { label: 'Cart', to: '/cart', icon: ShoppingCart }].map(({ label, to, icon: Icon }) => (
                 <Link
                   key={label}
                   to={to}
@@ -405,12 +486,12 @@ const Navbar = ({ scrollY }) => {
                       ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
                       : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                 >
-                  <span className={`w-5 h-5 ${iconColor}`}>{icon}</span>
+                  <Icon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
                   <span className="text-base">{label}</span>
                 </Link>
               ))}
 
-              {/* If not logged in, put Login button in the content section */}
+              {/* If not logged in, show Login here */}
               {!isLoggedIn && (
                 <button
                   onClick={() => {
@@ -423,7 +504,7 @@ const Navbar = ({ scrollY }) => {
                 </button>
               )}
 
-              {/* >>> Logout AT THE END of the mobile menu <<< */}
+              {/* Logout at the END */}
               {isLoggedIn && (
                 <>
                   <div className="my-3 border-t border-gray-200 dark:border-gray-800" />
@@ -431,14 +512,14 @@ const Navbar = ({ scrollY }) => {
                     onClick={handleLogout}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-800/60 border border-red-200 dark:border-red-800 text-red-600"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
                     Logout
                   </button>
                 </>
               )}
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </nav>
   );
