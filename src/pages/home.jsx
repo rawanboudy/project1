@@ -272,7 +272,7 @@ const RestaurantHomepage = () => {
   }, [visibleSections]);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors">
+    <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors overflow-x-hidden">
       <Navbar scrollY={scrollY} />
 
       {/* Hero (reveal on enter) */}

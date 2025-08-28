@@ -118,10 +118,24 @@ export default function RegisterPage() {
       });
       if (loginResponse.data?.token) {
         localStorage.setItem('token', loginResponse.data.token);
-        localStorage.setItem('user', JSON.stringify({
+        // [FIX] store both keys so all pages agree
+        const userPayload = {
           username: loginResponse.data.username,
-          email: loginResponse.data.email
-        }));
+          email: loginResponse.data.email,
+          firstname: loginResponse.data.firstname,
+          lastname: loginResponse.data.lastname,
+        };
+        localStorage.setItem('user', JSON.stringify(userPayload));       // legacy key
+        localStorage.setItem('userInfo', JSON.stringify(userPayload));   // key used elsewhere
+
+        // [FIX] set axios auth header right away
+        try {
+          axios.defaults.headers.common.Authorization = `Bearer ${loginResponse.data.token}`;
+        } catch {}
+
+        // [FIX] notify same-tab listeners (MenuPage listens to this)
+        window.dispatchEvent(new Event('localStorageChange'));
+
         sessionStorage.removeItem('scrollPosition');
         navigate('/', { replace: true });
         setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'instant' }), 100);
@@ -440,11 +454,11 @@ export default function RegisterPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <div className={`w-2 h-2 rounded-full ${passwordStrength.number ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
-                    <span className={passwordStrength.number ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}>At least one number</span>
+                    <span className="text-gray-500 dark:text-gray-400">At least one number</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <div className={`w-2 h-2 rounded-full ${passwordStrength.special ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
-                    <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}>Special character (!@#$%^&*)</span>
+                    <span className="text-gray-500 dark:text-gray-400">Special character (!@#$%^&*)</span>
                   </div>
                 </div>
               )}

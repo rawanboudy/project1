@@ -1,4 +1,3 @@
-// src/pages/MenuPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../axiosConfig';
@@ -158,17 +157,29 @@ export default function MenuPage() {
   useEffect(() => {
     const checkUserSession = () => {
       const token = localStorage.getItem('token');
-      const userInfo = localStorage.getItem('userInfo');
-      setIsUserLoggedIn(!!(token && userInfo));
+      // [FIX] accept either userInfo or user
+      const userInfo = localStorage.getItem('userInfo') || localStorage.getItem('user');
+      setIsUserLoggedIn(Boolean(token && userInfo));
     };
     checkUserSession();
     const handleStorageChange = () => checkUserSession();
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    // [FIX] listen same-tab broadcast
+    window.addEventListener('localStorageChange', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleStorageChange);
+    };
   }, []);
 
   const requireAuth = () => {
-    if (!isUserLoggedIn) {
+    // [FIX] re-check at action time to avoid stale state
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('userInfo') || localStorage.getItem('user');
+    const logged = Boolean(token && userInfo);
+    if (logged !== isUserLoggedIn) setIsUserLoggedIn(logged);
+
+    if (!logged) {
       toast.error('Please log in to continue');
       navigate('/login');
       return false;
@@ -370,9 +381,10 @@ export default function MenuPage() {
       return;
     }
     try {
-      const userInfo = localStorage.getItem('userInfo');
-      if (!userInfo) return;
-      const user = JSON.parse(userInfo);
+      // [FIX] support userInfo or user
+      const raw = localStorage.getItem('userInfo') || localStorage.getItem('user');
+      if (!raw) return;
+      const user = JSON.parse(raw);
       const favoritesKey = `favorites_${user.username || user.email}`;
       const storedFavorites = localStorage.getItem(favoritesKey);
       if (storedFavorites) {
@@ -384,9 +396,10 @@ export default function MenuPage() {
 
   const saveFavoritesToStorage = (favorites) => {
     try {
-      const userInfo = localStorage.getItem('userInfo');
-      if (userInfo) {
-        const user = JSON.parse(userInfo);
+      // [FIX] support userInfo or user
+      const raw = localStorage.getItem('userInfo') || localStorage.getItem('user');
+      if (raw) {
+        const user = JSON.parse(raw);
         const favoritesKey = `favorites_${user.username || user.email}`;
         localStorage.setItem(favoritesKey, JSON.stringify(favorites));
       }
@@ -395,9 +408,10 @@ export default function MenuPage() {
 
   const getUserStoredFavorites = () => {
     try {
-      const userInfo = localStorage.getItem('userInfo');
-      if (!userInfo) return [];
-      const user = JSON.parse(userInfo);
+      // [FIX] support userInfo or user
+      const raw = localStorage.getItem('userInfo') || localStorage.getItem('user');
+      if (!raw) return [];
+      const user = JSON.parse(raw);
       const favoritesKey = `favorites_${user.username || user.email}`;
       const storedFavorites = localStorage.getItem(favoritesKey);
       return storedFavorites ? JSON.parse(storedFavorites) : [];
@@ -772,14 +786,16 @@ export default function MenuPage() {
           style={{ height: heroHeight }}
           className="relative flex items-center justify-center bg-gradient-to-r from-orange-400 to-orange-600"
         >
-          <div className="text-center px-4 max-w-4xl mx-auto">
+          {/* Overlay (different for light vs dark mode) */}
+          <div className="absolute inset-0 bg-white/5 dark:bg-black/30" />
+          
+          <div className="relative text-center px-4 max-w-4xl mx-auto z-10">
             <motion.div style={{ scale: titleScale }}>
               <ShimmerHeading text="Explore Our Culinary Creations" />
             </motion.div>
-
             <motion.p
               style={{ opacity: subtitleOpacity }}
-              className="text-sm sm:text-base md:text-lg text-orange-200 max-w-xl mx-auto"
+              className="text-sm sm:text-base md:text-lg text-gray-900 dark:text-orange-100 max-w-xl mx-auto"
             >
               Handcrafted dishes, curated flavors. Refine your search with our filters.
             </motion.p>
@@ -929,22 +945,21 @@ export default function MenuPage() {
                           )}
 
                           {/* Image */}
-                          <div className="relative overflow-hidden aspect-[4/3] bg-gray-100 dark:bg-gray-800">
-                            <motion.img
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ duration: 0.25 }}
-                              src={item.pictureUrl || '/placeholder-dish.jpg'}
-                              alt={item.name || 'Product'}
-                              className="product-img absolute inset-0"
-                              decoding="async"
-                              
-                              draggable={false}
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder-dish.jpg';
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          </div>
+                  <div className="relative overflow-hidden aspect-square bg-gray-100 dark:bg-gray-800">
+  <motion.img
+    whileHover={{ scale: 1.05 }}
+    transition={{ duration: 0.25 }}
+    src={item.pictureUrl || '/placeholder-dish.jpg'}
+    alt={item.name || 'Product'}
+    className="w-full h-full object-cover object-center"
+    decoding="async"
+    draggable={false}
+    onError={(e) => {
+      e.currentTarget.src = '/placeholder-dish.jpg';
+    }}
+  />
+  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+</div>
 
                           {/* Body */}
                           <div className="p-3 sm:p-4 flex flex-col flex-grow">

@@ -11,6 +11,15 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState(null); // Added for user ID
+
+  // [FIX] gate page render on user fetch success
+  const [userLoaded, setUserLoaded] = useState(false);
+  const [userLoadError, setUserLoadError] = useState('');
+
+  // [FIX] always jump to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
   
   // Location form state
   const [locationData, setLocationData] = useState({
@@ -43,21 +52,26 @@ const CheckoutPage = () => {
 
   // Load basket data and user info
   useEffect(() => {
-    const userInfo = localStorage.getItem('userInfo');
-    
-    if (userInfo) {
-      const user = JSON.parse(userInfo);
-      setUserEmail(user.email || '');
-      
-      // Load user data from API
-      loadUserData();
+    // [FIX] support either key and require auth
+    const raw = localStorage.getItem('userInfo') || localStorage.getItem('user');
+    if (!raw) {
+      toast.error('Please log in to continue to checkout.');
+      navigate('/login', { replace: true });
+      return;
     }
 
-    // Load basket data
-    loadBasketData();
+    try {
+      const user = JSON.parse(raw);
+      setUserEmail(user.email || '');
+    } catch {}
 
-    // Fetch delivery methods
-    fetchDeliveryMethods();
+    // Load user data first; only after success, load basket + delivery methods
+    (async () => {
+      const ok = await loadUserData();
+      if (ok) {
+        await Promise.all([loadBasketData(), fetchDeliveryMethods()]);
+      }
+    })();
   }, []);
 
   // Load basket data from API
@@ -86,49 +100,58 @@ const CheckoutPage = () => {
 
   // UPDATED: Load user data from API with user ID handling
   const loadUserData = async () => {
-  try {
-    // Get user info
-    const userResponse = await axios.get('/Authentication/user');
-    const userData = userResponse.data;
-    
-    // Store the user ID for later use - handle different possible field names
-    const userIdValue = userData.userId || userData.id || userData.UserId;
-    setUserId(userIdValue);
-    
-    console.log('User data loaded:', userData);
-    console.log('User ID extracted:', userIdValue);
-    
-    // Get user address using the user ID
     try {
-      const addressResponse = await axios.get(`/Authentication/address/${userIdValue}`);
-      const addressData = addressResponse.data;
+      // Get user info
+      const userResponse = await axios.get('/Authentication/user');
+      const userData = userResponse.data;
       
-      console.log('Address data loaded:', addressData);
+      // Store the user ID for later use - handle different possible field names
+      const userIdValue = userData.userId || userData.id || userData.UserId;
+      setUserId(userIdValue);
       
-      setLocationData(prev => ({
-        ...prev,
-        firstname: addressData.firstname || userData.firstname || '',
-        lastname: addressData.lastname || userData.lastname || '',
-        street: addressData.location || addressData.street || '', // Handle API's 'location' field
-        city: addressData.city || '',
-        country: addressData.country || '',
-        phone: userData.phone || ''
-      }));
-    } catch (addressError) {
-      console.log('No existing address found, using user data only:', addressError);
-      // If no address found, just use user data
-      setLocationData(prev => ({
-        ...prev,
-        firstname: userData.firstname || '',
-        lastname: userData.lastname || '',
-        phone: userData.phone || ''
-      }));
+      console.log('User data loaded:', userData);
+      console.log('User ID extracted:', userIdValue);
+      
+      // Get user address using the user ID
+      try {
+        const addressResponse = await axios.get(`/Authentication/address/${userIdValue}`);
+        const addressData = addressResponse.data;
+        
+        console.log('Address data loaded:', addressData);
+        
+        setLocationData(prev => ({
+          ...prev,
+          firstname: addressData.firstname || userData.firstname || '',
+          lastname: addressData.lastname || userData.lastname || '',
+          street: addressData.location || addressData.street || '', // Handle API's 'location' field
+          city: addressData.city || '',
+          country: addressData.country || '',
+          phone: userData.phone || ''
+        }));
+      } catch (addressError) {
+        console.log('No existing address found, using user data only:', addressError);
+        // If no address found, just use user data
+        setLocationData(prev => ({
+          ...prev,
+          firstname: userData.firstname || '',
+          lastname: userData.lastname || '',
+          phone: userData.phone || ''
+        }));
+      }
+
+      // [FIX] mark user fetch as successful to allow page render
+      setUserLoaded(true);
+      setUserLoadError('');
+      return true;
+      
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      // [FIX] hold page and show friendly retry instead of broken render
+      setUserLoaded(false);
+      setUserLoadError('Failed to load your profile. Please try again.');
+      return false;
     }
-    
-  } catch (error) {
-    console.error('Error loading user data:', error);
-  }
-};
+  };
 
   // Update basket with delivery method
   const updateBasketWithDelivery = async (deliveryMethodId) => {
@@ -219,47 +242,47 @@ const CheckoutPage = () => {
   };
 
   // Parse API validation errors
-const parseApiErrors = (error) => {
-  const errors = {};
-  
-  if (error.response?.data) {
-    const errorData = error.response.data;
+  const parseApiErrors = (error) => {
+    const errors = {};
     
-    console.log('Parsing API error data:', errorData);
-    
-    // Handle different API error response formats
-    if (errorData.errors && typeof errorData.errors === 'object') {
-      // ASP.NET Core validation errors format
-      Object.keys(errorData.errors).forEach(field => {
-        const fieldName = field.toLowerCase();
-        if (Array.isArray(errorData.errors[field])) {
-          errors[fieldName] = errorData.errors[field][0];
-        } else {
-          errors[fieldName] = errorData.errors[field];
-        }
-      });
-    } else if (errorData.title || errorData.detail) {
-      // Problem Details format
-      errors.general = errorData.detail || errorData.title;
-    } else if (errorData.errorMessage) {
-      // Custom error format
-      errors.general = errorData.errorMessage;
-    } else if (errorData.message) {
-      // Simple message format
-      errors.general = errorData.message;
-    } else if (typeof errorData === 'string') {
-      errors.general = errorData;
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      
+      console.log('Parsing API error data:', errorData);
+      
+      // Handle different API error response formats
+      if (errorData.errors && typeof errorData.errors === 'object') {
+        // ASP.NET Core validation errors format
+        Object.keys(errorData.errors).forEach(field => {
+          const fieldName = field.toLowerCase();
+          if (Array.isArray(errorData.errors[field])) {
+            errors[fieldName] = errorData.errors[field][0];
+          } else {
+            errors[fieldName] = errorData.errors[field];
+          }
+        });
+      } else if (errorData.title || errorData.detail) {
+        // Problem Details format
+        errors.general = errorData.detail || errorData.title;
+      } else if (errorData.errorMessage) {
+        // Custom error format
+        errors.general = errorData.errorMessage;
+      } else if (errorData.message) {
+        // Simple message format
+        errors.general = errorData.message;
+      } else if (typeof errorData === 'string') {
+        errors.general = errorData;
+      } else {
+        // Fallback for unknown error format
+        errors.general = 'An error occurred while saving your address.';
+      }
     } else {
-      // Fallback for unknown error format
-      errors.general = 'An error occurred while saving your address.';
+      // Network or other error
+      errors.general = 'Network error. Please check your connection and try again.';
     }
-  } else {
-    // Network or other error
-    errors.general = 'Network error. Please check your connection and try again.';
-  }
-  
-  return errors;
-};
+    
+    return errors;
+  };
 
   // Client-side validation for required fields
   const validateAddressData = () => {
@@ -290,91 +313,91 @@ const parseApiErrors = (error) => {
 
   // UPDATED: Handle address form submission with user ID in URL
   const handleAddressSubmit = async (e) => {
-  if (e) {
-    e.preventDefault();
-  }
-  
-  // Clear previous errors
-  setApiErrors({});
-  
-  // Client-side validation first
-  const validationErrors = validateAddressData();
-  if (Object.keys(validationErrors).length > 0) {
-    setApiErrors(validationErrors);
-    const firstError = Object.values(validationErrors)[0];
-    toast.error(`Please fix: ${firstError}`);
-    return;
-  }
-
-  if (!userId) {
-    toast.error('User information not loaded. Please refresh the page.');
-    return;
-  }
-  
-  setLoading(true);
-  
-  try {
-    console.log('Submitting address data for user:', userId);
-    
-    // FIXED: Use the correct API endpoint from your documentation
-    const addressData = {
-      firstname: locationData.firstname.trim(),
-      lastname: locationData.lastname.trim(),
-      location: locationData.street.trim(), // API expects 'location' field
-      city: locationData.city.trim(),
-      country: locationData.country.trim()
-    };
-    
-    console.log('Address data being sent:', addressData);
-    
-    // Use the correct endpoint: PUT /api/Authentication/UpdateAddress/{id}
-    const response = await axios.put(`/Authentication/UpdateAddress/${userId}`, addressData, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000 // 10 seconds timeout
-    });
-    
-    console.log('Address saved successfully:', response.data);
-    
-    localStorage.setItem('deliveryAddress', JSON.stringify(locationData));
-    toast.success('Delivery address saved successfully!');
-    setStep(2); // Move to delivery method selection
-    
-  } catch (error) {
-    console.error('Error saving address:', error);
-    console.error('Error response:', error.response);
-    
-    // Parse and set API validation errors
-    const parsedErrors = parseApiErrors(error);
-    setApiErrors(parsedErrors);
-    
-    // Handle specific error cases
-    if (error.response?.status === 400) {
-      // Bad Request - validation errors
-      if (parsedErrors.general) {
-        toast.error(parsedErrors.general);
-      } else {
-        const firstError = Object.values(parsedErrors)[0];
-        if (firstError) {
-          toast.error(`Validation error: ${firstError}`);
-        } else {
-          toast.error('Please check your input and try again.');
-        }
-      }
-    } else if (error.response?.status === 401) {
-      toast.error('Please log in to save your address.');
-    } else if (error.response?.status === 404) {
-      toast.error('User not found. Please log in again.');
-    } else if (error.code === 'ECONNABORTED') {
-      toast.error('Request timeout. Please check your connection and try again.');
-    } else {
-      toast.error('Failed to save address. Please try again.');
+    if (e) {
+      e.preventDefault();
     }
-  } finally {
-    setLoading(false);
-  }
-};
+    
+    // Clear previous errors
+    setApiErrors({});
+    
+    // Client-side validation first
+    const validationErrors = validateAddressData();
+    if (Object.keys(validationErrors).length > 0) {
+      setApiErrors(validationErrors);
+      const firstError = Object.values(validationErrors)[0];
+      toast.error(`Please fix: ${firstError}`);
+      return;
+    }
+
+    if (!userId) {
+      toast.error('User information not loaded. Please refresh the page.');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      console.log('Submitting address data for user:', userId);
+      
+      // FIXED: Use the correct API endpoint from your documentation
+      const addressData = {
+        firstname: locationData.firstname.trim(),
+        lastname: locationData.lastname.trim(),
+        location: locationData.street.trim(), // API expects 'location' field
+        city: locationData.city.trim(),
+        country: locationData.country.trim()
+      };
+      
+      console.log('Address data being sent:', addressData);
+      
+      // Use the correct endpoint: PUT /api/Authentication/UpdateAddress/{id}
+      const response = await axios.put(`/Authentication/UpdateAddress/${userId}`, addressData, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000 // 10 seconds timeout
+      });
+      
+      console.log('Address saved successfully:', response.data);
+      
+      localStorage.setItem('deliveryAddress', JSON.stringify(locationData));
+      toast.success('Delivery address saved successfully!');
+      setStep(2); // Move to delivery method selection
+      
+    } catch (error) {
+      console.error('Error saving address:', error);
+      console.error('Error response:', error.response);
+      
+      // Parse and set API validation errors
+      const parsedErrors = parseApiErrors(error);
+      setApiErrors(parsedErrors);
+      
+      // Handle specific error cases
+      if (error.response?.status === 400) {
+        // Bad Request - validation errors
+        if (parsedErrors.general) {
+          toast.error(parsedErrors.general);
+        } else {
+          const firstError = Object.values(parsedErrors)[0];
+          if (firstError) {
+            toast.error(`Validation error: ${firstError}`);
+          } else {
+            toast.error('Please check your input and try again.');
+          }
+        }
+      } else if (error.response?.status === 401) {
+        toast.error('Please log in to save your address.');
+      } else if (error.response?.status === 404) {
+        toast.error('User not found. Please log in again.');
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error('Request timeout. Please check your connection and try again.');
+      } else {
+        toast.error('Failed to save address. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // FIXED: Mobile button handler for address submission
   const handleMobileAddressSubmit = () => {
@@ -630,7 +653,7 @@ const parseApiErrors = (error) => {
             <>
               <button
                 type="button"
-                onClick={() => navigate('/cart')}
+                onClick={() => { navigate('/cart'); }}
                 className="w-full py-3 px-4 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -878,34 +901,33 @@ const parseApiErrors = (error) => {
             </div>
 
             {/* Address Fields */}
-          <div className="group">
-  <label className="block text-sm font-semibold text-black dark:text-white mb-2">
-    Location *
-  </label>
-  <div className="relative">
-    <textarea
-      name="street"
-      value={locationData.street}
-      onChange={handleInputChange}
-      rows={3}   // 👈 makes it taller
-      required
-      className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl 
-                 transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 
-                 focus:shadow-md text-sm resize-y ${
-        apiErrors.street 
-          ? 'border-red-400 focus:border-red-500' 
-          : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
-      } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
-      placeholder="Enter your full address (street, apartment, etc.)"
-    />
-    {apiErrors.street && (
-      <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
-        {apiErrors.street}
-      </div>
-    )}
-  </div>
-</div>
-
+            <div className="group">
+              <label className="block text-sm font-semibold text-black dark:text-white mb-2">
+                Location *
+              </label>
+              <div className="relative">
+                <textarea
+                  name="street"
+                  value={locationData.street}
+                  onChange={handleInputChange}
+                  rows={3}   // 👈 makes it taller
+                  required
+                  className={`w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-50 dark:bg-gray-700 border-2 rounded-xl 
+                          transition-all duration-300 focus:outline-none focus:bg-white dark:focus:bg-gray-600 
+                          focus:shadow-md text-sm resize-y ${
+                    apiErrors.street 
+                      ? 'border-red-400 focus:border-red-500' 
+                      : 'border-gray-200 dark:border-gray-600 focus:border-orange-500 group-hover:border-orange-300 dark:group-hover:border-orange-400'
+                  } text-black dark:text-white placeholder-gray-400 dark:placeholder-gray-400`}
+                  placeholder="Enter your full address (street, apartment, etc.)"
+                />
+                {apiErrors.street && (
+                  <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-xs font-medium">
+                    {apiErrors.street}
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Delivery Instructions */}
             <div className="group">
@@ -926,7 +948,7 @@ const parseApiErrors = (error) => {
             <div className="hidden lg:flex gap-4 pt-4">
               <button
                 type="button"
-                onClick={() => navigate('/cart')}
+                onClick={() => { navigate('/cart'); }}
                 className="flex-1 py-3 px-6 border-2 border-black dark:border-white text-black dark:text-white rounded-xl hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 flex items-center justify-center gap-2 font-medium text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -1199,15 +1221,42 @@ const parseApiErrors = (error) => {
     </div>
   );
 
-  // Loading state while basket data is being fetched
-  if (!basketData) {
+  // [FIX] Hold page until BOTH user and basket are ready; show retry if user fetch failed
+  if (!userLoaded || !basketData) {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4">
-        <div className="text-center">
+        <div className="text-center max-w-md w-full">
           <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 shadow-lg max-w-sm mx-auto border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">Loading checkout...</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Preparing your order details</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-2">
+              {userLoadError ? 'We hit a snag' : 'Loading checkout...'}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {userLoadError ? userLoadError : 'Preparing your order details'}
+            </p>
+
+            {userLoadError && (
+              <div className="mt-4 flex gap-3 justify-center">
+                <button
+                  onClick={async () => {
+                    setUserLoadError('');
+                    const ok = await loadUserData();
+                    if (ok && !basketData) {
+                      await Promise.all([loadBasketData(), fetchDeliveryMethods()]);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-black dark:text-white"
+                >
+                  Go to login
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1220,30 +1269,31 @@ const parseApiErrors = (error) => {
       
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4 mt-20 sm:mt-24">
         {/* Progress Steps */}
-        <div className="mb-6 overflow-x-auto">
-          <div className="flex items-center justify-center min-w-max px-4">
+        <div className="mb-6">
+          {/* [FIX] make steps always fit on mobile (no horizontal scroll) */}
+          <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4">
             {[1, 2, 3].map((stepNum, index) => (
               <div key={stepNum} className="flex items-center">
                 <div className="relative">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 ${
                       step >= stepNum
                         ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-600'
                     }`}
                   >
-                    {step > stepNum ? <Check className="w-5 h-5" /> : stepNum}
+                    {step > stepNum ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : stepNum}
                   </div>
                 </div>
-                <div className="ml-2 mr-4">
-                  <div className={`text-xs font-bold ${
+                <div className="ml-2 mr-2 sm:mr-4">
+                  <div className={`text-[10px] sm:text-xs font-bold ${
                     step >= stepNum ? 'text-black dark:text-white' : 'text-gray-400 dark:text-gray-500'
                   }`}>
                     {stepNum === 1 && 'Address'}
                     {stepNum === 2 && 'Delivery'}
                     {stepNum === 3 && 'Review'}
                   </div>
-                  <div className={`text-xs ${
+                  <div className={`text-[9px] sm:text-xs ${
                     step >= stepNum ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'
                   }`}>
                     {stepNum === 1 && 'Where to deliver'}
@@ -1252,7 +1302,7 @@ const parseApiErrors = (error) => {
                   </div>
                 </div>
                 {index < 2 && (
-                  <div className={`w-12 h-1 rounded-full transition-all duration-300 ${
+                  <div className={`h-1 rounded-full transition-all duration-300 w-8 sm:w-12 ${
                     step > stepNum ? 'bg-gradient-to-r from-orange-500 to-orange-600' : 'bg-gray-200 dark:bg-gray-700'
                   }`} />
                 )}

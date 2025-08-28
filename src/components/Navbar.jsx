@@ -14,6 +14,8 @@ const NAV_ITEMS = [
   { label: 'Home', to: '/', icon: Home },
   { label: 'Menu', to: '/menu', icon: BookOpen },
   { label: 'About', to: '/about', icon: UserCircle },
+  { label: 'Cart', to: '/cart', icon: ShoppingCart },
+
 ];
 
 const Navbar = ({ scrollY }) => {
@@ -243,18 +245,7 @@ const Navbar = ({ scrollY }) => {
 
         {/* Right: Cart + Theme + User / Login + Mobile Toggle */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Desktop Cart (promoted) */}
-          <Link
-            to="/cart"
-            className="hidden md:inline-flex items-center justify-center p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-            aria-label="Cart"
-            title="Cart"
-          >
-            <ShoppingCart className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
-            {/* Example badge:
-            <span className="ml-1 -mr-1 px-1.5 py-0.5 rounded-full text-[10px] bg-orange-600 text-white">3</span>
-            */}
-          </Link>
+       
 
           {/* Theme Toggle */}
           <button
