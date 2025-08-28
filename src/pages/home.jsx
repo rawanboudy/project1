@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Star, Clock, ArrowRight, Heart, Award, Users, User } from 'lucide-react';
 import '../styles/RestaurantHomepage.css';
 import theme from '../theme';
@@ -7,7 +7,37 @@ import Footer from '../components/footer';
 import SignatureDishes from '../components/SignatureDishes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import HeroSection from '../components/heroSection';
-import { useTheme } from '../theme/ThemeProvider'; // ⬅️ add this
+import { useTheme } from '../theme/ThemeProvider';
+
+/* ------------------------ Tiny, dependency-free Reveal ------------------------ */
+const Reveal = ({ effect = 'fade-up', threshold = 0.15, rootMargin = '50px', children, className = '', as: Tag = 'div' }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            el.classList.add('is-visible');
+            // unobserve so it triggers once (remove if you want repeated on scroll)
+            obs.unobserve(el);
+          }
+        });
+      },
+      { threshold, rootMargin }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold, rootMargin]);
+
+  return (
+    <Tag ref={ref} className={`reveal ${effect} ${className}`.trim()}>
+      {children}
+    </Tag>
+  );
+};
+/* ------------------------------------------------------------------------------ */
 
 const RestaurantHomepage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -20,7 +50,7 @@ const RestaurantHomepage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { theme: mode } = useTheme(); // ⬅️ get current mode ("light" | "dark")
+  const { theme: mode } = useTheme();
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -34,21 +64,9 @@ const RestaurantHomepage = () => {
   }, [location.pathname]);
 
   const heroSlides = useMemo(() => [
-    {
-      title: "Culinary Excellence",
-      subtitle: "Where Every Dish Tells a Story",
-      image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&auto=format&q=75"
-    },
-    {
-      title: "Fresh Ingredients",
-      subtitle: "Farm to Table Experience",
-      image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop&auto=format&q=75"
-    },
-    {
-      title: "Artisan Crafted",
-      subtitle: "Passion in Every Bite",
-      image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&h=600&fit=crop&auto=format&q=75"
-    }
+    { title: "Culinary Excellence", subtitle: "Where Every Dish Tells a Story", image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop&auto=format&q=75" },
+    { title: "Fresh Ingredients",   subtitle: "Farm to Table Experience",       image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop&auto=format&q=75" },
+    { title: "Artisan Crafted",     subtitle: "Passion in Every Bite",           image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&h=600&fit=crop&auto=format&q=75" },
   ], []);
 
   const fallbackDishes = useMemo(() => [
@@ -120,54 +138,55 @@ const RestaurantHomepage = () => {
   const DishCard = React.memo(({ dish, index }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     return (
-      <div
-        className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-900 shadow-lg transition-transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp group"
-        style={{ animationDelay: `${index * 0.1}s` }}
-      >
-        <div className="relative">
-          <div className={`w-full h-64 bg-gray-200 dark:bg-gray-800 ${!imageLoaded ? 'animate-pulse' : ''}`}>
-            <img
-              src={dish.pictureUrl}
-              alt={dish.name}
-              className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => setImageLoaded(true)}
-            />
+      <Reveal effect="fade-up">
+        <div
+          className="relative overflow-hidden rounded-xl bg-white dark:bg-gray-900 shadow-lg transition-transform hover:-translate-y-2 hover:shadow-2xl animate-slideInUp group"
+          style={{ animationDelay: `${index * 0.1}s` }}
+        >
+          <div className="relative">
+            <div className={`w-full h-64 bg-gray-200 dark:bg-gray-800 ${!imageLoaded ? 'animate-pulse' : ''}`}>
+              <img
+                src={dish.pictureUrl}
+                alt={dish.name}
+                className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setImageLoaded(true)}
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+              {dish.category}
+            </span>
+            <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
+              <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
+              <span>{dish.rating}</span>
+            </div>
+            <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span>{dish.preparationTime}</span>
+            </div>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <span className="absolute top-4 left-4 bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-            {dish.category}
-          </span>
-          <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
-            <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
-            <span>{dish.rating}</span>
-          </div>
-          <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
-            <Clock className="w-4 h-4 text-orange-500" />
-            <span>{dish.preparationTime}</span>
+          <div className="p-6 space-y-3">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:gradient-text transition-all duration-500">
+              {dish.name}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-2xl font-bold gradient-text">{dish.price}</span>
+              <button
+                className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold group flex items-center hover:from-orange-600 hover:to-orange-800 transition"
+                onClick={() => navigate('/menu')}
+              >
+                Order
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
           </div>
         </div>
-        <div className="p-6 space-y-3">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:gradient-text transition-all duration-500">
-            {dish.name}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3">{dish.description}</p>
-          <div className="flex justify-between items-center">
-            <span className="text-2xl font-bold gradient-text">{dish.price}</span>
-            <button
-              className="btn-enhanced rounded-full bg-gradient-to-r from-orange-500 to-orange-700 text-white px-5 py-2 font-semibold group flex items-center hover:from-orange-600 hover:to-orange-800 transition"
-              onClick={() => navigate('/menu')}
-            >
-              Order
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
-        </div>
-      </div>
+      </Reveal>
     );
   });
 
   const handleScroll = useCallback(() => setScrollY(window.scrollY), []);
-
   useEffect(() => setFeaturedDishes(fallbackDishes), [fallbackDishes]);
 
   useEffect(() => {
@@ -237,6 +256,7 @@ const RestaurantHomepage = () => {
     return () => clearTimeout(t);
   }, [fallbackDishes, preloadImage]);
 
+  // (Optional) existing IntersectionObserver code you had — safe to keep alongside Reveal
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -255,119 +275,130 @@ const RestaurantHomepage = () => {
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors">
       <Navbar scrollY={scrollY} />
 
-      {/* Hero */}
-      <HeroSection />
+      {/* Hero (reveal on enter) */}
+      <Reveal effect="fade-up">
+        <HeroSection />
+      </Reveal>
 
-      {/* Signature Dishes */}
-      <SignatureDishes />
+      {/* Signature Dishes (slide-in) */}
+      <Reveal effect="slide-left">
+        <SignatureDishes />
+      </Reveal>
 
       {/* Experience Section */}
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75"
-            alt="Restaurant Interior"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <span
-                className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white/90 mb-4"
-                style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
-              >
-                The Experience
-              </span>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                More Than Just a Meal
-              </h2>
-              <p className="text-xl text-white/90 mb-8">
-                Step into our world where culinary artistry meets warm hospitality. Every detail is crafted to create unforgettable moments.
-              </p>
-
-              <div className="grid grid-cols-2 gap-6 mb-8">
-                {[
-                  { icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
-                  { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
-                  { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
-                  { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
-                    >
-                      <item.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white mb-1">{item.title}</h4>
-                      <p className="text-sm text-white/70">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials / Feedback */}
-      <section
-        className="py-20 transition-colors bg-orange-50 dark:bg-gray-900"
-        // Light mode gets a soft orange tint; in dark we let Tailwind's dark bg take over
-        style={{ backgroundColor: mode === 'dark' ? undefined : (theme.colors?.orangeLight || undefined) }}
-      >
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <span
-              className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 border
-                         bg-white text-orange-600 border-orange-200
-                         dark:bg-gray-800 dark:text-orange-300 dark:border-gray-700"
-            >
-              What Our Guests Say
-            </span>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-              Feedbacks
-            </h2>
-            <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
-              Real stories from our amazing community of guests.
-            </p>
+      <Reveal effect="fade-up">
+        <section className="py-20 relative overflow-hidden">
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75"
+              alt="Restaurant Interior"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/60" />
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((t, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
-              >
-                <div className="flex items-center mb-4">
-                  {Array.from({ length: t.rating }).map((_, k) => (
-                    <Star key={k} className="w-5 h-5 text-orange-500 dark:text-orange-400 fill-current" />
+          <div className="relative z-10 max-w-7xl mx-auto px-6">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <span
+                  className="inline-block px-4 py-2 rounded-full text-sm font-medium text-white/90 mb-4"
+                  style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
+                >
+                  The Experience
+                </span>
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                  More Than Just a Meal
+                </h2>
+                <p className="text-xl text-white/90 mb-8">
+                  Step into our world where culinary artistry meets warm hospitality. Every detail is crafted to create unforgettable moments.
+                </p>
+
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  {[
+                    { icon: Clock, title: 'Quick Service', desc: 'Fast & efficient' },
+                    { icon: Award, title: 'Premium Quality', desc: 'Only the finest' },
+                    { icon: Users, title: 'Expert Team', desc: 'Skilled professionals' },
+                    { icon: Heart, title: 'Made with Love', desc: 'Passion in every dish' }
+                  ].map((item, idx) => (
+                    <Reveal key={idx} effect="fade-up">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `${(theme.colors?.orange || '#ff6b35')}40` }}
+                        >
+                          <item.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-white mb-1">{item.title}</h4>
+                          <p className="text-sm text-white/70">{item.desc}</p>
+                        </div>
+                      </div>
+                    </Reveal>
                   ))}
                 </div>
 
-                <p className="mb-6 text-lg text-gray-700 dark:text-gray-200">
-                  "{t.text}"
-                </p>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center ring-1 ring-gray-300 dark:ring-gray-700">
-                    <User className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">{t.name}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Verified Customer</p>
-                  </div>
-                </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
+
+      {/* Testimonials / Feedback */}
+      <Reveal effect="fade-up">
+        <section
+          className="py-20 transition-colors bg-orange-50 dark:bg-gray-900"
+          style={{ backgroundColor: mode === 'dark' ? undefined : (theme.colors?.orangeLight || undefined) }}
+        >
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <span
+                className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 border
+                          bg-white text-orange-600 border-orange-200
+                          dark:bg-gray-800 dark:text-orange-300 dark:border-gray-700"
+              >
+                What Our Guests Say
+              </span>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+                Feedbacks
+              </h2>
+              <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+                Real stories from our amazing community of guests.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 reveal-stagger">
+              {testimonials.map((t, i) => (
+                <Reveal key={i} effect="slide-left">
+                  <div
+                    className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
+                    style={{ '--reveal-delay': `${i * 80}ms` }}
+                  >
+                    <div className="flex items-center mb-4">
+                      {Array.from({ length: t.rating }).map((_, k) => (
+                        <Star key={k} className="w-5 h-5 text-orange-500 dark:text-orange-400 fill-current" />
+                      ))}
+                    </div>
+
+                    <p className="mb-6 text-lg text-gray-700 dark:text-gray-200">
+                      "{t.text}"
+                    </p>
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center ring-1 ring-gray-300 dark:ring-gray-700">
+                        <User className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{t.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Verified Customer</p>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      </Reveal>
 
       <Footer />
     </div>
