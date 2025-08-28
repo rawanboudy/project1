@@ -937,7 +937,7 @@ export default function MenuPage() {
                               alt={item.name || 'Product'}
                               className="product-img absolute inset-0"
                               decoding="async"
-                              loading="lazy"
+                              
                               draggable={false}
                               onError={(e) => {
                                 e.currentTarget.src = '/placeholder-dish.jpg';

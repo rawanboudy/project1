@@ -128,7 +128,7 @@ const RestaurantHomepage = () => {
               alt={dish.name}
               className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setImageLoaded(true)}
-              loading="lazy"
+              
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -266,7 +266,7 @@ const RestaurantHomepage = () => {
             src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75"
             alt="Restaurant Interior"
             className="w-full h-full object-cover"
-            loading="lazy"
+            
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
