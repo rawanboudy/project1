@@ -150,13 +150,19 @@ export default function SignatureDishes() {
         /* ---------- Right column ---------- */
         .dish-content { text-align: center; }
         @media (min-width:1024px) { .dish-content { text-align: left; } }
-       .dish-name {
+      .dish-name {
+  font-size: clamp(2rem, 4vw, 3rem); /* responsive size: min 2rem, max 3rem */
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+
   background: linear-gradient(135deg, #fb8c00 0%, #f57c00 100%);
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;    /* add */
-  color: transparent;                      /* keep */
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
+
         .dish-description { font-size: 1.125rem; color: #64748b; line-height: 1.6; margin: 0 0 2rem; }
         .dark .dish-description { color: #cbd5e1; }
 

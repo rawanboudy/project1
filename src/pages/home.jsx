@@ -7,6 +7,7 @@ import Footer from '../components/footer';
 import SignatureDishes from '../components/SignatureDishes';
 import { useNavigate, useLocation } from 'react-router-dom';
 import HeroSection from '../components/heroSection';
+import { useTheme } from '../theme/ThemeProvider'; // ⬅️ add this
 
 const RestaurantHomepage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -18,6 +19,8 @@ const RestaurantHomepage = () => {
   const [imagesLoaded, setImagesLoaded] = useState(new Set());
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { theme: mode } = useTheme(); // ⬅️ get current mode ("light" | "dark")
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -128,7 +131,6 @@ const RestaurantHomepage = () => {
               alt={dish.name}
               className={`w-full h-64 object-cover transition-all duration-700 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setImageLoaded(true)}
-              
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -136,7 +138,7 @@ const RestaurantHomepage = () => {
             {dish.category}
           </span>
           <div className="absolute bottom-4 left-4 flex items-center space-x-2 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
-            <Star className="w-4 h-4 text-orange-500" />
+            <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
             <span>{dish.rating}</span>
           </div>
           <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 dark:bg-gray-900/90 text-sm text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full">
@@ -266,7 +268,6 @@ const RestaurantHomepage = () => {
             src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=600&fit=crop&auto=format&q=75"
             alt="Restaurant Interior"
             className="w-full h-full object-cover"
-            
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
@@ -317,14 +318,15 @@ const RestaurantHomepage = () => {
       {/* Testimonials / Feedback */}
       <section
         className="py-20 transition-colors bg-orange-50 dark:bg-gray-900"
-        // keep your theme color as a subtle tint in light mode
-        style={{ backgroundColor: theme.colors?.orangeLight || undefined }}
+        // Light mode gets a soft orange tint; in dark we let Tailwind's dark bg take over
+        style={{ backgroundColor: mode === 'dark' ? undefined : (theme.colors?.orangeLight || undefined) }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <span
-              className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 bg-white text-orange-600 dark:bg-gray-800 dark:text-orange-300 border border-orange-200 dark:border-gray-700"
-              style={{ color: theme.colors?.orangeDark || undefined }}
+              className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-4 border
+                         bg-white text-orange-600 border-orange-200
+                         dark:bg-gray-800 dark:text-orange-300 dark:border-gray-700"
             >
               What Our Guests Say
             </span>
@@ -340,22 +342,21 @@ const RestaurantHomepage = () => {
             {testimonials.map((t, i) => (
               <div
                 key={i}
-                className="bg-white dark:bg-gray-950 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
+                className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
               >
                 <div className="flex items-center mb-4">
                   {Array.from({ length: t.rating }).map((_, k) => (
-                    <Star key={k} className="w-5 h-5 fill-current text-orange-500" />
+                    <Star key={k} className="w-5 h-5 text-orange-500 dark:text-orange-400 fill-current" />
                   ))}
                 </div>
 
-                <p className="mb-6 text-lg text-gray-600 dark:text-gray-300">
+                <p className="mb-6 text-lg text-gray-700 dark:text-gray-200">
                   "{t.text}"
                 </p>
 
                 <div className="flex items-center gap-4">
-                  {/* If you want to show their image, swap this div for an <img> with dark ring/border */}
-                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                  <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center ring-1 ring-gray-300 dark:ring-gray-700">
+                    <User className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 dark:text-white">{t.name}</h4>
