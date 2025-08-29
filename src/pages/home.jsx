@@ -20,7 +20,6 @@ const Reveal = ({ effect = 'fade-up', threshold = 0.15, rootMargin = '50px', chi
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             el.classList.add('is-visible');
-            // unobserve so it triggers once (remove if you want repeated on scroll)
             obs.unobserve(el);
           }
         });
@@ -44,12 +43,11 @@ const RestaurantHomepage = () => {
   const [scrollY, setScrollY] = useState(0);
   const [visibleSections, setVisibleSections] = useState(new Set());
   const [featuredDishes, setFeaturedDishes] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [imagesLoaded, setImagesLoaded] = useState(new Set());
+  const [pageLoaded, setPageLoaded] = useState(false); // ⬅️ NEW: gate rendering until all is ready
+
   const navigate = useNavigate();
   const location = useLocation();
-
   const { theme: mode } = useTheme();
 
   useEffect(() => {
@@ -187,8 +185,6 @@ const RestaurantHomepage = () => {
   });
 
   const handleScroll = useCallback(() => setScrollY(window.scrollY), []);
-  useEffect(() => setFeaturedDishes(fallbackDishes), [fallbackDishes]);
-
   useEffect(() => {
     let ticking = false;
     const throttledScroll = () => {
@@ -209,54 +205,78 @@ const RestaurantHomepage = () => {
     return () => clearInterval(i);
   }, [heroSlides.length]);
 
+  // ⬇️ SINGLE orchestrator: wait for hero images + fallback dish images + API dishes (and their images)
   useEffect(() => {
-    heroSlides.forEach(s => preloadImage(s.image));
-  }, [heroSlides, preloadImage]);
-
-  useEffect(() => {
-    const fetchDishes = async () => {
+    const loadEverything = async () => {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(
-          'https://elkadyyy-drg9ape4djgmebad.italynorth-01.azurewebsites.net/api/products',
-          { signal: controller.signal }
-        );
-        clearTimeout(timeoutId);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        // 1) Preload hero images
+        const heroPromises = heroSlides.map(s => preloadImage(s.image));
 
-        const result = await response.json();
-        const data = result?.data || [];
-        if (data.length > 0) {
-          const formatted = data.map(item => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            price: `$${item.price ? item.price.toFixed(2) : '0.00'}`,
-            pictureUrl: item.pictureUrl || fallbackDishes[0].pictureUrl,
-            rating: item.rating || 4.5,
-            category: item.category || 'Specialty',
-            preparationTime: item.preparationTime || '25 min'
-          }));
-          const dishesToShow = formatted.slice(0, 3);
-          setFeaturedDishes(dishesToShow);
-          dishesToShow.forEach(d => preloadImage(d.pictureUrl));
-        }
-        setError(null);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error('Error fetching dishes:', err);
-          setError(err.message);
-        }
-      } finally {
-        setIsLoading(false);
+        // 2) Preload fallback dish images (used either as placeholders or as fallback content)
+        const fallbackPromises = fallbackDishes.map(d => preloadImage(d.pictureUrl));
+
+        // 3) Fetch featured dishes and preload their images
+        const fetchAndPreloadDishes = async () => {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch(
+              'https://elkadyyy-drg9ape4djgmebad.italynorth-01.azurewebsites.net/api/products',
+              { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const result = await response.json();
+            const data = result?.data || [];
+
+            if (data.length > 0) {
+              const formatted = data.map(item => ({
+                id: item.id,
+                name: item.name,
+                description: item.description,
+                price: `$${item.price ? item.price.toFixed(2) : '0.00'}`,
+                pictureUrl: item.pictureUrl || fallbackDishes[0].pictureUrl,
+                rating: item.rating || 4.5,
+                category: item.category || 'Specialty',
+                preparationTime: item.preparationTime || '25 min'
+              }));
+
+              const dishesToShow = formatted.slice(0, 3);
+              // preload their images BEFORE setting state so first paint has images ready
+              await Promise.all(dishesToShow.map(d => preloadImage(d.pictureUrl)));
+              setFeaturedDishes(dishesToShow);
+            } else {
+              setFeaturedDishes(fallbackDishes);
+            }
+          } catch (err) {
+            console.error('Error fetching dishes:', err);
+            setFeaturedDishes(fallbackDishes);
+          }
+        };
+
+        // Run everything in parallel
+        await Promise.all([
+          ...heroPromises,
+          ...fallbackPromises,
+          fetchAndPreloadDishes(),
+        ]);
+
+        // All good → show the page
+        setPageLoaded(true);
+      } catch (e) {
+        console.error('Error during page bootstrap:', e);
+        // Fallback to basic content if something fails
+        setFeaturedDishes(fallbackDishes);
+        setPageLoaded(true);
       }
     };
-    const t = setTimeout(fetchDishes, 100);
-    return () => clearTimeout(t);
-  }, [fallbackDishes, preloadImage]);
 
-  // (Optional) existing IntersectionObserver code you had — safe to keep alongside Reveal
+    loadEverything();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroSlides, fallbackDishes, preloadImage]);
+
+  // (Optional) existing IntersectionObserver for section visibility (kept)
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -270,6 +290,19 @@ const RestaurantHomepage = () => {
     elements.forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, [visibleSections]);
+
+  /* ------------------------------- Loading Gate ------------------------------- */
+  if (!pageLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-700 dark:text-gray-300 font-medium">Loading deliciousness...</p>
+        </div>
+      </div>
+    );
+  }
+  /* --------------------------------------------------------------------------- */
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors overflow-x-hidden">

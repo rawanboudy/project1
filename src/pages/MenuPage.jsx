@@ -869,12 +869,13 @@ export default function MenuPage() {
             <motion.div style={{ scale: titleScale }}>
               <ShimmerHeading text="Explore Our Culinary Creations" />
             </motion.div>
-            <motion.p
-              style={{ opacity: subtitleOpacity }}
-              className="text-sm sm:text-base md:text-lg text-gray-900 dark:text-orange-100 max-w-xl mx-auto"
-            >
-              Handcrafted dishes, curated flavors. Refine your search with our filters.
-            </motion.p>
+         <motion.p
+  style={{ opacity: subtitleOpacity }}
+  className="text-sm sm:text-base md:text-lg !text-white max-w-xl mx-auto drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]"
+>
+  Handcrafted dishes, curated flavors. Refine your search with our filters.
+</motion.p>
+
           </div>
         </motion.header>
 

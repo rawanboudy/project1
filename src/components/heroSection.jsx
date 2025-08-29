@@ -16,9 +16,9 @@ const HeroSection = () => {
   const heroRef = useRef(null);
 
   const heroSlides = useMemo(() => [
-    { title: ['Culinary', 'Excellence'], subtitle: 'Where Every Dish Tells a Story', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&h=800&fit=crop&auto=format&q=85', color: '#ff6b35', icon: ChefHat, stats: { experience: '15+ Years', dishes: '200+ Dishes' } },
-    { title: ['Fresh', 'Ingredients'],  subtitle: 'Farm to Table Experience',       image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=800&fit=crop&auto=format&q=85', color: '#f7931e', icon: Utensils, stats: { farmers: '50+ Farms', daily: 'Fresh Daily' } },
-    { title: ['Artisan', 'Crafted'],    subtitle: 'Passion in Every Bite',          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&h=800&fit=crop&auto=format&q=85', color: '#e67e22', icon: Clock,   stats: { time: '24h Prep', quality: 'Premium' } },
+    { title: ['Culinary', ' Excellence'], subtitle: 'Where Every Dish Tells a Story', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&h=800&fit=crop&auto=format&q=85', color: '#ff6b35', icon: ChefHat, stats: { experience: '15+ Years', dishes: '200+ Dishes' } },
+    { title: ['Fresh', ' Ingredients'],  subtitle: 'Farm to Table Experience',       image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=800&fit=crop&auto=format&q=85', color: '#f7931e', icon: Utensils, stats: { farmers: '50+ Farms', daily: 'Fresh Daily' } },
+    { title: ['Artisan', ' Crafted'],    subtitle: 'Passion in Every Bite',          image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&h=800&fit=crop&auto=format&q=85', color: '#e67e22', icon: Clock,   stats: { time: '24h Prep', quality: 'Premium' } },
   ], []);
 
   useEffect(() => {
@@ -76,23 +76,23 @@ const HeroSection = () => {
       <div className="relative z-20 h-full flex items-center justify-center text-center text-white">
         <div className="w-full max-w-4xl px-6 sm:px-8 md:px-12">
           {/* Title - Reduced size */}
-          <div className="mb-2 sm:mb-4 leading-tight">
-            {current.title.map((word, idx) => (
-              <span
-                key={`${word}-${currentSlide}`}
-                className="inline-block mr-1 sm:mr-2 md:mr-3 text-white"
-                style={{
-                  fontSize: 'clamp(1.5rem, 5vw, 3.5rem)',
-                  fontWeight: 900,
-                  textShadow: '2px 2px 8px rgba(0,0,0,0.7)',
-                  opacity: 0,
-                  animation: `fadeSlideUp 800ms ease ${idx * 120}ms forwards`
-                }}
-              >
-                {word}
-              </span>
-            ))}
-          </div>
+        <div className="mb-2 sm:mb-4 leading-tight">
+  {current.title.map((word, idx) => (
+    <span
+      key={`${word}-${currentSlide}`}
+      className="inline-block mx-2 text-white"   // ⬅️ uniform space
+      style={{
+        fontSize: 'clamp(2.5rem, 8vw, 3.5rem)',
+        fontWeight: 900,
+        textShadow: '2px 2px 8px rgba(0,0,0,0.7)',
+        opacity: 0,
+        animation: `fadeSlideUp 800ms ease ${idx * 120}ms forwards`
+      }}
+    >
+      {word}
+    </span>
+  ))}
+</div>
 
           {/* Subtitle - Reduced size */}
           <div className="mb-4 sm:mb-6 md:mb-8 flex items-center justify-center" style={{ height: 'clamp(1.5rem, 3vw, 2rem)' }}>
@@ -116,27 +116,31 @@ const HeroSection = () => {
 
           {/* CTA Button - Reduced size */}
           <div className="flex justify-center">
-            <button
-              className="group relative overflow-hidden rounded-full font-bold text-white transition-all duration-500 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-transparent"
-              style={{
-                padding: 'clamp(0.7rem, 2.5vw, 1.2rem) clamp(1.5rem, 5vw, 2.5rem)',
-                fontSize: 'clamp(0.9rem, 2.2vw, 1.2rem)',
-                background: `linear-gradient(135deg, ${current.color}, ${theme.colors.gradientEnd})`,
-                boxShadow: `0 15px 50px ${current.color}40`,
-                minWidth: 'clamp(140px, 25vw, 200px)'
-              }}
-              onClick={() => {
-                const menu = document.getElementById('menu');
-                if (menu) menu.scrollIntoView({ behavior: 'smooth' });
-                else window.location.href = '/menu';
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              <span className="relative flex items-center justify-center gap-2">
-                <span>Explore Menu</span>
-                <ArrowRight className="transition-transform duration-300 group-hover:translate-x-2" style={{ width: 'clamp(1rem,2.5vw,1.3rem)', height: 'clamp(1rem,2.5vw,1.3rem)' }} />
-              </span>
-            </button>
+         <button
+  className="group relative overflow-hidden rounded-full font-bold text-white transition-all duration-500 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-transparent"
+  style={{
+    padding: 'clamp(1rem, 3vw, 1.5rem) clamp(2rem, 6vw, 3rem)',   // ⬅️ Bigger padding
+    fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',                       // ⬅️ Slightly larger text
+    background: `linear-gradient(135deg, ${current.color}, ${theme.colors.gradientEnd})`,
+    boxShadow: `0 20px 60px ${current.color}60`,                  // ⬅️ More prominent shadow
+    minWidth: 'clamp(180px, 30vw, 260px)'                         // ⬅️ Wider base size
+  }}
+  onClick={() => {
+    const menu = document.getElementById('menu');
+    if (menu) menu.scrollIntoView({ behavior: 'smooth' });
+    else window.location.href = '/menu';
+  }}
+>
+  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+  <span className="relative flex items-center justify-center gap-2">
+    <span>Explore Menu</span>
+    <ArrowRight
+      className="transition-transform duration-300 group-hover:translate-x-2"
+      style={{ width: 'clamp(1.2rem,3vw,1.6rem)', height: 'clamp(1.2rem,3vw,1.6rem)' }}
+    />
+  </span>
+</button>
+
           </div>
         </div>
       </div>
