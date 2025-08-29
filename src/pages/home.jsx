@@ -399,11 +399,11 @@ const RestaurantHomepage = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 reveal-stagger">
+            <div className="grid md:grid-cols-3 gap-8 reveal-stagger auto-rows-fr">
               {testimonials.map((t, i) => (
-                <Reveal key={i} effect="slide-left">
+                <Reveal key={i} effect="slide-left" className="h-full">
                   <div
-                    className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
+                    className="h-full bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 dark:border-gray-800"
                     style={{ '--reveal-delay': `${i * 80}ms` }}
                   >
                     <div className="flex items-center mb-4">
