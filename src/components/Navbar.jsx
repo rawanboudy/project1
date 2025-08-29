@@ -199,8 +199,40 @@ const Navbar = ({ scrollY }) => {
     navigate('/profile/favorites');
   };
 
-  // Shared icon color classes (consistent orange, dark-mode aware)
-  const iconColor = 'text-orange-600 dark:text-orange-400';
+  // Dynamic color classes based on solid state and theme
+  const getTextColor = () => {
+    if (isSolid) {
+      return 'text-gray-800 dark:text-white';
+    }
+    return 'text-white';
+  };
+
+  const getIconColor = () => {
+    if (isSolid) {
+      return 'text-orange-600 dark:text-orange-400';
+    }
+    return 'text-white';
+  };
+
+  const getNavLinkColor = (isActive) => {
+    if (isActive) {
+      if (isSolid) {
+        return 'border-b-2 border-orange-500 text-orange-600 dark:text-orange-400';
+      }
+      return 'border-b-2 border-orange-400 text-orange-200';
+    }
+    if (isSolid) {
+      return 'text-gray-700 dark:text-gray-200 hover:text-orange-600 dark:hover:text-orange-400';
+    }
+    return 'text-white hover:text-orange-200';
+  };
+
+  const getUsernameColor = () => {
+    if (isSolid) {
+      return 'text-gray-800 dark:text-gray-100';
+    }
+    return 'text-white';
+  };
 
   return (
     <nav
@@ -216,10 +248,7 @@ const Navbar = ({ scrollY }) => {
           <div className="w-12 h-12 sm:w-14 sm:h-14 overflow-hidden rounded-full shadow-lg ring-2 ring-white/20 dark:ring-gray-700 transition-transform duration-300 hover:scale-105">
             <img src={elephantLogo} alt="Elephant Logo" className="object-cover w-full h-full" />
           </div>
-          <h1
-            className={`text-lg sm:text-xl md:text-2xl font-bold tracking-wide transition-colors 
-              ${isSolid ? 'text-gray-900 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}
-          >
+          <h1 className={`text-lg sm:text-xl md:text-2xl font-bold tracking-wide transition-colors duration-300 ${getTextColor()}`}>
             FILA
           </h1>
         </div>
@@ -230,23 +259,24 @@ const Navbar = ({ scrollY }) => {
             <Link
               key={label}
               to={to}
-              className={`font-medium flex items-center gap-2 px-2 py-1 rounded-lg transition-all duration-300 hover:scale-105
-                ${location.pathname === to
-                  ? 'border-b-2 border-orange-500 text-orange-600 dark:text-orange-400'
-                  : isSolid
-                    ? 'text-gray-800 dark:text-gray-200 hover:bg-gray-100/30 dark:hover:bg-gray-800/50'
-                    : 'text-gray-900 dark:text-white hover:bg-gray-100/40 dark:hover:bg-white/10'}`}
+              className={`font-medium flex items-center gap-2 px-2 py-1 rounded-lg transition-all duration-300 hover:scale-105 ${getNavLinkColor(location.pathname === to)}`}
             >
-              <Icon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+              <Icon className={`w-5 h-5 transition-colors duration-300 ${
+                location.pathname === to
+                  ? isSolid 
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-orange-200'
+                  : isSolid
+                    ? 'text-gray-700 dark:text-gray-200'
+                    : 'text-white'
+              }`} aria-hidden="true" />
               <span className="text-sm lg:text-base">{label}</span>
             </Link>
           ))}
         </div>
 
-        {/* Right: Cart + Theme + User / Login + Mobile Toggle */}
+        {/* Right: Theme + User / Login + Mobile Toggle */}
         <div className="flex items-center gap-2 sm:gap-3">
-       
-
           {/* Theme Toggle */}
           <button
             type="button"
@@ -257,13 +287,13 @@ const Navbar = ({ scrollY }) => {
               hover:scale-110 focus:outline-none focus:ring-2
               focus:ring-orange-400 focus:ring-offset-2 dark:focus:ring-orange-500
               ${isSolid
-                ? 'border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800'
-                : 'border-gray-300 text-gray-900 hover:bg-gray-100/60 dark:border-gray-700 dark:text-white dark:hover:bg-white/10'}`}
+                ? 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'border-white/30 hover:bg-white/10'}`}
           >
             <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-orange-400/40 to-pink-500/40 opacity-0 group-hover:opacity-100 blur-md transition" />
             {mode === 'dark'
-              ? <Sun className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
-              : <Moon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />}
+              ? <Sun className={`w-5 h-5 ${getIconColor()}`} aria-hidden="true" />
+              : <Moon className={`w-5 h-5 ${getIconColor()}`} aria-hidden="true" />}
           </button>
 
           {/* Desktop: User / Login */}
@@ -286,12 +316,11 @@ const Navbar = ({ scrollY }) => {
                     <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" aria-hidden="true" />
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors
-                      ${isSolid ? 'text-gray-800 dark:text-gray-100' : 'text-gray-900 dark:text-white'}`}>
+                    <p className={`hidden sm:block text-sm font-semibold truncate max-w-24 transition-colors duration-300 ${getUsernameColor()}`}>
                       {getDisplayUsername()}
                     </p>
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${iconColor}
+                      className={`w-4 h-4 transition-all duration-300 ${getIconColor()}
                         ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}`}
                       aria-hidden="true"
                     />
@@ -329,7 +358,7 @@ const Navbar = ({ scrollY }) => {
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
                         role="menuitem"
                       >
-                        <UserCircle className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
+                        <UserCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                         Profile
                       </button>
                       <button
@@ -337,7 +366,7 @@ const Navbar = ({ scrollY }) => {
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
                         role="menuitem"
                       >
-                        <History className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
+                        <History className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                         History
                       </button>
                       <button
@@ -345,7 +374,7 @@ const Navbar = ({ scrollY }) => {
                         className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200"
                         role="menuitem"
                       >
-                        <Heart className={`w-4 h-4 ${iconColor}`} aria-hidden="true" />
+                        <Heart className="w-4 h-4 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                         Favourites
                       </button>
                       <div className="mx-4 my-2 border-t border-gray-200 dark:border-gray-700"></div>
@@ -374,13 +403,16 @@ const Navbar = ({ scrollY }) => {
 
           {/* Mobile menu toggle */}
           <button
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            className={`md:hidden inline-flex items-center justify-center p-2 rounded-lg border transition
+              ${isSolid
+                ? 'border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'border-white/30 hover:bg-white/10'}`}
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
             aria-controls="mobile-drawer"
           >
-            {mobileOpen ? <X className={`w-6 h-6 ${iconColor}`} aria-hidden="true" /> : <Menu className={`w-6 h-6 ${iconColor}`} aria-hidden="true" />}
+            {mobileOpen ? <X className={`w-6 h-6 ${getIconColor()}`} aria-hidden="true" /> : <Menu className={`w-6 h-6 ${getIconColor()}`} aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -411,10 +443,10 @@ const Navbar = ({ scrollY }) => {
               <div className="w-10 h-10 rounded-full overflow-hidden">
                 <img src={elephantLogo} alt="Elephant Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">FILA</span>
+              <span className="font-semibold text-gray-900 dark:text-white">FILA</span>
             </div>
             <button onClick={() => setMobileOpen(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Close menu">
-              <X className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+              <X className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
             </button>
           </div>
 
@@ -443,21 +475,21 @@ const Navbar = ({ scrollY }) => {
                       onClick={handleViewProfile}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <UserCircle className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+                      <UserCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                       Profile
                     </button>
                     <button
                       onClick={handleHistory}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <History className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+                      <History className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                       History
                     </button>
                     <button
                       onClick={handleFavourites}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <Heart className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+                      <Heart className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                       Favourites
                     </button>
                   </div>
@@ -467,7 +499,7 @@ const Navbar = ({ scrollY }) => {
               )}
 
               {/* Main nav links + Cart for mobile */}
-              {[...NAV_ITEMS, { label: 'Cart', to: '/cart', icon: ShoppingCart }].map(({ label, to, icon: Icon }) => (
+              {[...NAV_ITEMS].map(({ label, to, icon: Icon }) => (
                 <Link
                   key={label}
                   to={to}
@@ -477,7 +509,7 @@ const Navbar = ({ scrollY }) => {
                       ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
                       : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                 >
-                  <Icon className={`w-5 h-5 ${iconColor}`} aria-hidden="true" />
+                  <Icon className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
                   <span className="text-base">{label}</span>
                 </Link>
               ))}

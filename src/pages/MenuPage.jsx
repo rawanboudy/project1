@@ -29,6 +29,47 @@ const SORT_OPTIONS = [
   { value: '3', label: 'Name: Z → A' }
 ];
 
+/* =========================
+   NEW: filter persistence helpers
+   ========================= */
+const FILTERS_STORAGE_KEY = 'menuPageFilters_v1';
+
+const readFiltersFromUrl = (searchStr) => {
+  const p = new URLSearchParams(searchStr || '');
+  return {
+    category: p.get('category') ?? '',
+    type: p.get('type') ?? '',
+    q: p.get('q') ?? '',
+    sort: p.get('sort') ?? '',
+    page: Math.max(1, Number(p.get('page') || 1)),
+  };
+};
+
+const writeFiltersToUrl = (navigate, { category, type, q, sort, page }) => {
+  const p = new URLSearchParams();
+  if (category) p.set('category', category);
+  if (type) p.set('type', type);
+  if (q) p.set('q', q);
+  if (sort) p.set('sort', sort);
+  if (page && page !== 1) p.set('page', String(page));
+  navigate({ search: p.toString() }, { replace: true });
+};
+
+const readFiltersFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeFiltersToStorage = (filters) => {
+  try {
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {}
+};
+
 // Shimmer SVG stays the same (uses gradient)
 const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
   const start = theme.colors.gradientStart;
@@ -52,6 +93,11 @@ const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
           <stop offset="55%" stopColor="rgba(255,255,255,0.6)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </linearGradient>
+        <linearGradient id="white-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+  <stop offset="0%" stopColor="rgba(255,255,255,0.9)" />
+  <stop offset="100%" stopColor="rgba(255,255,255,0.8)" />
+</linearGradient>
+
         <clipPath id="text-clip">
           <text
             id="hero-text"
@@ -94,9 +140,11 @@ const ShimmerHeading = ({ text = 'Explore Our Culinary Creations' }) => {
       </defs>
       <use href="#hero-text" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
       <g clipPath="url(#text-clip)">
-        <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
+        <rect x="0" y="0" width="1400" height="160" fill="url(#white-grad)" />
+
         <g style={{ filter: 'url(#wave-distort)' }} mask="url(#liquid-mask)">
-          <rect x="0" y="0" width="1400" height="160" fill="url(#brand-grad)" />
+          <rect x="0" y="0" width="1400" height="160" fill="url(#white-grad)" />
+
         </g>
         <rect x="0" y="0" width="1400" height="160" fill="url(#depth-grad)" />
         <rect x="-700" y="0" width="700" height="160" fill="url(#sheen-grad)">
@@ -124,11 +172,18 @@ export default function MenuPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('');
-  const [pageIndex, setPageIndex] = useState(1);
+  /* =========================
+     UPDATED: hydrate filters from URL/storage
+     ========================= */
+  const urlInit = readFiltersFromUrl(window.location.search);
+  const storageInit = readFiltersFromStorage();
+
+  const [categoryFilter, setCategoryFilter] = useState(urlInit.category || storageInit?.category || '');
+  const [typeFilter, setTypeFilter] = useState(urlInit.type || storageInit?.type || '');
+  const [search, setSearch] = useState(urlInit.q || storageInit?.q || '');
+  const [sort, setSort] = useState(urlInit.sort || storageInit?.sort || '');
+  const [pageIndex, setPageIndex] = useState(urlInit.page || storageInit?.page || 1);
+
   const [quantities, setQuantities] = useState({});
   const [isPageTransitioning, setIsPageTransitioning] = useState(false);
   const pageSize = 12;
@@ -374,6 +429,21 @@ export default function MenuPage() {
       if (currentCache) window.allFetchedProducts[currentFilterKey] = currentCache;
     }
   }, [categoryFilter, typeFilter, search, sort]);
+
+  /* =========================
+     NEW: keep URL + localStorage in sync
+     ========================= */
+  useEffect(() => {
+    const current = {
+      category: categoryFilter,
+      type: typeFilter,
+      q: search,
+      sort,
+      page: pageIndex,
+    };
+    writeFiltersToUrl(navigate, current);
+    writeFiltersToStorage(current);
+  }, [categoryFilter, typeFilter, search, sort, pageIndex, navigate]);
 
   const fetchUserFavorites = () => {
     if (!isUserLoggedIn) {
@@ -628,6 +698,8 @@ export default function MenuPage() {
       setCategoryFilter(localCategoryFilter);
       setTypeFilter(localTypeFilter);
       setSort(localSort);
+      /* NEW: reset page on new filters */
+      setPageIndex(1);
       smoothScrollToTop(600);
       if (onClose) onClose();
     };
@@ -643,7 +715,11 @@ export default function MenuPage() {
         setCategoryFilter(newValues.category);
         setTypeFilter(newValues.type);
         setSort(newValues.sort);
+        /* NEW: reset page on clear */
+        setPageIndex(1);
       }
+      /* NEW: also clear persisted filters */
+      try { localStorage.removeItem(FILTERS_STORAGE_KEY); } catch {}
     };
 
     const handleSearchChange = (value) => (onClose ? setLocalSearch(value) : setSearch(value));
@@ -891,6 +967,9 @@ export default function MenuPage() {
                       setCategoryFilter('');
                       setTypeFilter('');
                       setSort('');
+                      /* NEW: reset page + clear persisted filters */
+                      setPageIndex(1);
+                      try { localStorage.removeItem(FILTERS_STORAGE_KEY); } catch {}
                     }}
                     className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
                   >

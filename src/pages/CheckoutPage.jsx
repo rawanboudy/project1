@@ -99,59 +99,66 @@ const CheckoutPage = () => {
   };
 
   // UPDATED: Load user data from API with user ID handling
-  const loadUserData = async () => {
-    try {
-      // Get user info
-      const userResponse = await axios.get('/Authentication/user');
-      const userData = userResponse.data;
-      
-      // Store the user ID for later use - handle different possible field names
-      const userIdValue = userData.userId || userData.id || userData.UserId;
-      setUserId(userIdValue);
-      
-      console.log('User data loaded:', userData);
-      console.log('User ID extracted:', userIdValue);
-      
-      // Get user address using the user ID
-      try {
-        const addressResponse = await axios.get(`/Authentication/address/${userIdValue}`);
-        const addressData = addressResponse.data;
-        
-        console.log('Address data loaded:', addressData);
-        
-        setLocationData(prev => ({
-          ...prev,
-          firstname: addressData.firstname || userData.firstname || '',
-          lastname: addressData.lastname || userData.lastname || '',
-          street: addressData.location || addressData.street || '', // Handle API's 'location' field
-          city: addressData.city || '',
-          country: addressData.country || '',
-          phone: userData.phone || ''
-        }));
-      } catch (addressError) {
-        console.log('No existing address found, using user data only:', addressError);
-        // If no address found, just use user data
-        setLocationData(prev => ({
-          ...prev,
-          firstname: userData.firstname || '',
-          lastname: userData.lastname || '',
-          phone: userData.phone || ''
-        }));
-      }
+// UPDATED: Load user data from API with robust phone extraction
+const loadUserData = async () => {
+  try {
+    // 1) Get user
+    const userResponse = await axios.get('/Authentication/user');
+    const userData = userResponse.data;
 
-      // [FIX] mark user fetch as successful to allow page render
-      setUserLoaded(true);
-      setUserLoadError('');
-      return true;
-      
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      // [FIX] hold page and show friendly retry instead of broken render
-      setUserLoaded(false);
-      setUserLoadError('Failed to load your profile. Please try again.');
-      return false;
+    const userIdValue = userData.userId || userData.id || userData.UserId;
+    setUserId(userIdValue);
+
+    // Try multiple common keys for phone
+    const phoneFromUser =
+      userData.phoneNumber ||
+      userData.phone ||
+      userData.mobile ||
+      userData.contactNumber ||
+      '';
+
+    // 2) Get address (may also contain phone)
+    try {
+      const addressResponse = await axios.get(`/Authentication/address/${userIdValue}`);
+      const addressData = addressResponse.data;
+
+      const phoneFromAddress =
+        addressData.phoneNumber ||
+        addressData.phone ||
+        addressData.mobile ||
+        addressData.contactNumber ||
+        '';
+
+      setLocationData(prev => ({
+        ...prev,
+        firstname: addressData.firstname || userData.firstname || '',
+        lastname:  addressData.lastname  || userData.lastname  || '',
+        street:    addressData.location  || addressData.street || '',
+        city:      addressData.city      || '',
+        country:   addressData.country   || '',
+        // prefer address phone, fallback to user phone
+        phone:     phoneFromAddress || phoneFromUser || ''
+      }));
+    } catch (addressError) {
+      // No saved address; still prefill phone from user
+      setLocationData(prev => ({
+        ...prev,
+        firstname: userData.firstname || '',
+        lastname:  userData.lastname  || '',
+        phone:     phoneFromUser || ''
+      }));
     }
-  };
+
+    setUserLoaded(true);
+    setUserLoadError('');
+    return true;
+  } catch (error) {
+    console.error('Error loading user data:', error);
+    setUserLoaded(false);
+    setUserLoadError('Failed to load your profile. Please try again.');
+    return false;
+  }
+};
 
   // Update basket with delivery method
   const updateBasketWithDelivery = async (deliveryMethodId) => {

@@ -10,8 +10,19 @@ const Footer = () => {
     { name: 'About', path: '/about' },
     { name: 'Cart', path: '/cart' },
     { name: 'Profile', path: '/profile' },
-  
   ];
+
+  // Address for Google Maps
+  const address = "123 Culinary Street, Food City, FC 12345";
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+  // Function to scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   return (
     <footer className="py-10 sm:py-20 bg-gray-900 text-white">
@@ -55,6 +66,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <Link 
                     to={link.path} 
+                    onClick={scrollToTop}
                     className="text-gray-400 hover:text-white transition-colors duration-300 text-sm sm:text-base"
                   >
                     {link.name}
@@ -80,7 +92,14 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <MapPin className="w-5 h-5 flex-shrink-0" style={{ color: theme.colors.orange }} />
-                <span className="text-gray-400 text-sm sm:text-base">123 Culinary Street, Food City, FC 12345</span>
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors text-sm sm:text-base cursor-pointer"
+                >
+                  {address}
+                </a>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 flex-shrink-0" style={{ color: theme.colors.orange }} />

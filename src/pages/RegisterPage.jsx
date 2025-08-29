@@ -24,7 +24,7 @@ export default function RegisterPage() {
   const [fieldTouched, setFieldTouched] = useState({});
   const [emailExists, setEmailExists] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
-  const [emailCheckError, setEmailCheckError] = useState(false);
+  // Removed emailCheckError state since it's not necessary for user experience
   const [usernameExists, setUsernameExists] = useState(false);
   const [usernameChecking] = useState(false);
   const [usernameCheckError] = useState(false);
@@ -99,12 +99,15 @@ export default function RegisterPage() {
 
   const checkEmailAvailability = async (email) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
-    setEmailChecking(true); setEmailCheckError(false); setEmailExists(false);
+    setEmailChecking(true);
+    setEmailExists(false);
     try {
       const response = await axios.get(`/Authentication/emailexists/${encodeURIComponent(email)}`, { timeout: 5000 });
       setEmailExists(response.data === true);
     } catch (err) {
-      setEmailCheckError(true);
+      // Silently handle email check errors - don't show warnings to user
+      // The server will validate during registration anyway
+      console.log('Email availability check failed:', err.message);
     } finally {
       setEmailChecking(false);
     }
@@ -160,7 +163,6 @@ export default function RegisterPage() {
     if (name === 'password') checkPasswordStrength(value);
     if (name === 'email') {
       setEmailExists(false);
-      setEmailCheckError(false);
       if (emailDebounceTimer) clearTimeout(emailDebounceTimer);
       const timer = setTimeout(() => { checkEmailAvailability(value); }, 800);
       setEmailDebounceTimer(timer);
@@ -267,7 +269,8 @@ export default function RegisterPage() {
     const clientErrors = validate();
     if (Object.keys(clientErrors).length) { setErrors(clientErrors); return; }
     if (emailExists) { setErrors({ email: ['This email is already taken. Try logging in instead?'] }); return; }
-    if (emailChecking) { setGeneralError('Please wait while we verify your email.'); return; }
+    // Removed the emailChecking check - let registration proceed even if email check is still pending
+    // The server will validate the email during registration anyway
 
     setIsLoading(true); setErrors({});
     try {
@@ -339,7 +342,7 @@ export default function RegisterPage() {
   const getFieldValidationIcon = (field) => {
     if (field === 'email') {
       if (emailChecking) return <Loader2 className="w-5 h-5 animate-spin text-blue-500" />;
-      if (emailCheckError) return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      // Removed emailCheckError warning icon
       if (emailExists) return <X className="w-5 h-5 text-red-500" />;
       if (getFieldError(field)) return <X className="w-5 h-5 text-red-500" />;
       if (formData.email && fieldTouched.email && !getFieldError(field)) return <Check className="w-5 h-5 text-green-500" />;
@@ -454,11 +457,11 @@ export default function RegisterPage() {
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <div className={`w-2 h-2 rounded-full ${passwordStrength.number ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
-                    <span className="text-gray-500 dark:text-gray-400">At least one number</span>
+                    <span className={passwordStrength.number ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}>At least one number</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <div className={`w-2 h-2 rounded-full ${passwordStrength.special ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
-                    <span className="text-gray-500 dark:text-gray-400">Special character (!@#$%^&*)</span>
+                    <span className={passwordStrength.special ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}>Special character (!@#$%^&*)</span>
                   </div>
                 </div>
               )}
@@ -467,7 +470,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={isLoading || emailExists || !isOnline || emailChecking}
+            disabled={isLoading || emailExists || !isOnline}
             className="w-full py-3 font-semibold text-white rounded-xl transition duration-300 flex justify-center items-center gap-2 shadow-lg bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60"
           >
             {isLoading ? (
@@ -479,11 +482,6 @@ export default function RegisterPage() {
               <>
                 <WifiOff className="w-5 h-5" />
                 No Connection
-              </>
-            ) : emailChecking ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Validating Email...
               </>
             ) : (
               'Create Account'
